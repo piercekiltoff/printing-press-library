@@ -1,44 +1,51 @@
-# Contributing to CLI-PP-Library
+# Contributing to Printing Press Library
 
 ## Submitting a CLI
 
-### Prerequisites
-
-1. Install the [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press)
-2. Generate your CLI: `/printing-press <API-name>`
-3. Verify it passes quality gates
-
-### Quality Gates (All Required)
+The easiest way to submit a CLI is with the `/printing-press publish` skill:
 
 ```bash
-# 1. Runtime verification - must pass at 80%+
-printing-press verify --dir ./your-cli --spec your-spec.json
-
-# 2. Scorecard - must score 75+
-printing-press scorecard --dir ./your-cli
-
-# 3. Build verification
-cd your-cli && go build ./... && go vet ./...
+/printing-press publish notion-pp-cli
 ```
 
-### PR Checklist
+The skill handles everything: validation, packaging, and PR creation. You don't need to clone this repo manually.
 
-- [ ] CLI source code in its own directory (e.g., `your-api-cli/`)
-- [ ] OpenAPI spec used to generate it
-- [ ] Phase 0-5 plan artifacts in `docs/plans/`
-- [ ] Verify report output (copy from terminal)
-- [ ] Scorecard report output
-- [ ] README with product thesis (who is this for, why it matters)
-- [ ] At least one emboss pass applied
+### What the Skill Does
+
+1. **Finds your CLI** in `~/printing-press/library/` by name (exact, suffix, or fuzzy match)
+2. **Determines the category** from the manifest, catalog, or asks you
+3. **Validates** the CLI builds, passes `go vet`, and has a manifest
+4. **Packages** the CLI source + manuscripts into the library structure
+5. **Opens a PR** with a structured description, `--help` output, and manuscript links
+
+### Prerequisites
+
+- [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press) installed (`go install github.com/mvanhorn/cli-printing-press/cmd/printing-press@latest`)
+- `gh` CLI installed and authenticated (`gh auth login`)
+- A generated CLI in your local library (`~/printing-press/library/`)
+
+### Manual Submission
+
+If you prefer to submit manually:
+
+1. Generate your CLI with `/printing-press <API>`
+2. Verify it passes quality gates: `go build ./...`, `go vet ./...`
+3. Fork this repo and create a branch: `feat/<cli-name>`
+4. Add your CLI under `library/<category>/<cli-name>/` with:
+   - The full CLI source code
+   - `.printing-press.json` manifest
+   - `.manuscripts/` directory with research and proof artifacts
+5. Update `registry.json` with your CLI's entry
+6. Open a PR
+
+### Quality Expectations
+
+- `.printing-press.json` manifest must be present with `api_name` and `cli_name`
+- `go build ./...` must succeed
+- `go vet ./...` must pass
+- The CLI must respond to `--help` and `--version`
+- Manuscripts (research briefs, shipcheck results) are strongly encouraged
 
 ### Commit Style
 
-Conventional commits: `feat(api-name):`, `fix(api-name):`, `docs(api-name):`
-
-### What Makes a Good Submission
-
-- The CLI solves a real problem (not just wraps endpoints)
-- The data layer works end to end (sync -> sql -> search)
-- Workflow commands are named after user outcomes, not API resources
-- The README tells a story, not just lists commands
-- Live API testing passes (if you have an API key)
+Conventional commits: `feat(<api-name>): add <cli-name>`
