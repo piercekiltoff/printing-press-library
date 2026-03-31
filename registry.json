@@ -8,5 +8,15 @@
       "description": "Offline-capable, agent-native CLI for the Linear API with SQLite-backed sync, search, and cross-entity queries.",
       "path": "library/project-management/linear-pp-cli"
     }
+  ],
+  "clis": [
+    {
+      "cli_name": "redfin-pp-cli",
+      "api_name": "redfin",
+      "category": "other",
+      "description": "Redfin real estate CLI with offline search, market analysis, and portfolio tracking",
+      "printing_press_version": "0.4.0",
+      "published_date": "2026-03-30"
+    }
   ]
 }

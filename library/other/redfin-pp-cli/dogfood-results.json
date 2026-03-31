@@ -1,0 +1,73 @@
+{
+  "dir": "/Users/mvanhorn/printing-press/library/redfin-pp-cli",
+  "spec_path": "/Users/mvanhorn/printing-press/.runstate/mvanhorn-eb6a05f2/runs/20260330-200039/research/redfin-stingray-spec.yaml",
+  "verdict": "FAIL",
+  "path_check": {
+    "tested": 2,
+    "valid": 0,
+    "invalid": [
+      "/"
+    ],
+    "valid_pct": 0
+  },
+  "auth_check": {
+    "spec_scheme": "",
+    "generated_format": "unknown",
+    "match": true,
+    "detail": "spec not provided or no bot/bearer scheme detected"
+  },
+  "dead_flags": {
+    "total": 14,
+    "dead": 7,
+    "items": [
+      "agent",
+      "dryRun",
+      "noCache",
+      "noInput",
+      "rateLimit",
+      "timeout",
+      "yes"
+    ]
+  },
+  "dead_functions": {
+    "total": 29,
+    "dead": 15,
+    "items": [
+      "apiErr",
+      "bold",
+      "colorEnabled",
+      "compactFields",
+      "compactListFields",
+      "compactObjectFields",
+      "filterFields",
+      "isTerminal",
+      "levenshteinDistance",
+      "newTabWriter",
+      "notFoundErr",
+      "paginatedGet",
+      "printCSV",
+      "printOutput",
+      "rateLimitErr"
+    ]
+  },
+  "pipeline_check": {
+    "sync_calls_domain": true,
+    "search_calls_domain": false,
+    "domain_tables": 1,
+    "detail": "sync uses domain-specific Upsert methods; search uses generic Search only; 1 domain tables found"
+  },
+  "example_check": {
+    "tested": 10,
+    "with_examples": 9,
+    "valid_examples": 9,
+    "missing": [
+      "analyze zips"
+    ],
+    "detail": "9/10 commands have examples"
+  },
+  "issues": [
+    "0% path validity against spec",
+    "7 dead flags found",
+    "15 dead helper functions found"
+  ]
+}

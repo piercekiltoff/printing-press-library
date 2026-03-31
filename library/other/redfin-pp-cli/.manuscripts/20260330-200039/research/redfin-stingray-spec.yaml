@@ -1,0 +1,531 @@
+openapi: 3.0.3
+info:
+  title: Redfin Stingray API (Unofficial)
+  description: Reverse-engineered Redfin real estate API endpoints
+  version: 1.0.0
+servers:
+  - url: https://www.redfin.com
+paths:
+  /stingray/api/gis:
+    get:
+      operationId: searchProperties
+      summary: Search properties by region with filters
+      parameters:
+        - name: region_id
+          in: query
+          schema: { type: integer }
+          description: Region identifier
+        - name: region_type
+          in: query
+          schema: { type: integer }
+          description: "Region type (2=county, 5=zip, 6=city, 8=neighborhood)"
+        - name: status
+          in: query
+          schema: { type: integer }
+          description: "Property status (1=active, 9=sold)"
+        - name: uipt
+          in: query
+          schema: { type: string }
+          description: "Property types (1=house, 2=condo, 3=townhouse, 4=multi-family, 5=land, 6=other)"
+        - name: num_homes
+          in: query
+          schema: { type: integer, default: 350 }
+        - name: page_number
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: sf
+          in: query
+          schema: { type: string }
+          description: "Search filters (1,2,3,5,6,7)"
+        - name: market
+          in: query
+          schema: { type: string }
+          description: Market name (e.g. boston, seattle)
+        - name: min_price
+          in: query
+          schema: { type: integer }
+        - name: max_price
+          in: query
+          schema: { type: integer }
+        - name: min_beds
+          in: query
+          schema: { type: integer }
+        - name: max_beds
+          in: query
+          schema: { type: integer }
+        - name: min_baths
+          in: query
+          schema: { type: integer }
+        - name: max_baths
+          in: query
+          schema: { type: integer }
+        - name: min_sqft
+          in: query
+          schema: { type: integer }
+        - name: max_sqft
+          in: query
+          schema: { type: integer }
+        - name: min_lot_size
+          in: query
+          schema: { type: integer }
+        - name: max_lot_size
+          in: query
+          schema: { type: integer }
+        - name: min_year_built
+          in: query
+          schema: { type: integer }
+        - name: max_year_built
+          in: query
+          schema: { type: integer }
+        - name: min_stories
+          in: query
+          schema: { type: integer }
+        - name: max_stories
+          in: query
+          schema: { type: integer }
+        - name: min_parking
+          in: query
+          schema: { type: integer }
+        - name: hoa
+          in: query
+          schema: { type: integer }
+          description: Max HOA fee
+        - name: ord
+          in: query
+          schema: { type: string }
+          description: "Sort order (e.g. days-on-redfin-asc, price-asc)"
+        - name: poly
+          in: query
+          schema: { type: string }
+          description: Polygon coordinates for map-based search
+        - name: al
+          in: query
+          schema: { type: integer, default: 1 }
+        - name: v
+          in: query
+          schema: { type: integer, default: 8 }
+      responses:
+        '200':
+          description: Property search results
+
+  /stingray/api/gis-csv:
+    get:
+      operationId: searchPropertiesCsv
+      summary: Download property search results as CSV
+      parameters:
+        - name: region_id
+          in: query
+          schema: { type: integer }
+        - name: region_type
+          in: query
+          schema: { type: integer }
+        - name: status
+          in: query
+          schema: { type: integer }
+        - name: num_homes
+          in: query
+          schema: { type: integer, default: 350 }
+      responses:
+        '200':
+          description: CSV file of property search results
+
+  /stingray/api/home/details/initialInfo:
+    get:
+      operationId: getInitialInfo
+      summary: Get initial property info including listingId
+      parameters:
+        - name: path
+          in: query
+          required: true
+          schema: { type: string }
+          description: Property URL path (e.g. /CA/San-Francisco/123-Main-St-94102/home/12345)
+      responses:
+        '200':
+          description: Initial property info with listingId
+
+  /stingray/api/home/details/aboveTheFold:
+    get:
+      operationId: getAboveTheFold
+      summary: Get property images, price, and top details
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+        - name: accessLevel
+          in: query
+          schema: { type: integer, default: 3 }
+      responses:
+        '200':
+          description: Above-the-fold property details
+
+  /stingray/api/home/details/belowTheFold:
+    get:
+      operationId: getBelowTheFold
+      summary: Get property amenities, history, and characteristics
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+        - name: accessLevel
+          in: query
+          schema: { type: integer, default: 3 }
+      responses:
+        '200':
+          description: Below-the-fold property details
+
+  /stingray/api/home/details/mainHouseInfoPanelInfo:
+    get:
+      operationId: getInfoPanel
+      summary: Get property info panel data
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+        - name: accessLevel
+          in: query
+          schema: { type: integer, default: 3 }
+      responses:
+        '200':
+          description: Property info panel
+
+  /stingray/api/home/details/neighborhoodStats/statsInfo:
+    get:
+      operationId: getNeighborhoodStats
+      summary: Get walk, bike, and transit scores
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Neighborhood statistics
+
+  /stingray/api/home/details/avmHistoricalData:
+    get:
+      operationId: getAvmHistory
+      summary: Get automated valuation model historical data
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: AVM historical valuations
+
+  /stingray/api/home/details/commute/commuteInfo:
+    get:
+      operationId: getCommuteInfo
+      summary: Get commute information for property
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Commute data
+
+  /stingray/api/home/details/owner-estimate:
+    get:
+      operationId: getOwnerEstimate
+      summary: Get owner valuation estimate
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Owner estimate
+
+  /stingray/api/home/details/similar-listings:
+    get:
+      operationId: getSimilarListings
+      summary: Get comparable active listings
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Similar active listings
+
+  /stingray/api/home/details/similar-sold:
+    get:
+      operationId: getSimilarSold
+      summary: Get recently sold comparable properties
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Recently sold comparables
+
+  /stingray/api/home/details/nearby-homes:
+    get:
+      operationId: getNearbyHomes
+      summary: Get nearby properties
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Nearby homes
+
+  /stingray/api/home/details/property-comments:
+    get:
+      operationId: getPropertyComments
+      summary: Get user comments on property
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Property comments
+
+  /stingray/api/home/details/building-details:
+    get:
+      operationId: getBuildingDetails
+      summary: Get building details
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Building details
+
+  /stingray/api/home/details/cost-of-home-ownership:
+    get:
+      operationId: getCostOfOwnership
+      summary: Get cost of home ownership breakdown
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Ownership cost breakdown
+
+  /stingray/api/home/details/descriptive-paragraph:
+    get:
+      operationId: getDescription
+      summary: Get property description
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Property description text
+
+  /stingray/api/home/details/tour-insights:
+    get:
+      operationId: getTourInsights
+      summary: Get tour availability info
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Tour insights
+
+  /stingray/api/home/details/stats:
+    get:
+      operationId: getPropertyStats
+      summary: Get property statistics
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+        - name: listingId
+          in: query
+          schema: { type: integer }
+        - name: regionId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Property statistics
+
+  /stingray/api/home/details/hood-photos:
+    get:
+      operationId: getHoodPhotos
+      summary: Get neighborhood photos
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Neighborhood photos
+
+  /stingray/api/home/details/more-resources:
+    get:
+      operationId: getMoreResources
+      summary: Get additional resources
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Additional resources
+
+  /stingray/api/home/details/page-header:
+    get:
+      operationId: getPageHeader
+      summary: Get page header info
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Page header data
+
+  /stingray/api/home/details/claimed-home-seller-data:
+    get:
+      operationId: getSellerData
+      summary: Get claimed home seller data
+      parameters:
+        - name: propertyId
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Seller data
+
+  /stingray/api/v1/rentals/{rentalId}/floorPlans:
+    get:
+      operationId: getRentalFloorPlans
+      summary: Get rental floor plans and unit pricing
+      parameters:
+        - name: rentalId
+          in: path
+          required: true
+          schema: { type: string }
+          description: "36-character UUID rental ID"
+      responses:
+        '200':
+          description: Floor plans with unit availability and pricing
+
+  /stingray/api/region/{regionType}/{regionId}/{code}/aggregate-trends:
+    get:
+      operationId: getAggregateTrends
+      summary: Get aggregate market trends for a region
+      parameters:
+        - name: regionType
+          in: path
+          required: true
+          schema: { type: string }
+        - name: regionId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Aggregate market trends
+
+  /stingray/api/region/{regionType}/{regionId}/{code}/trends:
+    get:
+      operationId: getRegionTrends
+      summary: Get detailed market trends for a region
+      parameters:
+        - name: regionType
+          in: path
+          required: true
+          schema: { type: string }
+        - name: regionId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detailed market trends
+
+  /stingray/do/location-autocomplete:
+    get:
+      operationId: locationAutocomplete
+      summary: Autocomplete location search
+      parameters:
+        - name: location
+          in: query
+          required: true
+          schema: { type: string }
+        - name: v
+          in: query
+          schema: { type: integer, default: 2 }
+      responses:
+        '200':
+          description: Location autocomplete results
+
+  /stingray/do/query-location:
+    get:
+      operationId: queryLocation
+      summary: Query location details
+      parameters:
+        - name: location
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Location query results with region_id and region_type
