@@ -9,6 +9,13 @@
       "path": "library/project-management/linear-pp-cli"
     },
     {
+      "name": "postman-explore-pp-cli",
+      "category": "developer-tools",
+      "api": "postman-explore",
+      "description": "Search and browse the Postman API Network — 700K+ public collections, workspaces, and APIs.",
+      "path": "library/developer-tools/postman-explore-pp-cli"
+    },
+    {
       "name": "steam-web-pp-cli",
       "category": "media-and-entertainment",
       "api": "Steam Web API",
