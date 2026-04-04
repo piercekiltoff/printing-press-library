@@ -14,9 +14,9 @@ import (
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/user/espn-pp-cli/internal/client"
-	"github.com/user/espn-pp-cli/internal/config"
-	"github.com/user/espn-pp-cli/internal/store"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/client"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/store"
 )
 
 // RegisterTools registers all API operations as MCP tools.
@@ -26,7 +26,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDescription("GET /apis/v3/games/ffl/seasons/2024/segments/0/leagues/{league_id}"),
 			mcplib.WithString("league_id", mcplib.Required(), mcplib.Description("The league_id identifier")),
 		),
-		makeAPIHandler("GET", "/apis/v3/games/ffl/seasons/2024/segments/0/leagues/{league_id}", []string{"league_id", }),
+		makeAPIHandler("GET", "/apis/v3/games/ffl/seasons/2024/segments/0/leagues/{league_id}", []string{"league_id"}),
 	)
 	// Sync tool
 	s.AddTool(

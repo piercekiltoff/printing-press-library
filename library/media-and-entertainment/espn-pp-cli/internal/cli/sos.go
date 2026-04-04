@@ -16,8 +16,13 @@ func newSOSCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli sos "Dallas Cowboys" --league nfl
   espn-pp-cli sos "Los Angeles Lakers" --league nba
   espn-pp-cli sos dal --league nfl --json`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"dal"}
+			}
 			spec, err := resolveLeagueSpec(league)
 			if err != nil {
 				return err

@@ -17,8 +17,13 @@ func newTrendingCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli trending nba
   espn-pp-cli trending nfl --limit 10
   espn-pp-cli trending mlb --json`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"nfl"}
+			}
 			spec, err := resolveLeagueSpec(args[0])
 			if err != nil {
 				return err

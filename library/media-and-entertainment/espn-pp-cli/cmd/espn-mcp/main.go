@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/mark3labs/mcp-go/server"
-	mcptools "github.com/user/espn-pp-cli/internal/mcp"
+	mcptools "github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/mcp"
 )
 
 func main() {

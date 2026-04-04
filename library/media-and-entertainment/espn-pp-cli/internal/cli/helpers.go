@@ -138,10 +138,6 @@ func newTabWriter(w io.Writer) *tabwriter.Writer {
 	return tabwriter.NewWriter(w, 2, 4, 2, ' ', 0)
 }
 
-func replacePathParam(path, name, value string) string {
-	return strings.ReplaceAll(path, "{"+name+"}", value)
-}
-
 func confirmMutation(flags *rootFlags, stderr io.Writer, prompt string) error {
 	if flags.yes {
 		return nil

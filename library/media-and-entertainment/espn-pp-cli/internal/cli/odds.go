@@ -1,6 +1,8 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 func newOddsCmd(flags *rootFlags) *cobra.Command {
 	var event string
@@ -10,8 +12,13 @@ func newOddsCmd(flags *rootFlags) *cobra.Command {
 		Short: "Show betting odds from ESPN",
 		Example: `  espn-pp-cli odds nfl
   espn-pp-cli odds nba --event 401671793`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"nfl"}
+			}
 			spec, err := resolveLeagueSpec(args[0])
 			if err != nil {
 				return err

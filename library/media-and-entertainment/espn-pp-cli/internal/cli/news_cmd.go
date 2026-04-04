@@ -15,8 +15,12 @@ func newNewsCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli news
   espn-pp-cli news nfl
   espn-pp-cli news nba --team lakers`,
-		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if flags.dryRun {
+					args = []string{"nfl"}
+				}
+			}
 			client := newESPNClient(flags)
 			leagues := majorLeagueKeys()
 			if len(args) == 1 {

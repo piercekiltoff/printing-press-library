@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/user/espn-pp-cli/internal/espn"
-	"github.com/user/espn-pp-cli/internal/store"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/espn"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/store"
 )
 
 type leagueSpec struct {
@@ -348,10 +348,6 @@ func extractScoreRows(data json.RawMessage, leagueKey string) []map[string]any {
 		rows = append(rows, row)
 	}
 	return rows
-}
-
-func hasEvents(data json.RawMessage) bool {
-	return len(extractEventPayloads(data)) > 0
 }
 
 func scoreRowsForLeague(client *espn.ESPN, leagueKey, date string) ([]map[string]any, error) {

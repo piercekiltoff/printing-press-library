@@ -15,8 +15,13 @@ func newPreviewCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli preview 401810937 --league nba
   espn-pp-cli preview 401547665 --league nfl
   espn-pp-cli preview 401810937 --league nba --json`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"401671793"}
+			}
 			spec, err := resolveLeagueSpec(league)
 			if err != nil {
 				return err

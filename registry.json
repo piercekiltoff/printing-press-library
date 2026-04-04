@@ -28,6 +28,13 @@
       "api": "Pagliacci Pizza",
       "description": "Order pizza, browse menu, check rewards, and manage orders for Pagliacci Pizza in Seattle",
       "path": "library/other/pagliacci-pizza-pp-cli"
+    },
+    {
+      "name": "espn-pp-cli",
+      "category": "media-and-entertainment",
+      "api": "ESPN",
+      "description": "ESPN sports CLI with live scores, standings, stats, and offline search across 10 leagues",
+      "path": "library/media-and-entertainment/espn-pp-cli"
     }
   ]
 }

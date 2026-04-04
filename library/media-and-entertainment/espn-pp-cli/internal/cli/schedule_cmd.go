@@ -16,8 +16,13 @@ func newScheduleCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli schedule nfl
   espn-pp-cli schedule nfl --team dal
   espn-pp-cli schedule nba --dates 20260401`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"nfl"}
+			}
 			spec, err := resolveLeagueSpec(args[0])
 			if err != nil {
 				return err

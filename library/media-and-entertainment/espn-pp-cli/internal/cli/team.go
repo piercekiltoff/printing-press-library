@@ -17,8 +17,13 @@ func newTeamCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli team "Dallas Cowboys"
   espn-pp-cli team dal --roster
   espn-pp-cli team dal --stats`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"dal"}
+			}
 			if roster && stats {
 				return usageErr(fmt.Errorf("use only one of --roster or --stats"))
 			}

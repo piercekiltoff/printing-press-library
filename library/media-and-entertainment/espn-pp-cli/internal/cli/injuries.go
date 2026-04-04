@@ -1,6 +1,8 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 func newInjuriesCmd(flags *rootFlags) *cobra.Command {
 	var team string
@@ -10,8 +12,13 @@ func newInjuriesCmd(flags *rootFlags) *cobra.Command {
 		Short: "Show league injury data from ESPN",
 		Example: `  espn-pp-cli injuries nfl
   espn-pp-cli injuries nba --team lakers`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"nfl"}
+			}
 			spec, err := resolveLeagueSpec(args[0])
 			if err != nil {
 				return err

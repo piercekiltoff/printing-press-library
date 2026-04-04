@@ -1,6 +1,8 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
 func newBoxscoreCmd(flags *rootFlags) *cobra.Command {
 	var league string
@@ -9,8 +11,13 @@ func newBoxscoreCmd(flags *rootFlags) *cobra.Command {
 		Use:     "boxscore <event-id>",
 		Short:   "Show ESPN boxscore data for an event",
 		Example: `  espn-pp-cli boxscore 401671793 --league nfl`,
-		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"401671793"}
+			}
 			spec, err := resolveLeagueSpec(league)
 			if err != nil {
 				return err

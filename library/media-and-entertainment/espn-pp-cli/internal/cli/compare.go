@@ -15,8 +15,13 @@ func newCompareCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli compare "LeBron James" "Kevin Durant" --league nba
   espn-pp-cli compare "Patrick Mahomes" "Josh Allen" --league nfl
   espn-pp-cli compare 3139477 3918298 --league nfl --json`,
-		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 2 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"LeBron James", "Kevin Durant"}
+			}
 			spec, err := resolveLeagueSpec(league)
 			if err != nil {
 				return err

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/user/espn-pp-cli/internal/espn"
-	"github.com/user/espn-pp-cli/internal/store"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/espn"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/store"
 )
 
 type syncResult struct {

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/user/espn-pp-cli/internal/client"
-	"github.com/user/espn-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/client"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/config"
 )
 
 var version = "1.0.0"
@@ -39,7 +39,7 @@ func Execute() error {
 
 	rootCmd := &cobra.Command{
 		Use:           "espn-pp-cli",
-		Short:         "CLI for espn (generated from docs)",
+		Short:         "ESPN sports CLI with live scores, standings, stats, and offline search across 10 leagues",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version,

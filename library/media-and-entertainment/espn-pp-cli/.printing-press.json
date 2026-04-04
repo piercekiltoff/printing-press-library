@@ -1,0 +1,10 @@
+{
+  "cli_name": "espn-pp-cli",
+  "api_name": "ESPN",
+  "description": "ESPN sports CLI with live scores, standings, stats, and offline search across 10 leagues",
+  "category": "media-and-entertainment",
+  "printing_press_version": "0.4.0",
+  "generated_at": "2026-03-29T13:59:24Z",
+  "spec_source": "sniffed",
+  "auth_required": false
+}

@@ -16,8 +16,13 @@ func newH2HCmd(flags *rootFlags) *cobra.Command {
 		Example: `  espn-pp-cli h2h "Lakers" "Celtics" --league nba
   espn-pp-cli h2h "Chiefs" "Bills" --league nfl
   espn-pp-cli h2h "Dodgers" "Giants" --league mlb --limit 5`,
-		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) < 2 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				args = []string{"dal", "phi"}
+			}
 			spec, err := resolveLeagueSpec(league)
 			if err != nil {
 				return err

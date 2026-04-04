@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/user/espn-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/internal/config"
 )
 
 type Client struct {

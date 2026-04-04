@@ -1,4 +1,4 @@
-module github.com/user/espn-pp-cli
+module github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli
 
 go 1.23.0
 

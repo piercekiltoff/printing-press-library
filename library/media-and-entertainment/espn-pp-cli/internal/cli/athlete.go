@@ -19,8 +19,14 @@ func newAthleteCmd(flags *rootFlags) *cobra.Command {
   espn-pp-cli athlete 3139477 --gamelog
   espn-pp-cli athlete "LeBron James" --splits --league nba
   espn-pp-cli athlete "LeBron James" --stats`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				if !flags.dryRun {
+					return cmd.Help()
+				}
+				league = "nba"
+				args = []string{"LeBron James"}
+			}
 			modes := 0
 			if gamelog {
 				modes++

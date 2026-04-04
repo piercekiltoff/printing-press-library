@@ -13,7 +13,6 @@ func newScoresCmd(flags *rootFlags) *cobra.Command {
   espn-pp-cli scores nfl
   espn-pp-cli scores nba --date 20260328
   espn-pp-cli scores --all`,
-		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client := newESPNClient(flags)
 
