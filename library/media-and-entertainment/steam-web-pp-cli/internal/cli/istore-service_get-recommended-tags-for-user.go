@@ -17,8 +17,9 @@ func newIstoreServiceGetRecommendedTagsForUserCmd(flags *rootFlags) *cobra.Comma
 	var flagFavorRarerTags bool
 
 	cmd := &cobra.Command{
-		Use:   "get-recommended-tags-for-user",
-		Short: "GetRecommendedTagsForUser operation of IStoreService",
+		Use:     "get-recommended-tags-for-user",
+		Short:   "GetRecommendedTagsForUser operation of IStoreService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli istore-service get-recommended-tags-for-user",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

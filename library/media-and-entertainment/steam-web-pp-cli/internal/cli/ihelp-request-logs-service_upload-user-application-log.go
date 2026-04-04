@@ -21,8 +21,9 @@ func newIhelpRequestLogsServiceUploadUserApplicationLogCmd(flags *rootFlags) *co
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "upload-user-application-log",
-		Short: "UploadUserApplicationLog operation of IHelpRequestLogsService",
+		Use:     "upload-user-application-log",
+		Short:   "UploadUserApplicationLog operation of IHelpRequestLogsService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli ihelp-request-logs-service upload-user-application-log --log-contents example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -74,7 +75,9 @@ func newIhelpRequestLogsServiceUploadUserApplicationLogCmd(flags *rootFlags) *co
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

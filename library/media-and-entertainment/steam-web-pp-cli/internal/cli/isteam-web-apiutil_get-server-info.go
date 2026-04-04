@@ -14,9 +14,10 @@ import (
 func newIsteamWebApiutilGetServerInfoCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get-server-info",
+		Use:     "get-server-info",
 		Aliases: []string{"list"},
-		Short: "GetServerInfo operation of ISteamWebAPIUtil",
+		Short:   "GetServerInfo operation of ISteamWebAPIUtil",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-web-apiutil get-server-info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

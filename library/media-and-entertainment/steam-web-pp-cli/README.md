@@ -1,6 +1,6 @@
 # Steam Web CLI
 
-Access the Steam Web API for player profiles, game libraries, achievements, friends lists, match history, news, and more.
+Look up Steam players, games, achievements, friends, and stats from the command line.
 
 Learn more at [Steam](https://store.steampowered.com).
 
@@ -30,48 +30,54 @@ Download from [Releases](https://github.com/mvanhorn/printing-press-library/rele
 # Check setup
 steam-web-pp-cli doctor
 
-# Look up a player by vanity URL
-steam-web-pp-cli isteam-user resolve-vanity-url --vanityurl trevin
+# Resolve a username to a Steam ID
+steam-web-pp-cli resolve gaben
 
 # Get a player's profile
-steam-web-pp-cli isteam-user get-player-summaries --steamids 76561198000000000
+steam-web-pp-cli profile 76561197968052866
 
-# List a player's games
-steam-web-pp-cli iplayer-service get-owned-games --steamid 76561198000000000
+# List their games sorted by playtime
+steam-web-pp-cli games 76561197968052866 --include-info
 
-# Get a player's friends
-steam-web-pp-cli isteam-user get-friend-list --steamid 76561198000000000
+# Check achievements for CS2
+steam-web-pp-cli achievements 76561197968052866 --app 730
 
-# Check achievements for a game
-steam-web-pp-cli isteam-user-stats get-player-achievements --steamid 76561198000000000 --appid 440
+# Current CS2 player count
+steam-web-pp-cli players 730
 
-# Get news for a game
-steam-web-pp-cli isteam-news get-news-for-app --appid 730 --count 5
-
-# Current players for a game
-steam-web-pp-cli isteam-user-stats get-number-of-current-players --appid 570
+# Latest CS2 news
+steam-web-pp-cli news 730 --count 5
 ```
 
-## Key Commands
+## Commands
 
-| What you want | Command |
-|---------------|---------|
-| Player profile | `isteam-user get-player-summaries --steamids <id>` |
-| Owned games | `iplayer-service get-owned-games --steamid <id>` |
-| Recent games | `iplayer-service get-recently-played-games --steamid <id>` |
-| Friends list | `isteam-user get-friend-list --steamid <id>` |
-| Player achievements | `isteam-user-stats get-player-achievements --steamid <id> --appid <appid>` |
-| Game stats | `isteam-user-stats get-user-stats-for-game --steamid <id> --appid <appid>` |
-| Game news | `isteam-news get-news-for-app --appid <appid>` |
-| Current players | `isteam-user-stats get-number-of-current-players --appid <appid>` |
-| Steam level | `iplayer-service get-steam-level --steamid <id>` |
-| Badges | `iplayer-service get-badges --steamid <id>` |
-| VAC bans | `isteam-user get-player-bans --steamids <id>` |
-| Resolve vanity URL | `isteam-user resolve-vanity-url --vanityurl <name>` |
-| Trade offers | `iecon-service get-trade-offers` |
-| App list | `isteam-apps get-app-list` |
-| Dota 2 matches | `idota2-match-570 get-match-history --account-id <id>` |
-| CS2 server status | `icsgoservers-730 get-game-servers-status` |
+| Command | What it does |
+|---------|-------------|
+| `resolve <vanityurl>` | Resolve a username to a Steam ID |
+| `profile <steamid>` | Player profile — name, avatar, status, profile URL |
+| `friends <steamid>` | List friends with relationship dates |
+| `games <steamid>` | Owned games with playtime hours |
+| `recent <steamid>` | Recently played games |
+| `achievements <steamid> --app <appid>` | Player's achievements for a game |
+| `stats <steamid> --app <appid>` | Player's stats for a game |
+| `news <appid>` | Game news articles |
+| `players <appid>` | Current player count |
+| `level <steamid>` | Steam level |
+| `badges <steamid>` | Player's badges and XP |
+| `bans <steamid>` | VAC and game ban status |
+| `schema <appid>` | Game's stat and achievement definitions |
+
+### Workflow Commands
+
+| Command | What it does |
+|---------|-------------|
+| `workflow backlog <steamid>` | Find unplayed games (the shame pile) |
+| `workflow compare <id1> <id2>` | Compare two players' libraries |
+| `workflow playtime <steamid>` | Top games by playtime |
+
+### Full API Access
+
+All 170 Steam Web API operations are also available under their native interface names (e.g., `isteam-user get-player-summaries`). The friendly commands above are shortcuts for the most common operations.
 
 ## Agent Usage
 
@@ -82,6 +88,7 @@ This CLI is designed for AI agent consumption:
 - `--dry-run` to preview requests
 - `--agent` for all agent-friendly defaults at once
 - `--data-source auto|live|local` for data source control
+- `--compact` for minimal token usage
 
 Exit codes: `0` success, `2` usage, `3` not found, `4` auth, `5` API error, `7` rate limited.
 
@@ -98,26 +105,31 @@ steam-web-pp-cli doctor
 - Get a key at [steamcommunity.com/dev/apikey](https://steamcommunity.com/dev/apikey)
 
 **Not found errors (exit code 3)**
-- Steam IDs are 17-digit numbers (e.g., 76561198000000000)
-- Use `resolve-vanity-url` to convert a username to a Steam ID
+- Steam IDs are 17-digit numbers (e.g., 76561197968052866)
+- Use `resolve` to convert a username: `steam-web-pp-cli resolve gaben`
 
 **Rate limit errors (exit code 7)**
-- Steam's API allows ~100,000 calls/day
-- The CLI auto-retries with backoff
+- Steam allows ~100K calls/day. The CLI auto-retries with backoff.
 
 ## Cookbook
 
 ```bash
-# Look up someone by username, then get their games
-STEAMID=$(steam-web-pp-cli isteam-user resolve-vanity-url --vanityurl gaben --json | jq -r '.response.steamid')
-steam-web-pp-cli iplayer-service get-owned-games --steamid $STEAMID --json
+# Look up Gabe Newell's profile
+steam-web-pp-cli resolve gaben --json | jq -r '.results.steamid'
+# → 76561197968052866
 
-# Get global achievement stats for CS2
-steam-web-pp-cli isteam-user-stats get-global-achievement-percentages-for-app --gameid 730 --json
+steam-web-pp-cli profile 76561197968052866
 
-# Sync data locally for offline search
+# Find someone's most-played games
+steam-web-pp-cli games 76561197968052866 --include-info --json \
+  | jq '.results.games | sort_by(-.playtime_forever) | .[0:5]'
+
+# Check if someone is VAC banned
+steam-web-pp-cli bans 76561197968052866
+
+# Sync data locally, then search offline
 steam-web-pp-cli sync
-steam-web-pp-cli search "counter-strike"
+steam-web-pp-cli search "counter-strike" --data-source local
 
 # Export for backup
 steam-web-pp-cli export --format jsonl > backup.jsonl

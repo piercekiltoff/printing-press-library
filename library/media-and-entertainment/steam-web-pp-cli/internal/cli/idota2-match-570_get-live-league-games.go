@@ -17,9 +17,10 @@ func newIdota2Match570GetLiveLeagueGamesCmd(flags *rootFlags) *cobra.Command {
 	var flagDpc bool
 
 	cmd := &cobra.Command{
-		Use:   "get-live-league-games",
+		Use:     "get-live-league-games",
 		Aliases: []string{"list"},
-		Short: "GetLiveLeagueGames operation of IDOTA2Match_570",
+		Short:   "GetLiveLeagueGames operation of IDOTA2Match_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-570 get-live-league-games",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

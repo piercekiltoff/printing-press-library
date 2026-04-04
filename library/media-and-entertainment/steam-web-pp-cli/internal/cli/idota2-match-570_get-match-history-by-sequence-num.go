@@ -16,8 +16,9 @@ func newIdota2Match570GetMatchHistoryBySequenceNumCmd(flags *rootFlags) *cobra.C
 	var flagMatchesRequested int
 
 	cmd := &cobra.Command{
-		Use:   "get-match-history-by-sequence-num",
-		Short: "GetMatchHistoryBySequenceNum operation of IDOTA2Match_570",
+		Use:     "get-match-history-by-sequence-num",
+		Short:   "GetMatchHistoryBySequenceNum operation of IDOTA2Match_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-570 get-match-history-by-sequence-num",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

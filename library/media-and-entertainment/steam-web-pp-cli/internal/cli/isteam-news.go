@@ -11,6 +11,7 @@ func newIsteamNewsCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "isteam-news",
 		Short: "Manage isteam news",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIsteamNewsGetNewsForAppCmd(flags))

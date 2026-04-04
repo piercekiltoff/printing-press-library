@@ -23,9 +23,10 @@ func newIeconServiceGetTradeHistoryCmd(flags *rootFlags) *cobra.Command {
 	var flagIncludeTotal bool
 
 	cmd := &cobra.Command{
-		Use:   "get-trade-history",
+		Use:     "get-trade-history",
 		Aliases: []string{"list"},
-		Short: "GetTradeHistory operation of IEconService",
+		Short:   "GetTradeHistory operation of IEconService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-service get-trade-history",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

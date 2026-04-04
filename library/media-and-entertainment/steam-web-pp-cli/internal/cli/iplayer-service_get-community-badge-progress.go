@@ -17,8 +17,8 @@ func newIplayerServiceGetCommunityBadgeProgressCmd(flags *rootFlags) *cobra.Comm
 	var flagBadgeid string
 
 	cmd := &cobra.Command{
-		Use:   "get-community-badge-progress",
-		Short: "GetCommunityBadgeProgress operation of IPlayerService",
+		Use:     "get-community-badge-progress",
+		Short:   "GetCommunityBadgeProgress operation of IPlayerService",
 		Example: "  steam-web-pp-cli iplayer-service get-community-badge-progress",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

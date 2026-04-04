@@ -11,6 +11,7 @@ func newIclientStats1046930Cmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iclient-stats-1046930",
 		Short: "Manage iclient stats 1046930",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIclientStats1046930ReportEventCmd(flags))

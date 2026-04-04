@@ -11,6 +11,7 @@ func newIsteamUserAuthCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "isteam-user-auth",
 		Short: "Manage isteam user auth",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIsteamUserAuthAuthenticateUserTicketCmd(flags))

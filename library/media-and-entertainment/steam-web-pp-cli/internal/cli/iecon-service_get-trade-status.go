@@ -18,8 +18,9 @@ func newIeconServiceGetTradeStatusCmd(flags *rootFlags) *cobra.Command {
 	var flagLanguage string
 
 	cmd := &cobra.Command{
-		Use:   "get-trade-status",
-		Short: "GetTradeStatus operation of IEconService",
+		Use:     "get-trade-status",
+		Short:   "GetTradeStatus operation of IEconService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-service get-trade-status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

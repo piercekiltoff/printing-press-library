@@ -11,6 +11,7 @@ func newIdota2StreamSystem570Cmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "idota2-stream-system-570",
 		Short: "Manage idota2 stream system 570",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIdota2StreamSystem570GetBroadcasterInfoCmd(flags))

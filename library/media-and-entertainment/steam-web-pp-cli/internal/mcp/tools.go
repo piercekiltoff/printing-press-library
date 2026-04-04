@@ -19,6 +19,7 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/steam-web-pp-cli/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/steam-web-pp-cli/internal/store"
 )
+
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
 func looksLikeAuthError(msg string) bool {
 	lower := strings.ToLower(msg)
@@ -57,74 +58,74 @@ func RegisterTools(s *server.MCPServer) {
 		mcplib.NewTool("iauthentication-service_begin-auth-session-via-credentials",
 			mcplib.WithDescription("BeginAuthSessionViaCredentials operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/BeginAuthSessionViaCredentials/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/BeginAuthSessionViaCredentials/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_begin-auth-session-via-qr",
 			mcplib.WithDescription("BeginAuthSessionViaQR operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/BeginAuthSessionViaQR/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/BeginAuthSessionViaQR/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_get-auth-session-info",
 			mcplib.WithDescription("GetAuthSessionInfo operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/GetAuthSessionInfo/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/GetAuthSessionInfo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_get-auth-session-risk-info",
 			mcplib.WithDescription("GetAuthSessionRiskInfo operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/GetAuthSessionRiskInfo/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/GetAuthSessionRiskInfo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_get-password-rsapublic-key",
 			mcplib.WithDescription("GetPasswordRSAPublicKey operation of IAuthenticationService"),
 			mcplib.WithString("account_name", mcplib.Required(), mcplib.Description("user-provided account name to get an RSA key for")),
 		),
-		makeAPIHandler("GET", "/IAuthenticationService/GetPasswordRSAPublicKey/v1", []string{ }),
+		makeAPIHandler("GET", "/IAuthenticationService/GetPasswordRSAPublicKey/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_notify-risk-quiz-results",
 			mcplib.WithDescription("NotifyRiskQuizResults operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/NotifyRiskQuizResults/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/NotifyRiskQuizResults/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_poll-auth-session-status",
 			mcplib.WithDescription("PollAuthSessionStatus operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/PollAuthSessionStatus/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/PollAuthSessionStatus/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_update-auth-session-with-mobile-confirmation",
 			mcplib.WithDescription("UpdateAuthSessionWithMobileConfirmation operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/UpdateAuthSessionWithMobileConfirmation/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/UpdateAuthSessionWithMobileConfirmation/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iauthentication-service_update-auth-session-with-steam-guard-code",
 			mcplib.WithDescription("UpdateAuthSessionWithSteamGuardCode operation of IAuthenticationService"),
 		),
-		makeAPIHandler("POST", "/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1", []string{ }),
+		makeAPIHandler("POST", "/IAuthenticationService/UpdateAuthSessionWithSteamGuardCode/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ibroadcast-service_post-game-data-frame-rtmp",
 			mcplib.WithDescription("PostGameDataFrameRTMP operation of IBroadcastService"),
 		),
-		makeAPIHandler("POST", "/IBroadcastService/PostGameDataFrameRTMP/v1", []string{ }),
+		makeAPIHandler("POST", "/IBroadcastService/PostGameDataFrameRTMP/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icheat-reporting-service_report-cheat-data",
 			mcplib.WithDescription("ReportCheatData operation of ICheatReportingService"),
 		),
-		makeAPIHandler("POST", "/ICheatReportingService/ReportCheatData/v1", []string{ }),
+		makeAPIHandler("POST", "/ICheatReportingService/ReportCheatData/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iclient-stats-1046930_report-event",
 			mcplib.WithDescription("ReportEvent operation of IClientStats_1046930"),
 		),
-		makeAPIHandler("POST", "/IClientStats_1046930/ReportEvent/v1", []string{ }),
+		makeAPIHandler("POST", "/IClientStats_1046930/ReportEvent/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-config-service_get-steam-cache-node-params",
@@ -133,19 +134,19 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("cache_id", mcplib.Required(), mcplib.Description("Unique ID number")),
 			mcplib.WithString("cache_key", mcplib.Required(), mcplib.Description("Valid current cache API key")),
 		),
-		makeAPIHandler("GET", "/IContentServerConfigService/GetSteamCacheNodeParams/v1", []string{ }),
+		makeAPIHandler("GET", "/IContentServerConfigService/GetSteamCacheNodeParams/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-config-service_set-steam-cache-client-filters",
 			mcplib.WithDescription("SetSteamCacheClientFilters operation of IContentServerConfigService"),
 		),
-		makeAPIHandler("POST", "/IContentServerConfigService/SetSteamCacheClientFilters/v1", []string{ }),
+		makeAPIHandler("POST", "/IContentServerConfigService/SetSteamCacheClientFilters/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-config-service_set-steam-cache-performance-stats",
 			mcplib.WithDescription("SetSteamCachePerformanceStats operation of IContentServerConfigService"),
 		),
-		makeAPIHandler("POST", "/IContentServerConfigService/SetSteamCachePerformanceStats/v1", []string{ }),
+		makeAPIHandler("POST", "/IContentServerConfigService/SetSteamCachePerformanceStats/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-directory-service_get-cdnfor-video",
@@ -154,14 +155,14 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("client_ip", mcplib.Required(), mcplib.Description("client IP address")),
 			mcplib.WithString("client_region", mcplib.Required(), mcplib.Description("client region")),
 		),
-		makeAPIHandler("GET", "/IContentServerDirectoryService/GetCDNForVideo/v1", []string{ }),
+		makeAPIHandler("GET", "/IContentServerDirectoryService/GetCDNForVideo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-directory-service_get-client-update-hosts",
 			mcplib.WithDescription("GetClientUpdateHosts operation of IContentServerDirectoryService"),
 			mcplib.WithString("cached_signature", mcplib.Required(), mcplib.Description("Cached signature")),
 		),
-		makeAPIHandler("GET", "/IContentServerDirectoryService/GetClientUpdateHosts/v1", []string{ }),
+		makeAPIHandler("GET", "/IContentServerDirectoryService/GetClientUpdateHosts/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-directory-service_get-depot-patch-info",
@@ -171,7 +172,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("source_manifestid", mcplib.Required(), mcplib.Description("Source manifestid")),
 			mcplib.WithString("target_manifestid", mcplib.Required(), mcplib.Description("Target manifestid")),
 		),
-		makeAPIHandler("GET", "/IContentServerDirectoryService/GetDepotPatchInfo/v1", []string{ }),
+		makeAPIHandler("GET", "/IContentServerDirectoryService/GetDepotPatchInfo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-directory-service_get-servers-for-steam-pipe",
@@ -183,7 +184,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("ipv6_public", mcplib.Description("client public ipv6 address if it knows it")),
 			mcplib.WithString("current_connections", mcplib.Required(), mcplib.Description("what sources is the client currently using")),
 		),
-		makeAPIHandler("GET", "/IContentServerDirectoryService/GetServersForSteamPipe/v1", []string{ }),
+		makeAPIHandler("GET", "/IContentServerDirectoryService/GetServersForSteamPipe/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icontent-server-directory-service_pick-single-content-server",
@@ -192,7 +193,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("cell_id", mcplib.Required(), mcplib.Description("client Cell ID")),
 			mcplib.WithString("client_ip", mcplib.Required(), mcplib.Description("client IP address")),
 		),
-		makeAPIHandler("GET", "/IContentServerDirectoryService/PickSingleContentServer/v1", []string{ }),
+		makeAPIHandler("GET", "/IContentServerDirectoryService/PickSingleContentServer/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgoplayers-730_get-next-match-sharing-code",
@@ -201,7 +202,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamidkey", mcplib.Required(), mcplib.Description("Authentication obtained from the SteamID")),
 			mcplib.WithString("knowncode", mcplib.Required(), mcplib.Description("Previously known match sharing code obtained from the SteamID")),
 		),
-		makeAPIHandler("GET", "/ICSGOPlayers_730/GetNextMatchSharingCode/v1", []string{ }),
+		makeAPIHandler("GET", "/ICSGOPlayers_730/GetNextMatchSharingCode/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgoservers-730_get-game-maps-playtime",
@@ -210,13 +211,13 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("gamemode", mcplib.Required(), mcplib.Description("What game mode is requested, possible values: competitive, casual")),
 			mcplib.WithString("mapgroup", mcplib.Required(), mcplib.Description("What maps are requested, possible values: operation")),
 		),
-		makeAPIHandler("GET", "/ICSGOServers_730/GetGameMapsPlaytime/v1", []string{ }),
+		makeAPIHandler("GET", "/ICSGOServers_730/GetGameMapsPlaytime/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgoservers-730_get-game-servers-status",
 			mcplib.WithDescription("GetGameServersStatus operation of ICSGOServers_730"),
 		),
-		makeAPIHandler("GET", "/ICSGOServers_730/GetGameServersStatus/v1", []string{ }),
+		makeAPIHandler("GET", "/ICSGOServers_730/GetGameServersStatus/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgotournaments-730_get-tournament-fantasy-lineup",
@@ -225,7 +226,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The SteamID of the user inventory")),
 			mcplib.WithString("steamidkey", mcplib.Required(), mcplib.Description("Authentication obtained from the SteamID")),
 		),
-		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentFantasyLineup/v1", []string{ }),
+		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentFantasyLineup/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgotournaments-730_get-tournament-items",
@@ -234,14 +235,14 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The SteamID of the user inventory")),
 			mcplib.WithString("steamidkey", mcplib.Required(), mcplib.Description("Authentication obtained from the SteamID")),
 		),
-		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentItems/v1", []string{ }),
+		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgotournaments-730_get-tournament-layout",
 			mcplib.WithDescription("GetTournamentLayout operation of ICSGOTournaments_730"),
 			mcplib.WithString("event", mcplib.Required(), mcplib.Description("The event ID")),
 		),
-		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentLayout/v1", []string{ }),
+		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentLayout/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgotournaments-730_get-tournament-predictions",
@@ -250,19 +251,19 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The SteamID of the user inventory")),
 			mcplib.WithString("steamidkey", mcplib.Required(), mcplib.Description("Authentication obtained from the SteamID")),
 		),
-		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentPredictions/v1", []string{ }),
+		makeAPIHandler("GET", "/ICSGOTournaments_730/GetTournamentPredictions/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgotournaments-730_upload-tournament-fantasy-lineup",
 			mcplib.WithDescription("UploadTournamentFantasyLineup operation of ICSGOTournaments_730"),
 		),
-		makeAPIHandler("POST", "/ICSGOTournaments_730/UploadTournamentFantasyLineup/v1", []string{ }),
+		makeAPIHandler("POST", "/ICSGOTournaments_730/UploadTournamentFantasyLineup/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("icsgotournaments-730_upload-tournament-predictions",
 			mcplib.WithDescription("UploadTournamentPredictions operation of ICSGOTournaments_730"),
 		),
-		makeAPIHandler("POST", "/ICSGOTournaments_730/UploadTournamentPredictions/v1", []string{ }),
+		makeAPIHandler("POST", "/ICSGOTournaments_730/UploadTournamentPredictions/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-live-league-games",
@@ -271,7 +272,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("match_id", mcplib.Description("Only show matches of the specified match id")),
 			mcplib.WithString("dpc", mcplib.Description("Only show matches that are part of the DPC")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetLiveLeagueGames/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetLiveLeagueGames/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-match-details",
@@ -279,7 +280,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("match_id", mcplib.Required(), mcplib.Description("Match id")),
 			mcplib.WithString("include_persona_names", mcplib.Description("Include persona names as part of the response")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetMatchDetails/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetMatchDetails/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-match-history",
@@ -293,7 +294,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("start_at_match_id", mcplib.Description("The minimum match ID to start from")),
 			mcplib.WithString("matches_requested", mcplib.Description("The number of requested matches to return (maximum 100)")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetMatchHistory/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetMatchHistory/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-match-history-by-sequence-num",
@@ -301,7 +302,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("start_at_match_seq_num", mcplib.Description("Start at match seq num")),
 			mcplib.WithString("matches_requested", mcplib.Description("Matches requested")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetMatchHistoryBySequenceNum/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetMatchHistoryBySequenceNum/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-team-info-by-team-id",
@@ -309,21 +310,21 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("start_at_team_id", mcplib.Description("Start at team id")),
 			mcplib.WithString("teams_requested", mcplib.Description("Teams requested")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetTeamInfoByTeamID/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetTeamInfoByTeamID/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-top-live-event-game",
 			mcplib.WithDescription("GetTopLiveEventGame operation of IDOTA2Match_570"),
 			mcplib.WithString("partner", mcplib.Required(), mcplib.Description("Which partner's games to use.")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetTopLiveEventGame/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetTopLiveEventGame/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-top-live-game",
 			mcplib.WithDescription("GetTopLiveGame operation of IDOTA2Match_570"),
 			mcplib.WithString("partner", mcplib.Required(), mcplib.Description("Which partner's games to use.")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetTopLiveGame/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetTopLiveGame/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-top-weekend-tourney-games",
@@ -331,7 +332,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("partner", mcplib.Required(), mcplib.Description("Which partner's games to use.")),
 			mcplib.WithString("home_division", mcplib.Description("Prefer matches from this division.")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetTopWeekendTourneyGames/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetTopWeekendTourneyGames/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-tournament-player-stats",
@@ -342,7 +343,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("time_frame", mcplib.Description("Time frame")),
 			mcplib.WithString("match_id", mcplib.Description("Match id")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetTournamentPlayerStats/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetTournamentPlayerStats/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-570_get-tournament-player-stats-idota2match570",
@@ -354,14 +355,14 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("match_id", mcplib.Description("Match id")),
 			mcplib.WithString("phase_id", mcplib.Description("Phase id")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Match_570/GetTournamentPlayerStats/v2", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Match_570/GetTournamentPlayerStats/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-match-stats-570_get-realtime-stats",
 			mcplib.WithDescription("GetRealtimeStats operation of IDOTA2MatchStats_570"),
 			mcplib.WithString("server_steam_id", mcplib.Required(), mcplib.Description("Server steam id")),
 		),
-		makeAPIHandler("GET", "/IDOTA2MatchStats_570/GetRealtimeStats/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2MatchStats_570/GetRealtimeStats/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-stream-system-570_get-broadcaster-info",
@@ -369,20 +370,20 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("broadcaster_steam_id", mcplib.Required(), mcplib.Description("64-bit Steam ID of the broadcaster")),
 			mcplib.WithString("league_id", mcplib.Description("LeagueID to use if we aren't in a lobby")),
 		),
-		makeAPIHandler("GET", "/IDOTA2StreamSystem_570/GetBroadcasterInfo/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2StreamSystem_570/GetBroadcasterInfo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-ticket-570_get-steam-idfor-badge-id",
 			mcplib.WithDescription("GetSteamIDForBadgeID operation of IDOTA2Ticket_570"),
 			mcplib.WithString("BadgeID", mcplib.Required(), mcplib.Description("The badge ID")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Ticket_570/GetSteamIDForBadgeID/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Ticket_570/GetSteamIDForBadgeID/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-ticket-570_set-steam-account-purchased",
 			mcplib.WithDescription("SetSteamAccountPurchased operation of IDOTA2Ticket_570"),
 		),
-		makeAPIHandler("POST", "/IDOTA2Ticket_570/SetSteamAccountPurchased/v1", []string{ }),
+		makeAPIHandler("POST", "/IDOTA2Ticket_570/SetSteamAccountPurchased/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("idota2-ticket-570_steam-account-valid-for-badge-type",
@@ -393,7 +394,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("ValidBadgeType3", mcplib.Required(), mcplib.Description("Valid Badge Type 3")),
 			mcplib.WithString("ValidBadgeType4", mcplib.Description("Valid Badge Type 4")),
 		),
-		makeAPIHandler("GET", "/IDOTA2Ticket_570/SteamAccountValidForBadgeType/v1", []string{ }),
+		makeAPIHandler("GET", "/IDOTA2Ticket_570/SteamAccountValidForBadgeType/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-dota2-570_get-event-stats-for-account",
@@ -402,7 +403,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("accountid", mcplib.Required(), mcplib.Description("The account ID to look up.")),
 			mcplib.WithString("language", mcplib.Description("The language to provide hero names in.")),
 		),
-		makeAPIHandler("GET", "/IEconDOTA2_570/GetEventStatsForAccount/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconDOTA2_570/GetEventStatsForAccount/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-dota2-570_get-heroes",
@@ -410,42 +411,42 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("language", mcplib.Description("The language to provide hero names in.")),
 			mcplib.WithString("itemizedonly", mcplib.Description("Return a list of itemized heroes only.")),
 		),
-		makeAPIHandler("GET", "/IEconDOTA2_570/GetHeroes/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconDOTA2_570/GetHeroes/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-dota2-570_get-item-creators",
 			mcplib.WithDescription("GetItemCreators operation of IEconDOTA2_570"),
 			mcplib.WithString("itemdef", mcplib.Required(), mcplib.Description("The item definition to get creator information for.")),
 		),
-		makeAPIHandler("GET", "/IEconDOTA2_570/GetItemCreators/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconDOTA2_570/GetItemCreators/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-dota2-570_get-item-workshop-published-file-ids",
 			mcplib.WithDescription("GetItemWorkshopPublishedFileIDs operation of IEconDOTA2_570"),
 			mcplib.WithString("itemdef", mcplib.Required(), mcplib.Description("The item definition to get published file ids for.")),
 		),
-		makeAPIHandler("GET", "/IEconDOTA2_570/GetItemWorkshopPublishedFileIDs/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconDOTA2_570/GetItemWorkshopPublishedFileIDs/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-dota2-570_get-rarities",
 			mcplib.WithDescription("GetRarities operation of IEconDOTA2_570"),
 			mcplib.WithString("language", mcplib.Description("The language to provide rarity names in.")),
 		),
-		makeAPIHandler("GET", "/IEconDOTA2_570/GetRarities/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconDOTA2_570/GetRarities/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-dota2-570_get-tournament-prize-pool",
 			mcplib.WithDescription("GetTournamentPrizePool operation of IEconDOTA2_570"),
 			mcplib.WithString("leagueid", mcplib.Description("The ID of the league to get the prize pool of")),
 		),
-		makeAPIHandler("GET", "/IEconDOTA2_570/GetTournamentPrizePool/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconDOTA2_570/GetTournamentPrizePool/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-1046930_get-player-items",
 			mcplib.WithDescription("GetPlayerItems operation of IEconItems_1046930"),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The Steam ID to fetch items for")),
 		),
-		makeAPIHandler("GET", "/IEconItems_1046930/GetPlayerItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_1046930/GetPlayerItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-1269260_get-equipped-player-items",
@@ -453,21 +454,21 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The Steam ID to fetch items for")),
 			mcplib.WithString("class_id", mcplib.Required(), mcplib.Description("Return items equipped for this class id")),
 		),
-		makeAPIHandler("GET", "/IEconItems_1269260/GetEquippedPlayerItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_1269260/GetEquippedPlayerItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-440_get-player-items",
 			mcplib.WithDescription("GetPlayerItems operation of IEconItems_440"),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The Steam ID to fetch items for")),
 		),
-		makeAPIHandler("GET", "/IEconItems_440/GetPlayerItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_440/GetPlayerItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-440_get-schema",
 			mcplib.WithDescription("GetSchema operation of IEconItems_440"),
 			mcplib.WithString("language", mcplib.Description("The language to return the names in. Defaults to returning string keys.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_440/GetSchema/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_440/GetSchema/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-440_get-schema-items",
@@ -475,47 +476,47 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("language", mcplib.Description("The language to return the names in. Defaults to returning string keys.")),
 			mcplib.WithString("start", mcplib.Description("The first item id to return. Defaults to 0. Response will indicate next value to query if applicable.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_440/GetSchemaItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_440/GetSchemaItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-440_get-schema-overview",
 			mcplib.WithDescription("GetSchemaOverview operation of IEconItems_440"),
 			mcplib.WithString("language", mcplib.Description("The language to return the names in. Defaults to returning string keys.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_440/GetSchemaOverview/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_440/GetSchemaOverview/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-440_get-schema-url",
 			mcplib.WithDescription("GetSchemaURL operation of IEconItems_440"),
 		),
-		makeAPIHandler("GET", "/IEconItems_440/GetSchemaURL/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_440/GetSchemaURL/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-440_get-store-meta-data",
 			mcplib.WithDescription("GetStoreMetaData operation of IEconItems_440"),
 			mcplib.WithString("language", mcplib.Description("The language to results in.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_440/GetStoreMetaData/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_440/GetStoreMetaData/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-440_get-store-status",
 			mcplib.WithDescription("GetStoreStatus operation of IEconItems_440"),
 		),
-		makeAPIHandler("GET", "/IEconItems_440/GetStoreStatus/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_440/GetStoreStatus/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-570_get-player-items",
 			mcplib.WithDescription("GetPlayerItems operation of IEconItems_570"),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The Steam ID to fetch items for")),
 		),
-		makeAPIHandler("GET", "/IEconItems_570/GetPlayerItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_570/GetPlayerItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-570_get-store-meta-data",
 			mcplib.WithDescription("GetStoreMetaData operation of IEconItems_570"),
 			mcplib.WithString("language", mcplib.Description("The language to results in.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_570/GetStoreMetaData/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_570/GetStoreMetaData/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-583950_get-equipped-player-items",
@@ -523,48 +524,48 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The Steam ID to fetch items for")),
 			mcplib.WithString("class_id", mcplib.Required(), mcplib.Description("Return items equipped for this class id")),
 		),
-		makeAPIHandler("GET", "/IEconItems_583950/GetEquippedPlayerItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_583950/GetEquippedPlayerItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-620_get-player-items",
 			mcplib.WithDescription("GetPlayerItems operation of IEconItems_620"),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The Steam ID to fetch items for")),
 		),
-		makeAPIHandler("GET", "/IEconItems_620/GetPlayerItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_620/GetPlayerItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-620_get-schema",
 			mcplib.WithDescription("GetSchema operation of IEconItems_620"),
 			mcplib.WithString("language", mcplib.Description("The language to return the names in. Defaults to returning string keys.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_620/GetSchema/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_620/GetSchema/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-730_get-player-items",
 			mcplib.WithDescription("GetPlayerItems operation of IEconItems_730"),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The Steam ID to fetch items for")),
 		),
-		makeAPIHandler("GET", "/IEconItems_730/GetPlayerItems/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_730/GetPlayerItems/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-730_get-schema",
 			mcplib.WithDescription("GetSchema operation of IEconItems_730"),
 			mcplib.WithString("language", mcplib.Description("The language to return the names in. Defaults to returning string keys.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_730/GetSchema/v2", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_730/GetSchema/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-730_get-schema-url",
 			mcplib.WithDescription("GetSchemaURL operation of IEconItems_730"),
 		),
-		makeAPIHandler("GET", "/IEconItems_730/GetSchemaURL/v2", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_730/GetSchemaURL/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-items-730_get-store-meta-data",
 			mcplib.WithDescription("GetStoreMetaData operation of IEconItems_730"),
 			mcplib.WithString("language", mcplib.Description("The language to results in.")),
 		),
-		makeAPIHandler("GET", "/IEconItems_730/GetStoreMetaData/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconItems_730/GetStoreMetaData/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-service_get-trade-history",
@@ -579,7 +580,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("include_failed", mcplib.Required(), mcplib.Description("Include failed")),
 			mcplib.WithString("include_total", mcplib.Required(), mcplib.Description("If set, the total number of trades the account has participated in will be included in the response")),
 		),
-		makeAPIHandler("GET", "/IEconService/GetTradeHistory/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconService/GetTradeHistory/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-service_get-trade-hold-durations",
@@ -588,7 +589,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid_target", mcplib.Required(), mcplib.Description("User you are trading with")),
 			mcplib.WithString("trade_offer_access_token", mcplib.Required(), mcplib.Description("A special token that allows for trade offers from non-friends.")),
 		),
-		makeAPIHandler("GET", "/IEconService/GetTradeHoldDurations/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconService/GetTradeHoldDurations/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-service_get-trade-offer",
@@ -598,7 +599,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("language", mcplib.Required(), mcplib.Description("Language")),
 			mcplib.WithString("get_descriptions", mcplib.Required(), mcplib.Description("If set, the item display data for the items included in the returned trade offers will also be returned. If one or...")),
 		),
-		makeAPIHandler("GET", "/IEconService/GetTradeOffer/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconService/GetTradeOffer/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-service_get-trade-offers",
@@ -613,7 +614,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("time_historical_cutoff", mcplib.Required(), mcplib.Description("When active_only is set, offers updated since this time will also be returned. When historical_only is set, only...")),
 			mcplib.WithString("cursor", mcplib.Description("Cursor aka start index")),
 		),
-		makeAPIHandler("GET", "/IEconService/GetTradeOffers/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconService/GetTradeOffers/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-service_get-trade-offers-summary",
@@ -621,7 +622,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 			mcplib.WithString("time_last_visit", mcplib.Required(), mcplib.Description("The time the user last visited. If not passed, will use the time the user last visited the trade offer page.")),
 		),
-		makeAPIHandler("GET", "/IEconService/GetTradeOffersSummary/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconService/GetTradeOffersSummary/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iecon-service_get-trade-status",
@@ -631,44 +632,44 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("get_descriptions", mcplib.Required(), mcplib.Description("If set, the item display data for the items included in the returned trades will also be returned")),
 			mcplib.WithString("language", mcplib.Required(), mcplib.Description("The language to use when loading item display data")),
 		),
-		makeAPIHandler("GET", "/IEconService/GetTradeStatus/v1", []string{ }),
+		makeAPIHandler("GET", "/IEconService/GetTradeStatus/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-notifications-service_user-create-session",
 			mcplib.WithDescription("UserCreateSession operation of IGameNotificationsService"),
 		),
-		makeAPIHandler("POST", "/IGameNotificationsService/UserCreateSession/v1", []string{ }),
+		makeAPIHandler("POST", "/IGameNotificationsService/UserCreateSession/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-notifications-service_user-delete-session",
 			mcplib.WithDescription("UserDeleteSession operation of IGameNotificationsService"),
 		),
-		makeAPIHandler("POST", "/IGameNotificationsService/UserDeleteSession/v1", []string{ }),
+		makeAPIHandler("POST", "/IGameNotificationsService/UserDeleteSession/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-notifications-service_user-update-session",
 			mcplib.WithDescription("UserUpdateSession operation of IGameNotificationsService"),
 		),
-		makeAPIHandler("POST", "/IGameNotificationsService/UserUpdateSession/v1", []string{ }),
+		makeAPIHandler("POST", "/IGameNotificationsService/UserUpdateSession/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_create-account",
 			mcplib.WithDescription("CreateAccount operation of IGameServersService"),
 		),
-		makeAPIHandler("POST", "/IGameServersService/CreateAccount/v1", []string{ }),
+		makeAPIHandler("POST", "/IGameServersService/CreateAccount/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_delete-account",
 			mcplib.WithDescription("DeleteAccount operation of IGameServersService"),
 		),
-		makeAPIHandler("POST", "/IGameServersService/DeleteAccount/v1", []string{ }),
+		makeAPIHandler("POST", "/IGameServersService/DeleteAccount/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_get-account-list",
 			mcplib.WithDescription("GetAccountList operation of IGameServersService"),
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 		),
-		makeAPIHandler("GET", "/IGameServersService/GetAccountList/v1", []string{ }),
+		makeAPIHandler("GET", "/IGameServersService/GetAccountList/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_get-account-public-info",
@@ -676,7 +677,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The SteamID of the game server to get info on")),
 		),
-		makeAPIHandler("GET", "/IGameServersService/GetAccountPublicInfo/v1", []string{ }),
+		makeAPIHandler("GET", "/IGameServersService/GetAccountPublicInfo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_get-server-ips-by-steam-id",
@@ -684,7 +685,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 			mcplib.WithString("server_steamids", mcplib.Required(), mcplib.Description("Server steamids")),
 		),
-		makeAPIHandler("GET", "/IGameServersService/GetServerIPsBySteamID/v1", []string{ }),
+		makeAPIHandler("GET", "/IGameServersService/GetServerIPsBySteamID/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_get-server-steam-ids-by-ip",
@@ -692,7 +693,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 			mcplib.WithString("server_ips", mcplib.Required(), mcplib.Description("Server ips")),
 		),
-		makeAPIHandler("GET", "/IGameServersService/GetServerSteamIDsByIP/v1", []string{ }),
+		makeAPIHandler("GET", "/IGameServersService/GetServerSteamIDsByIP/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_query-by-fake-ip",
@@ -703,7 +704,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("app_id", mcplib.Required(), mcplib.Description("AppID to use. Each AppID has its own FakeIP address.")),
 			mcplib.WithString("query_type", mcplib.Required(), mcplib.Description("What type of query?")),
 		),
-		makeAPIHandler("GET", "/IGameServersService/QueryByFakeIP/v1", []string{ }),
+		makeAPIHandler("GET", "/IGameServersService/QueryByFakeIP/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_query-login-token",
@@ -711,115 +712,115 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 			mcplib.WithString("login_token", mcplib.Required(), mcplib.Description("Login token to query")),
 		),
-		makeAPIHandler("GET", "/IGameServersService/QueryLoginToken/v1", []string{ }),
+		makeAPIHandler("GET", "/IGameServersService/QueryLoginToken/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_reset-login-token",
 			mcplib.WithDescription("ResetLoginToken operation of IGameServersService"),
 		),
-		makeAPIHandler("POST", "/IGameServersService/ResetLoginToken/v1", []string{ }),
+		makeAPIHandler("POST", "/IGameServersService/ResetLoginToken/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igame-servers-service_set-memo",
 			mcplib.WithDescription("SetMemo operation of IGameServersService"),
 		),
-		makeAPIHandler("POST", "/IGameServersService/SetMemo/v1", []string{ }),
+		makeAPIHandler("POST", "/IGameServersService/SetMemo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-1046930_get-client-version",
 			mcplib.WithDescription("GetClientVersion operation of IGCVersion_1046930"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_1046930/GetClientVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_1046930/GetClientVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-1046930_get-server-version",
 			mcplib.WithDescription("GetServerVersion operation of IGCVersion_1046930"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_1046930/GetServerVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_1046930/GetServerVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-1269260_get-client-version",
 			mcplib.WithDescription("GetClientVersion operation of IGCVersion_1269260"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_1269260/GetClientVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_1269260/GetClientVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-1269260_get-server-version",
 			mcplib.WithDescription("GetServerVersion operation of IGCVersion_1269260"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_1269260/GetServerVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_1269260/GetServerVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-1422450_get-client-version",
 			mcplib.WithDescription("GetClientVersion operation of IGCVersion_1422450"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_1422450/GetClientVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_1422450/GetClientVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-1422450_get-server-version",
 			mcplib.WithDescription("GetServerVersion operation of IGCVersion_1422450"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_1422450/GetServerVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_1422450/GetServerVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-440_get-client-version",
 			mcplib.WithDescription("GetClientVersion operation of IGCVersion_440"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_440/GetClientVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_440/GetClientVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-440_get-server-version",
 			mcplib.WithDescription("GetServerVersion operation of IGCVersion_440"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_440/GetServerVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_440/GetServerVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-570_get-client-version",
 			mcplib.WithDescription("GetClientVersion operation of IGCVersion_570"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_570/GetClientVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_570/GetClientVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-570_get-server-version",
 			mcplib.WithDescription("GetServerVersion operation of IGCVersion_570"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_570/GetServerVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_570/GetServerVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-583950_get-client-version",
 			mcplib.WithDescription("GetClientVersion operation of IGCVersion_583950"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_583950/GetClientVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_583950/GetClientVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-583950_get-server-version",
 			mcplib.WithDescription("GetServerVersion operation of IGCVersion_583950"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_583950/GetServerVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_583950/GetServerVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("igcversion-730_get-server-version",
 			mcplib.WithDescription("GetServerVersion operation of IGCVersion_730"),
 		),
-		makeAPIHandler("GET", "/IGCVersion_730/GetServerVersion/v1", []string{ }),
+		makeAPIHandler("GET", "/IGCVersion_730/GetServerVersion/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ihelp-request-logs-service_get-application-log-demand",
 			mcplib.WithDescription("GetApplicationLogDemand operation of IHelpRequestLogsService"),
 		),
-		makeAPIHandler("POST", "/IHelpRequestLogsService/GetApplicationLogDemand/v1", []string{ }),
+		makeAPIHandler("POST", "/IHelpRequestLogsService/GetApplicationLogDemand/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ihelp-request-logs-service_upload-user-application-log",
 			mcplib.WithDescription("UploadUserApplicationLog operation of IHelpRequestLogsService"),
 		),
-		makeAPIHandler("POST", "/IHelpRequestLogsService/UploadUserApplicationLog/v1", []string{ }),
+		makeAPIHandler("POST", "/IHelpRequestLogsService/UploadUserApplicationLog/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iinventory-service_combine-item-stacks",
 			mcplib.WithDescription("CombineItemStacks operation of IInventoryService"),
 		),
-		makeAPIHandler("POST", "/IInventoryService/CombineItemStacks/v1", []string{ }),
+		makeAPIHandler("POST", "/IInventoryService/CombineItemStacks/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iinventory-service_get-price-sheet",
@@ -828,13 +829,13 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("ecurrency", mcplib.Required(), mcplib.Description("Ecurrency")),
 			mcplib.WithString("currency_code", mcplib.Required(), mcplib.Description("Standard short code of the requested currency (preferred)")),
 		),
-		makeAPIHandler("GET", "/IInventoryService/GetPriceSheet/v1", []string{ }),
+		makeAPIHandler("GET", "/IInventoryService/GetPriceSheet/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iinventory-service_split-item-stack",
 			mcplib.WithDescription("SplitItemStack operation of IInventoryService"),
 		),
-		makeAPIHandler("POST", "/IInventoryService/SplitItemStack/v1", []string{ }),
+		makeAPIHandler("POST", "/IInventoryService/SplitItemStack/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iplayer-service_get-badges",
@@ -842,7 +843,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The player we're asking about")),
 		),
-		makeAPIHandler("GET", "/IPlayerService/GetBadges/v1", []string{ }),
+		makeAPIHandler("GET", "/IPlayerService/GetBadges/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iplayer-service_get-community-badge-progress",
@@ -851,7 +852,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The player we're asking about")),
 			mcplib.WithString("badgeid", mcplib.Required(), mcplib.Description("The badge we're asking about")),
 		),
-		makeAPIHandler("GET", "/IPlayerService/GetCommunityBadgeProgress/v1", []string{ }),
+		makeAPIHandler("GET", "/IPlayerService/GetCommunityBadgeProgress/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iplayer-service_get-owned-games",
@@ -866,7 +867,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("language", mcplib.Required(), mcplib.Description("Will return appinfo in this language")),
 			mcplib.WithString("include_extended_appinfo", mcplib.Required(), mcplib.Description("true if we want even more details (capsule, sortas, and capabilities) about each game. include_appinfo must also be...")),
 		),
-		makeAPIHandler("GET", "/IPlayerService/GetOwnedGames/v1", []string{ }),
+		makeAPIHandler("GET", "/IPlayerService/GetOwnedGames/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iplayer-service_get-recently-played-games",
@@ -875,7 +876,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The player we're asking about")),
 			mcplib.WithString("count", mcplib.Required(), mcplib.Description("The number of games to return (0/unset: all)")),
 		),
-		makeAPIHandler("GET", "/IPlayerService/GetRecentlyPlayedGames/v1", []string{ }),
+		makeAPIHandler("GET", "/IPlayerService/GetRecentlyPlayedGames/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iplayer-service_get-steam-level",
@@ -883,7 +884,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("Access key")),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The player we're asking about")),
 		),
-		makeAPIHandler("GET", "/IPlayerService/GetSteamLevel/v1", []string{ }),
+		makeAPIHandler("GET", "/IPlayerService/GetSteamLevel/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iplayer-service_is-playing-shared-game",
@@ -892,20 +893,20 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("The player we're asking about")),
 			mcplib.WithString("appid_playing", mcplib.Required(), mcplib.Description("The game player is currently playing")),
 		),
-		makeAPIHandler("GET", "/IPlayerService/IsPlayingSharedGame/v1", []string{ }),
+		makeAPIHandler("GET", "/IPlayerService/IsPlayingSharedGame/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iplayer-service_record-offline-playtime",
 			mcplib.WithDescription("RecordOfflinePlaytime operation of IPlayerService"),
 		),
-		makeAPIHandler("POST", "/IPlayerService/RecordOfflinePlaytime/v1", []string{ }),
+		makeAPIHandler("POST", "/IPlayerService/RecordOfflinePlaytime/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("iportal2-leaderboards-620_get-bucketized-data",
 			mcplib.WithDescription("GetBucketizedData operation of IPortal2Leaderboards_620"),
 			mcplib.WithString("leaderboardName", mcplib.Required(), mcplib.Description("The leaderboard name to fetch data for.")),
 		),
-		makeAPIHandler("GET", "/IPortal2Leaderboards_620/GetBucketizedData/v1", []string{ }),
+		makeAPIHandler("GET", "/IPortal2Leaderboards_620/GetBucketizedData/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ipublished-file-service_get-details",
@@ -928,7 +929,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("includereactions", mcplib.Description("If true, then reactions to items will be returned.")),
 			mcplib.WithString("admin_query", mcplib.Required(), mcplib.Description("Admin tool is doing a query, return hidden items")),
 		),
-		makeAPIHandler("GET", "/IPublishedFileService/GetDetails/v1", []string{ }),
+		makeAPIHandler("GET", "/IPublishedFileService/GetDetails/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ipublished-file-service_get-sub-section-data",
@@ -939,7 +940,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("specific_sectionid", mcplib.Required(), mcplib.Description("Specific sectionid")),
 			mcplib.WithString("desired_revision", mcplib.Description("Return the data for the specified revision.")),
 		),
-		makeAPIHandler("GET", "/IPublishedFileService/GetSubSectionData/v1", []string{ }),
+		makeAPIHandler("GET", "/IPublishedFileService/GetSubSectionData/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ipublished-file-service_get-user-file-count",
@@ -981,7 +982,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("desired_revision", mcplib.Description("Return the data for the specified revision.")),
 			mcplib.WithString("return_apps", mcplib.Required(), mcplib.Description("Return list of apps the items belong to")),
 		),
-		makeAPIHandler("GET", "/IPublishedFileService/GetUserFileCount/v1", []string{ }),
+		makeAPIHandler("GET", "/IPublishedFileService/GetUserFileCount/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ipublished-file-service_get-user-files",
@@ -1023,14 +1024,14 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("desired_revision", mcplib.Description("Return the data for the specified revision.")),
 			mcplib.WithString("return_apps", mcplib.Required(), mcplib.Description("Return list of apps the items belong to")),
 		),
-		makeAPIHandler("GET", "/IPublishedFileService/GetUserFiles/v1", []string{ }),
+		makeAPIHandler("GET", "/IPublishedFileService/GetUserFiles/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ipublished-file-service_get-user-vote-summary",
 			mcplib.WithDescription("GetUserVoteSummary operation of IPublishedFileService"),
 			mcplib.WithString("publishedfileids", mcplib.Required(), mcplib.Description("Publishedfileids")),
 		),
-		makeAPIHandler("GET", "/IPublishedFileService/GetUserVoteSummary/v1", []string{ }),
+		makeAPIHandler("GET", "/IPublishedFileService/GetUserVoteSummary/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("ipublished-file-service_query-files",
@@ -1077,21 +1078,21 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("desired_revision", mcplib.Description("Return the data for the specified revision.")),
 			mcplib.WithString("return_reactions", mcplib.Description("If true, then reactions to items will be returned.")),
 		),
-		makeAPIHandler("GET", "/IPublishedFileService/QueryFiles/v1", []string{ }),
+		makeAPIHandler("GET", "/IPublishedFileService/QueryFiles/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-apps_get-sdrconfig",
 			mcplib.WithDescription("GetSDRConfig operation of ISteamApps"),
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("AppID of game")),
 		),
-		makeAPIHandler("GET", "/ISteamApps/GetSDRConfig/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamApps/GetSDRConfig/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-apps_get-servers-at-address",
 			mcplib.WithDescription("GetServersAtAddress operation of ISteamApps"),
 			mcplib.WithString("addr", mcplib.Required(), mcplib.Description("IP or IP:queryport to list")),
 		),
-		makeAPIHandler("GET", "/ISteamApps/GetServersAtAddress/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamApps/GetServersAtAddress/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-apps_up-to-date-check",
@@ -1099,13 +1100,13 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("AppID of game")),
 			mcplib.WithString("version", mcplib.Required(), mcplib.Description("The installed version of the game")),
 		),
-		makeAPIHandler("GET", "/ISteamApps/UpToDateCheck/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamApps/UpToDateCheck/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-broadcast_player-stats",
 			mcplib.WithDescription("PlayerStats operation of ISteamBroadcast"),
 		),
-		makeAPIHandler("POST", "/ISteamBroadcast/PlayerStats/v1", []string{ }),
+		makeAPIHandler("POST", "/ISteamBroadcast/PlayerStats/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-broadcast_viewer-heartbeat",
@@ -1115,19 +1116,19 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("token", mcplib.Required(), mcplib.Description("Viewer token")),
 			mcplib.WithString("stream", mcplib.Description("video stream representation watching")),
 		),
-		makeAPIHandler("GET", "/ISteamBroadcast/ViewerHeartbeat/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamBroadcast/ViewerHeartbeat/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-cdn_set-client-filters",
 			mcplib.WithDescription("SetClientFilters operation of ISteamCDN"),
 		),
-		makeAPIHandler("POST", "/ISteamCDN/SetClientFilters/v1", []string{ }),
+		makeAPIHandler("POST", "/ISteamCDN/SetClientFilters/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-cdn_set-performance-stats",
 			mcplib.WithDescription("SetPerformanceStats operation of ISteamCDN"),
 		),
-		makeAPIHandler("POST", "/ISteamCDN/SetPerformanceStats/v1", []string{ }),
+		makeAPIHandler("POST", "/ISteamCDN/SetPerformanceStats/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-directory_get-cmlist",
@@ -1135,7 +1136,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("cellid", mcplib.Required(), mcplib.Description("Client's Steam cell ID")),
 			mcplib.WithString("maxcount", mcplib.Description("Max number of servers to return")),
 		),
-		makeAPIHandler("GET", "/ISteamDirectory/GetCMList/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamDirectory/GetCMList/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-directory_get-cmlist-for-connect",
@@ -1146,13 +1147,13 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("maxcount", mcplib.Description("Max number of servers to return")),
 			mcplib.WithString("qoslevel", mcplib.Description("Desired connection priority")),
 		),
-		makeAPIHandler("GET", "/ISteamDirectory/GetCMListForConnect/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamDirectory/GetCMListForConnect/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-directory_get-steam-pipe-domains",
 			mcplib.WithDescription("GetSteamPipeDomains operation of ISteamDirectory"),
 		),
-		makeAPIHandler("GET", "/ISteamDirectory/GetSteamPipeDomains/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamDirectory/GetSteamPipeDomains/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-economy_get-asset-class-info",
@@ -1163,7 +1164,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("classid0", mcplib.Required(), mcplib.Description("Class ID of the nth class.")),
 			mcplib.WithString("instanceid0", mcplib.Description("Instance ID of the nth class.")),
 		),
-		makeAPIHandler("GET", "/ISteamEconomy/GetAssetClassInfo/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamEconomy/GetAssetClassInfo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-economy_get-asset-prices",
@@ -1172,7 +1173,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("currency", mcplib.Description("The currency to filter for")),
 			mcplib.WithString("language", mcplib.Description("The user's local language")),
 		),
-		makeAPIHandler("GET", "/ISteamEconomy/GetAssetPrices/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamEconomy/GetAssetPrices/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-news_get-news-for-app",
@@ -1183,7 +1184,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("count", mcplib.Description("# of posts to retrieve (default 20)")),
 			mcplib.WithString("tags", mcplib.Description("Comma-separated list of tags to filter by (e.g. 'patchnodes')")),
 		),
-		makeAPIHandler("GET", "/ISteamNews/GetNewsForApp/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamNews/GetNewsForApp/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-news_get-news-for-app-isteamnews",
@@ -1195,19 +1196,19 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("feeds", mcplib.Description("Comma-separated list of feed names to return news for")),
 			mcplib.WithString("tags", mcplib.Description("Comma-separated list of tags to filter by (e.g. 'patchnodes')")),
 		),
-		makeAPIHandler("GET", "/ISteamNews/GetNewsForApp/v2", []string{ }),
+		makeAPIHandler("GET", "/ISteamNews/GetNewsForApp/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-remote-storage_get-collection-details",
 			mcplib.WithDescription("GetCollectionDetails operation of ISteamRemoteStorage"),
 		),
-		makeAPIHandler("POST", "/ISteamRemoteStorage/GetCollectionDetails/v1", []string{ }),
+		makeAPIHandler("POST", "/ISteamRemoteStorage/GetCollectionDetails/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-remote-storage_get-published-file-details",
 			mcplib.WithDescription("GetPublishedFileDetails operation of ISteamRemoteStorage"),
 		),
-		makeAPIHandler("POST", "/ISteamRemoteStorage/GetPublishedFileDetails/v1", []string{ }),
+		makeAPIHandler("POST", "/ISteamRemoteStorage/GetPublishedFileDetails/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-remote-storage_get-ugcfile-details",
@@ -1216,7 +1217,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("ugcid", mcplib.Required(), mcplib.Description("ID of UGC file to get info for")),
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("appID of product")),
 		),
-		makeAPIHandler("GET", "/ISteamRemoteStorage/GetUGCFileDetails/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamRemoteStorage/GetUGCFileDetails/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user_get-friend-list",
@@ -1225,7 +1226,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("SteamID of user")),
 			mcplib.WithString("relationship", mcplib.Description("relationship type (ex: friend)")),
 		),
-		makeAPIHandler("GET", "/ISteamUser/GetFriendList/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUser/GetFriendList/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user_get-player-bans",
@@ -1233,7 +1234,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("access key")),
 			mcplib.WithString("steamids", mcplib.Required(), mcplib.Description("Comma-delimited list of SteamIDs")),
 		),
-		makeAPIHandler("GET", "/ISteamUser/GetPlayerBans/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUser/GetPlayerBans/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user_get-player-summaries",
@@ -1241,7 +1242,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("access key")),
 			mcplib.WithString("steamids", mcplib.Required(), mcplib.Description("Comma-delimited list of SteamIDs")),
 		),
-		makeAPIHandler("GET", "/ISteamUser/GetPlayerSummaries/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUser/GetPlayerSummaries/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user_get-player-summaries-isteamuser",
@@ -1249,7 +1250,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("access key")),
 			mcplib.WithString("steamids", mcplib.Required(), mcplib.Description("Comma-delimited list of SteamIDs (max: 100)")),
 		),
-		makeAPIHandler("GET", "/ISteamUser/GetPlayerSummaries/v2", []string{ }),
+		makeAPIHandler("GET", "/ISteamUser/GetPlayerSummaries/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user_get-user-group-list",
@@ -1257,7 +1258,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("key", mcplib.Required(), mcplib.Description("access key")),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("SteamID of user")),
 		),
-		makeAPIHandler("GET", "/ISteamUser/GetUserGroupList/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUser/GetUserGroupList/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user_resolve-vanity-url",
@@ -1266,7 +1267,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("vanityurl", mcplib.Required(), mcplib.Description("The vanity URL to get a SteamID for")),
 			mcplib.WithString("url_type", mcplib.Description("The type of vanity URL. 1 (default): Individual profile, 2: Group, 3: Official game group")),
 		),
-		makeAPIHandler("GET", "/ISteamUser/ResolveVanityURL/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUser/ResolveVanityURL/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-auth_authenticate-user-ticket",
@@ -1275,28 +1276,28 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("appid of game")),
 			mcplib.WithString("ticket", mcplib.Required(), mcplib.Description("Ticket from GetAuthSessionTicket.")),
 		),
-		makeAPIHandler("GET", "/ISteamUserAuth/AuthenticateUserTicket/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserAuth/AuthenticateUserTicket/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-oauth_get-token-details",
 			mcplib.WithDescription("GetTokenDetails operation of ISteamUserOAuth"),
 			mcplib.WithString("access_token", mcplib.Required(), mcplib.Description("OAuth2 token for which to return details")),
 		),
-		makeAPIHandler("GET", "/ISteamUserOAuth/GetTokenDetails/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserOAuth/GetTokenDetails/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-global-achievement-percentages-for-app",
 			mcplib.WithDescription("GetGlobalAchievementPercentagesForApp operation of ISteamUserStats"),
 			mcplib.WithString("gameid", mcplib.Required(), mcplib.Description("GameID to retrieve the achievement percentages for")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-global-achievement-percentages-for-app-isteamuserstats",
 			mcplib.WithDescription("GetGlobalAchievementPercentagesForApp operation of ISteamUserStats"),
 			mcplib.WithString("gameid", mcplib.Required(), mcplib.Description("GameID to retrieve the achievement percentages for")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-global-stats-for-game",
@@ -1307,14 +1308,14 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("startdate", mcplib.Description("Start date for daily totals (unix epoch timestamp)")),
 			mcplib.WithString("enddate", mcplib.Description("End date for daily totals (unix epoch timestamp)")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetGlobalStatsForGame/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetGlobalStatsForGame/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-number-of-current-players",
 			mcplib.WithDescription("GetNumberOfCurrentPlayers operation of ISteamUserStats"),
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("AppID that we're getting user count for")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetNumberOfCurrentPlayers/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetNumberOfCurrentPlayers/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-player-achievements",
@@ -1324,7 +1325,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("AppID to get achievements for")),
 			mcplib.WithString("l", mcplib.Description("Language to return strings for")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetPlayerAchievements/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetPlayerAchievements/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-schema-for-game",
@@ -1333,7 +1334,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("appid of game")),
 			mcplib.WithString("l", mcplib.Description("localized langauge to return (english, french, etc.)")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetSchemaForGame/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetSchemaForGame/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-schema-for-game-isteamuserstats",
@@ -1342,7 +1343,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("appid of game")),
 			mcplib.WithString("l", mcplib.Description("localized language to return (english, french, etc.)")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetSchemaForGame/v2", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetSchemaForGame/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-user-stats-for-game",
@@ -1351,7 +1352,7 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("SteamID of user")),
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("appid of game")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetUserStatsForGame/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetUserStatsForGame/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-user-stats_get-user-stats-for-game-isteamuserstats",
@@ -1360,20 +1361,20 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("SteamID of user")),
 			mcplib.WithString("appid", mcplib.Required(), mcplib.Description("appid of game")),
 		),
-		makeAPIHandler("GET", "/ISteamUserStats/GetUserStatsForGame/v2", []string{ }),
+		makeAPIHandler("GET", "/ISteamUserStats/GetUserStatsForGame/v2", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-web-apiutil_get-server-info",
 			mcplib.WithDescription("GetServerInfo operation of ISteamWebAPIUtil"),
 		),
-		makeAPIHandler("GET", "/ISteamWebAPIUtil/GetServerInfo/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamWebAPIUtil/GetServerInfo/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("isteam-web-apiutil_get-supported-apilist",
 			mcplib.WithDescription("GetSupportedAPIList operation of ISteamWebAPIUtil"),
 			mcplib.WithString("key", mcplib.Description("access key")),
 		),
-		makeAPIHandler("GET", "/ISteamWebAPIUtil/GetSupportedAPIList/v1", []string{ }),
+		makeAPIHandler("GET", "/ISteamWebAPIUtil/GetSupportedAPIList/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("istore-service_get-app-list",
@@ -1382,21 +1383,21 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("max_results", mcplib.Description("Maximum number of results to return")),
 			mcplib.WithString("last_appid", mcplib.Description("Cursor for pagination — pass the last appid from previous page")),
 		),
-		makeAPIHandler("GET", "/IStoreService/GetAppList/v1", []string{ }),
+		makeAPIHandler("GET", "/IStoreService/GetAppList/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("istore-service_get-games-followed",
 			mcplib.WithDescription("GetGamesFollowed operation of IStoreService"),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("Steamid")),
 		),
-		makeAPIHandler("GET", "/IStoreService/GetGamesFollowed/v1", []string{ }),
+		makeAPIHandler("GET", "/IStoreService/GetGamesFollowed/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("istore-service_get-games-followed-count",
 			mcplib.WithDescription("GetGamesFollowedCount operation of IStoreService"),
 			mcplib.WithString("steamid", mcplib.Required(), mcplib.Description("Steamid")),
 		),
-		makeAPIHandler("GET", "/IStoreService/GetGamesFollowedCount/v1", []string{ }),
+		makeAPIHandler("GET", "/IStoreService/GetGamesFollowedCount/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("istore-service_get-recommended-tags-for-user",
@@ -1405,19 +1406,19 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("country_code", mcplib.Required(), mcplib.Description("Country code")),
 			mcplib.WithString("favor_rarer_tags", mcplib.Required(), mcplib.Description("Biases tags towards tags that are less common. e.g. Favor Zombies over Action if the user plays the same number of...")),
 		),
-		makeAPIHandler("GET", "/IStoreService/GetRecommendedTagsForUser/v1", []string{ }),
+		makeAPIHandler("GET", "/IStoreService/GetRecommendedTagsForUser/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("itfitems-440_get-golden-wrenches",
 			mcplib.WithDescription("GetGoldenWrenches operation of ITFItems_440"),
 		),
-		makeAPIHandler("GET", "/ITFItems_440/GetGoldenWrenches/v1", []string{ }),
+		makeAPIHandler("GET", "/ITFItems_440/GetGoldenWrenches/v1", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("itfitems-440_get-golden-wrenches-itfitems440",
 			mcplib.WithDescription("GetGoldenWrenches operation of ITFItems_440"),
 		),
-		makeAPIHandler("GET", "/ITFItems_440/GetGoldenWrenches/v2", []string{ }),
+		makeAPIHandler("GET", "/ITFItems_440/GetGoldenWrenches/v2", []string{}),
 	)
 	// Sync tool
 	s.AddTool(
@@ -1563,6 +1564,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "steam-web-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 

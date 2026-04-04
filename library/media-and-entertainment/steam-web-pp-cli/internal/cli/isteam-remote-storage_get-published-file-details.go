@@ -18,8 +18,9 @@ func newIsteamRemoteStorageGetPublishedFileDetailsCmd(flags *rootFlags) *cobra.C
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "get-published-file-details",
-		Short: "GetPublishedFileDetails operation of ISteamRemoteStorage",
+		Use:     "get-published-file-details",
+		Short:   "GetPublishedFileDetails operation of ISteamRemoteStorage",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-remote-storage get-published-file-details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -62,7 +63,9 @@ func newIsteamRemoteStorageGetPublishedFileDetailsCmd(flags *rootFlags) *cobra.C
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

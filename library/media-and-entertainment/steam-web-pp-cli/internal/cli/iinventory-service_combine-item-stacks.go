@@ -22,9 +22,10 @@ func newIinventoryServiceCombineItemStacksCmd(flags *rootFlags) *cobra.Command {
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "combine-item-stacks",
+		Use:     "combine-item-stacks",
 		Aliases: []string{"create"},
-		Short: "CombineItemStacks operation of IInventoryService",
+		Short:   "CombineItemStacks operation of IInventoryService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iinventory-service combine-item-stacks --key your-token-here",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -79,7 +80,9 @@ func newIinventoryServiceCombineItemStacksCmd(flags *rootFlags) *cobra.Command {
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

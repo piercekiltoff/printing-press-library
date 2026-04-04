@@ -15,8 +15,9 @@ func newIstoreServiceGetGamesFollowedCountCmd(flags *rootFlags) *cobra.Command {
 	var flagSteamid string
 
 	cmd := &cobra.Command{
-		Use:   "get-games-followed-count",
-		Short: "GetGamesFollowedCount operation of IStoreService",
+		Use:     "get-games-followed-count",
+		Short:   "GetGamesFollowedCount operation of IStoreService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli istore-service get-games-followed-count",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

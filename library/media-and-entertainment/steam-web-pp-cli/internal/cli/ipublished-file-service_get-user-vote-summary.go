@@ -15,8 +15,9 @@ func newIpublishedFileServiceGetUserVoteSummaryCmd(flags *rootFlags) *cobra.Comm
 	var flagPublishedfileids string
 
 	cmd := &cobra.Command{
-		Use:   "get-user-vote-summary",
-		Short: "GetUserVoteSummary operation of IPublishedFileService",
+		Use:     "get-user-vote-summary",
+		Short:   "GetUserVoteSummary operation of IPublishedFileService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli ipublished-file-service get-user-vote-summary",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

@@ -11,6 +11,7 @@ func newIcsgoplayers730Cmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "icsgoplayers-730",
 		Short: "Manage icsgoplayers 730",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIcsgoplayers730GetNextMatchSharingCodeCmd(flags))

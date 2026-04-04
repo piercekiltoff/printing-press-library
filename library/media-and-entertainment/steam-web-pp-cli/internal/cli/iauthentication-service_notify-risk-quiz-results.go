@@ -20,8 +20,8 @@ func newIauthenticationServiceNotifyRiskQuizResultsCmd(flags *rootFlags) *cobra.
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "notify-risk-quiz-results",
-		Short: "NotifyRiskQuizResults operation of IAuthenticationService",
+		Use:     "notify-risk-quiz-results",
+		Short:   "NotifyRiskQuizResults operation of IAuthenticationService",
 		Example: "  steam-web-pp-cli iauthentication-service notify-risk-quiz-results --results example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -70,7 +70,9 @@ func newIauthenticationServiceNotifyRiskQuizResultsCmd(flags *rootFlags) *cobra.
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

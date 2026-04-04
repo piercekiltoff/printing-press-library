@@ -17,8 +17,9 @@ func newIcsgotournaments730GetTournamentPredictionsCmd(flags *rootFlags) *cobra.
 	var flagSteamidkey string
 
 	cmd := &cobra.Command{
-		Use:   "get-tournament-predictions",
-		Short: "GetTournamentPredictions operation of ICSGOTournaments_730",
+		Use:     "get-tournament-predictions",
+		Short:   "GetTournamentPredictions operation of ICSGOTournaments_730",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icsgotournaments-730 get-tournament-predictions",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

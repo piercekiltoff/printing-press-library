@@ -18,9 +18,10 @@ func newIsteamBroadcastViewerHeartbeatCmd(flags *rootFlags) *cobra.Command {
 	var flagStream int
 
 	cmd := &cobra.Command{
-		Use:   "viewer-heartbeat",
+		Use:     "viewer-heartbeat",
 		Aliases: []string{"list"},
-		Short: "ViewerHeartbeat operation of ISteamBroadcast",
+		Short:   "ViewerHeartbeat operation of ISteamBroadcast",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-broadcast viewer-heartbeat",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

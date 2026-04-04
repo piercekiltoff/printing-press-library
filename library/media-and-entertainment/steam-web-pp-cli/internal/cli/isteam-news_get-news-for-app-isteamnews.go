@@ -20,8 +20,9 @@ func newIsteamNewsGetNewsForAppIsteamnewsCmd(flags *rootFlags) *cobra.Command {
 	var flagTags string
 
 	cmd := &cobra.Command{
-		Use:   "get-news-for-app-isteamnews",
-		Short: "GetNewsForApp operation of ISteamNews",
+		Use:     "get-news-for-app-isteamnews",
+		Short:   "GetNewsForApp operation of ISteamNews",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-news get-news-for-app-isteamnews",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

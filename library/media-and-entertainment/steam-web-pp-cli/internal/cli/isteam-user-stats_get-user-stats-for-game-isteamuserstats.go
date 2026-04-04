@@ -17,8 +17,9 @@ func newIsteamUserStatsGetUserStatsForGameIsteamuserstatsCmd(flags *rootFlags) *
 	var flagAppid string
 
 	cmd := &cobra.Command{
-		Use:   "get-user-stats-for-game-isteamuserstats",
-		Short: "GetUserStatsForGame operation of ISteamUserStats",
+		Use:     "get-user-stats-for-game-isteamuserstats",
+		Short:   "GetUserStatsForGame operation of ISteamUserStats",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-stats get-user-stats-for-game-isteamuserstats",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

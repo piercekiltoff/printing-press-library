@@ -21,9 +21,10 @@ func newIsteamCdnSetClientFiltersCmd(flags *rootFlags) *cobra.Command {
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "set-client-filters",
+		Use:     "set-client-filters",
 		Aliases: []string{"create"},
-		Short: "SetClientFilters operation of ISteamCDN",
+		Short:   "SetClientFilters operation of ISteamCDN",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-cdn set-client-filters --cdnname example-resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -75,7 +76,9 @@ func newIsteamCdnSetClientFiltersCmd(flags *rootFlags) *cobra.Command {
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

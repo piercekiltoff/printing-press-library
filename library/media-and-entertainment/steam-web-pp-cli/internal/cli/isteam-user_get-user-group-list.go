@@ -16,8 +16,9 @@ func newIsteamUserGetUserGroupListCmd(flags *rootFlags) *cobra.Command {
 	var flagSteamid string
 
 	cmd := &cobra.Command{
-		Use:   "get-user-group-list",
-		Short: "GetUserGroupList operation of ISteamUser",
+		Use:     "get-user-group-list",
+		Short:   "GetUserGroupList operation of ISteamUser",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user get-user-group-list",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

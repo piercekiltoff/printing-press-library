@@ -11,6 +11,7 @@ func newIdota2Ticket570Cmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "idota2-ticket-570",
 		Short: "Manage idota2 ticket 570",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIdota2Ticket570GetSteamIdforBadgeIdCmd(flags))

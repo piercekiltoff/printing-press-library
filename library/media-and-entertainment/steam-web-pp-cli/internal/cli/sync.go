@@ -14,8 +14,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/steam-web-pp-cli/internal/store"
 	"github.com/spf13/cobra"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/steam-web-pp-cli/internal/store"
 )
 
 // syncResult holds the outcome of syncing a single resource.
@@ -392,12 +392,12 @@ func upsertSingleObject(db *store.Store, resource string, data json.RawMessage) 
 	switch resource {
 	case "isteam_user_stats":
 		return db.UpsertIsteamUserStats(data)
-	case "idota2_match_570":
-		return db.UpsertIdota2Match570(data)
-	case "iauthentication_service":
-		return db.UpsertIauthenticationService(data)
 	case "ipublished_file_service":
 		return db.UpsertIpublishedFileService(data)
+	case "iauthentication_service":
+		return db.UpsertIauthenticationService(data)
+	case "idota2_match_570":
+		return db.UpsertIdota2Match570(data)
 	default:
 		return db.Upsert(resource, id, data)
 	}
@@ -448,12 +448,12 @@ func defaultSyncResources() []string {
 // this preserves the actual endpoint path like "/ISteamApps/GetAppList/v2".
 func syncResourcePath(resource string) string {
 	paths := map[string]string{
-		"iecon-service": "/IEconService/GetTradeOffers/v1",
-		"igame-servers-service": "/IGameServersService/GetAccountList/v1",
+		"iecon-service":           "/IEconService/GetTradeOffers/v1",
+		"igame-servers-service":   "/IGameServersService/GetAccountList/v1",
 		"ipublished-file-service": "/IPublishedFileService/QueryFiles/v1",
-		"isteam-directory": "/ISteamDirectory/GetCMListForConnect/v1",
-		"isteam-web-apiutil": "/ISteamWebAPIUtil/GetSupportedAPIList/v1",
-		"istore-service": "/IStoreService/GetAppList/v1",
+		"isteam-directory":        "/ISteamDirectory/GetCMListForConnect/v1",
+		"isteam-web-apiutil":      "/ISteamWebAPIUtil/GetSupportedAPIList/v1",
+		"istore-service":          "/IStoreService/GetAppList/v1",
 	}
 	if p, ok := paths[resource]; ok {
 		return p

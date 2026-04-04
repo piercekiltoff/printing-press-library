@@ -17,8 +17,9 @@ func newIsteamUserResolveVanityUrlCmd(flags *rootFlags) *cobra.Command {
 	var flagUrlType int
 
 	cmd := &cobra.Command{
-		Use:   "resolve-vanity-url",
-		Short: "ResolveVanityURL operation of ISteamUser",
+		Use:     "resolve-vanity-url",
+		Short:   "ResolveVanityURL operation of ISteamUser",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user resolve-vanity-url",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

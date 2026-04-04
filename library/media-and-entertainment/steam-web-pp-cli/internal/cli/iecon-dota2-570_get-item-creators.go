@@ -15,8 +15,9 @@ func newIeconDota2570GetItemCreatorsCmd(flags *rootFlags) *cobra.Command {
 	var flagItemdef int
 
 	cmd := &cobra.Command{
-		Use:   "get-item-creators",
-		Short: "GetItemCreators operation of IEconDOTA2_570",
+		Use:     "get-item-creators",
+		Short:   "GetItemCreators operation of IEconDOTA2_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-dota2-570 get-item-creators",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

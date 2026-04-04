@@ -15,9 +15,9 @@ func newIauthenticationServiceGetPasswordRsapublicKeyCmd(flags *rootFlags) *cobr
 	var flagAccountName string
 
 	cmd := &cobra.Command{
-		Use:   "get-password-rsapublic-key",
+		Use:     "get-password-rsapublic-key",
 		Aliases: []string{"list"},
-		Short: "GetPasswordRSAPublicKey operation of IAuthenticationService",
+		Short:   "GetPasswordRSAPublicKey operation of IAuthenticationService",
 		Example: "  steam-web-pp-cli iauthentication-service get-password-rsapublic-key",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

@@ -14,9 +14,10 @@ import (
 func newItfitems440GetGoldenWrenchesCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get-golden-wrenches",
+		Use:     "get-golden-wrenches",
 		Aliases: []string{"list"},
-		Short: "GetGoldenWrenches operation of ITFItems_440",
+		Short:   "GetGoldenWrenches operation of ITFItems_440",
+		Hidden: true,
 		Example: "  steam-web-pp-cli itfitems-440 get-golden-wrenches",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

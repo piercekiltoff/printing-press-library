@@ -11,6 +11,7 @@ func newIeconDota2570Cmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iecon-dota2-570",
 		Short: "Manage iecon dota2 570",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIeconDota2570GetEventStatsForAccountCmd(flags))

@@ -16,9 +16,10 @@ func newIdota2StreamSystem570GetBroadcasterInfoCmd(flags *rootFlags) *cobra.Comm
 	var flagLeagueId string
 
 	cmd := &cobra.Command{
-		Use:   "get-broadcaster-info",
+		Use:     "get-broadcaster-info",
 		Aliases: []string{"list"},
-		Short: "GetBroadcasterInfo operation of IDOTA2StreamSystem_570",
+		Short:   "GetBroadcasterInfo operation of IDOTA2StreamSystem_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-stream-system-570 get-broadcaster-info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

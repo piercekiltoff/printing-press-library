@@ -11,6 +11,7 @@ func newIhelpRequestLogsServiceCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ihelp-request-logs-service",
 		Short: "Manage ihelp request logs service",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIhelpRequestLogsServiceGetApplicationLogDemandCmd(flags))

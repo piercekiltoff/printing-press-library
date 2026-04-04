@@ -15,8 +15,9 @@ func newIcsgotournaments730GetTournamentLayoutCmd(flags *rootFlags) *cobra.Comma
 	var flagEvent int
 
 	cmd := &cobra.Command{
-		Use:   "get-tournament-layout",
-		Short: "GetTournamentLayout operation of ICSGOTournaments_730",
+		Use:     "get-tournament-layout",
+		Short:   "GetTournamentLayout operation of ICSGOTournaments_730",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icsgotournaments-730 get-tournament-layout",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

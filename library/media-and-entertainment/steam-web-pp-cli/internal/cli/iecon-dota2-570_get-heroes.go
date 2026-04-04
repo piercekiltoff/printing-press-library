@@ -16,8 +16,9 @@ func newIeconDota2570GetHeroesCmd(flags *rootFlags) *cobra.Command {
 	var flagItemizedonly bool
 
 	cmd := &cobra.Command{
-		Use:   "get-heroes",
-		Short: "GetHeroes operation of IEconDOTA2_570",
+		Use:     "get-heroes",
+		Short:   "GetHeroes operation of IEconDOTA2_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-dota2-570 get-heroes",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

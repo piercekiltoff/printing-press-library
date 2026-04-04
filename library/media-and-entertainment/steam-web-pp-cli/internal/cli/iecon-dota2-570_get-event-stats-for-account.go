@@ -17,9 +17,10 @@ func newIeconDota2570GetEventStatsForAccountCmd(flags *rootFlags) *cobra.Command
 	var flagLanguage string
 
 	cmd := &cobra.Command{
-		Use:   "get-event-stats-for-account",
+		Use:     "get-event-stats-for-account",
 		Aliases: []string{"list"},
-		Short: "GetEventStatsForAccount operation of IEconDOTA2_570",
+		Short:   "GetEventStatsForAccount operation of IEconDOTA2_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-dota2-570 get-event-stats-for-account",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

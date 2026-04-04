@@ -16,8 +16,9 @@ func newIdota2Match570GetMatchDetailsCmd(flags *rootFlags) *cobra.Command {
 	var flagIncludePersonaNames bool
 
 	cmd := &cobra.Command{
-		Use:   "get-match-details",
-		Short: "GetMatchDetails operation of IDOTA2Match_570",
+		Use:     "get-match-details",
+		Short:   "GetMatchDetails operation of IDOTA2Match_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-570 get-match-details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

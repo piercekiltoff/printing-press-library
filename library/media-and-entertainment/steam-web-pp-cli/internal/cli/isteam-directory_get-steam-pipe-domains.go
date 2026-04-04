@@ -14,8 +14,9 @@ import (
 func newIsteamDirectoryGetSteamPipeDomainsCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get-steam-pipe-domains",
-		Short: "GetSteamPipeDomains operation of ISteamDirectory",
+		Use:     "get-steam-pipe-domains",
+		Short:   "GetSteamPipeDomains operation of ISteamDirectory",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-directory get-steam-pipe-domains",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

@@ -11,6 +11,7 @@ func newIeconItems583950Cmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iecon-items-583950",
 		Short: "Manage iecon items 583950",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIeconItems583950GetEquippedPlayerItemsCmd(flags))

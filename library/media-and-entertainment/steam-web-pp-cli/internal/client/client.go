@@ -118,8 +118,6 @@ func (l *adaptiveLimiter) Rate() float64 {
 	return l.rate
 }
 
-
-
 // APIError carries HTTP status information for structured exit codes.
 type APIError struct {
 	Method     string

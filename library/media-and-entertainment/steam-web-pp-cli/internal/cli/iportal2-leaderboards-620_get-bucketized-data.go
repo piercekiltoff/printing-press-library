@@ -15,9 +15,10 @@ func newIportal2Leaderboards620GetBucketizedDataCmd(flags *rootFlags) *cobra.Com
 	var flagLeaderboardName string
 
 	cmd := &cobra.Command{
-		Use:   "get-bucketized-data",
+		Use:     "get-bucketized-data",
 		Aliases: []string{"list"},
-		Short: "GetBucketizedData operation of IPortal2Leaderboards_620",
+		Short:   "GetBucketizedData operation of IPortal2Leaderboards_620",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iportal2-leaderboards-620 get-bucketized-data",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

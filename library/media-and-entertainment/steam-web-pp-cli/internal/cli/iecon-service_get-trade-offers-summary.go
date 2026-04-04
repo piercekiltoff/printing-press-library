@@ -16,8 +16,9 @@ func newIeconServiceGetTradeOffersSummaryCmd(flags *rootFlags) *cobra.Command {
 	var flagTimeLastVisit int
 
 	cmd := &cobra.Command{
-		Use:   "get-trade-offers-summary",
-		Short: "GetTradeOffersSummary operation of IEconService",
+		Use:     "get-trade-offers-summary",
+		Short:   "GetTradeOffersSummary operation of IEconService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-service get-trade-offers-summary",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

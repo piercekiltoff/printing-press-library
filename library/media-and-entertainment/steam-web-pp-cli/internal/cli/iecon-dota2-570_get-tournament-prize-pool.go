@@ -15,8 +15,9 @@ func newIeconDota2570GetTournamentPrizePoolCmd(flags *rootFlags) *cobra.Command 
 	var flagLeagueid string
 
 	cmd := &cobra.Command{
-		Use:   "get-tournament-prize-pool",
-		Short: "GetTournamentPrizePool operation of IEconDOTA2_570",
+		Use:     "get-tournament-prize-pool",
+		Short:   "GetTournamentPrizePool operation of IEconDOTA2_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-dota2-570 get-tournament-prize-pool",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

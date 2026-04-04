@@ -16,8 +16,9 @@ func newIgameServersServiceGetAccountPublicInfoCmd(flags *rootFlags) *cobra.Comm
 	var flagSteamid string
 
 	cmd := &cobra.Command{
-		Use:   "get-account-public-info",
-		Short: "GetAccountPublicInfo operation of IGameServersService",
+		Use:     "get-account-public-info",
+		Short:   "GetAccountPublicInfo operation of IGameServersService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli igame-servers-service get-account-public-info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

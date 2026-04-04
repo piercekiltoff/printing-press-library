@@ -18,9 +18,10 @@ func newIdota2Ticket570SetSteamAccountPurchasedCmd(flags *rootFlags) *cobra.Comm
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "set-steam-account-purchased",
+		Use:     "set-steam-account-purchased",
 		Aliases: []string{"create"},
-		Short: "SetSteamAccountPurchased operation of IDOTA2Ticket_570",
+		Short:   "SetSteamAccountPurchased operation of IDOTA2Ticket_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-ticket-570 set-steam-account-purchased",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -63,7 +64,9 @@ func newIdota2Ticket570SetSteamAccountPurchasedCmd(flags *rootFlags) *cobra.Comm
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

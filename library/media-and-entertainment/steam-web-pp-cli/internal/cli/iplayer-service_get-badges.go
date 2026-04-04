@@ -16,9 +16,9 @@ func newIplayerServiceGetBadgesCmd(flags *rootFlags) *cobra.Command {
 	var flagSteamid string
 
 	cmd := &cobra.Command{
-		Use:   "get-badges",
+		Use:     "get-badges",
 		Aliases: []string{"list"},
-		Short: "GetBadges operation of IPlayerService",
+		Short:   "GetBadges operation of IPlayerService",
 		Example: "  steam-web-pp-cli iplayer-service get-badges",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

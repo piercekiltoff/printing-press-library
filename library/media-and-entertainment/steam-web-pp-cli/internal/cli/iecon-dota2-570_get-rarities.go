@@ -15,8 +15,9 @@ func newIeconDota2570GetRaritiesCmd(flags *rootFlags) *cobra.Command {
 	var flagLanguage string
 
 	cmd := &cobra.Command{
-		Use:   "get-rarities",
-		Short: "GetRarities operation of IEconDOTA2_570",
+		Use:     "get-rarities",
+		Short:   "GetRarities operation of IEconDOTA2_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-dota2-570 get-rarities",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

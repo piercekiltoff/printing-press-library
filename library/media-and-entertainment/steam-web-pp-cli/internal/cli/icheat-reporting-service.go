@@ -11,6 +11,7 @@ func newIcheatReportingServiceCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "icheat-reporting-service",
 		Short: "Manage icheat reporting service",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIcheatReportingServiceReportCheatDataCmd(flags))

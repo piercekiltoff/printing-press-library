@@ -16,8 +16,9 @@ func newIsteamUserGetPlayerSummariesIsteamuserCmd(flags *rootFlags) *cobra.Comma
 	var flagSteamids string
 
 	cmd := &cobra.Command{
-		Use:   "get-player-summaries-isteamuser",
-		Short: "GetPlayerSummaries operation of ISteamUser",
+		Use:     "get-player-summaries-isteamuser",
+		Short:   "GetPlayerSummaries operation of ISteamUser",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user get-player-summaries-isteamuser",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

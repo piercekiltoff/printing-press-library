@@ -15,9 +15,10 @@ func newIeconItems620GetPlayerItemsCmd(flags *rootFlags) *cobra.Command {
 	var flagSteamid string
 
 	cmd := &cobra.Command{
-		Use:   "get-player-items",
+		Use:     "get-player-items",
 		Aliases: []string{"list"},
-		Short: "GetPlayerItems operation of IEconItems_620",
+		Short:   "GetPlayerItems operation of IEconItems_620",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-items-620 get-player-items",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

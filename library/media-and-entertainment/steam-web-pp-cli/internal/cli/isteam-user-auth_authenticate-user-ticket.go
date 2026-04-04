@@ -17,9 +17,10 @@ func newIsteamUserAuthAuthenticateUserTicketCmd(flags *rootFlags) *cobra.Command
 	var flagTicket string
 
 	cmd := &cobra.Command{
-		Use:   "authenticate-user-ticket",
+		Use:     "authenticate-user-ticket",
 		Aliases: []string{"list"},
-		Short: "AuthenticateUserTicket operation of ISteamUserAuth",
+		Short:   "AuthenticateUserTicket operation of ISteamUserAuth",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-auth authenticate-user-ticket",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

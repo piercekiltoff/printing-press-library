@@ -17,9 +17,10 @@ func newIcsgoservers730GetGameMapsPlaytimeCmd(flags *rootFlags) *cobra.Command {
 	var flagMapgroup string
 
 	cmd := &cobra.Command{
-		Use:   "get-game-maps-playtime",
+		Use:     "get-game-maps-playtime",
 		Aliases: []string{"list"},
-		Short: "GetGameMapsPlaytime operation of ICSGOServers_730",
+		Short:   "GetGameMapsPlaytime operation of ICSGOServers_730",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icsgoservers-730 get-game-maps-playtime",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

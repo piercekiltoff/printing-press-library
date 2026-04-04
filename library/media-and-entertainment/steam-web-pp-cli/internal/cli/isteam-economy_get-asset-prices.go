@@ -17,8 +17,9 @@ func newIsteamEconomyGetAssetPricesCmd(flags *rootFlags) *cobra.Command {
 	var flagLanguage string
 
 	cmd := &cobra.Command{
-		Use:   "get-asset-prices",
-		Short: "GetAssetPrices operation of ISteamEconomy",
+		Use:     "get-asset-prices",
+		Short:   "GetAssetPrices operation of ISteamEconomy",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-economy get-asset-prices",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

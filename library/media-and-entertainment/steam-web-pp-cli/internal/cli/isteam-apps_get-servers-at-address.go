@@ -15,8 +15,9 @@ func newIsteamAppsGetServersAtAddressCmd(flags *rootFlags) *cobra.Command {
 	var flagAddr string
 
 	cmd := &cobra.Command{
-		Use:   "get-servers-at-address",
-		Short: "GetServersAtAddress operation of ISteamApps",
+		Use:     "get-servers-at-address",
+		Short:   "GetServersAtAddress operation of ISteamApps",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-apps get-servers-at-address",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

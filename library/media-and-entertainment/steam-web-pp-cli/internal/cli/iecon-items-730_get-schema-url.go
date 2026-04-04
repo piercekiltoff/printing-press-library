@@ -14,8 +14,9 @@ import (
 func newIeconItems730GetSchemaUrlCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get-schema-url",
-		Short: "GetSchemaURL operation of IEconItems_730",
+		Use:     "get-schema-url",
+		Short:   "GetSchemaURL operation of IEconItems_730",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-items-730 get-schema-url",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

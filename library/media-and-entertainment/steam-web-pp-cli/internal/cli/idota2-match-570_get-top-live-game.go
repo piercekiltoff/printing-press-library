@@ -15,8 +15,9 @@ func newIdota2Match570GetTopLiveGameCmd(flags *rootFlags) *cobra.Command {
 	var flagPartner int
 
 	cmd := &cobra.Command{
-		Use:   "get-top-live-game",
-		Short: "GetTopLiveGame operation of IDOTA2Match_570",
+		Use:     "get-top-live-game",
+		Short:   "GetTopLiveGame operation of IDOTA2Match_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-570 get-top-live-game",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

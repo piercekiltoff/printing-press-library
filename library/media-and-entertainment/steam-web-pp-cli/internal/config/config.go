@@ -14,16 +14,16 @@ import (
 )
 
 type Config struct {
-	BaseURL        string `toml:"base_url"`
-	AuthHeaderVal  string `toml:"auth_header"`
-	AuthSource     string `toml:"-"`
-	AccessToken    string `toml:"access_token"`
-	RefreshToken   string `toml:"refresh_token"`
+	BaseURL        string    `toml:"base_url"`
+	AuthHeaderVal  string    `toml:"auth_header"`
+	AuthSource     string    `toml:"-"`
+	AccessToken    string    `toml:"access_token"`
+	RefreshToken   string    `toml:"refresh_token"`
 	TokenExpiry    time.Time `toml:"token_expiry"`
-	ClientID       string `toml:"client_id"`
-	ClientSecret   string `toml:"client_secret"`
-	Path           string `toml:"-"`
-	SteamWebApiKey string `toml:"web_api_key"`
+	ClientID       string    `toml:"client_id"`
+	ClientSecret   string    `toml:"client_secret"`
+	Path           string    `toml:"-"`
+	SteamWebApiKey string    `toml:"web_api_key"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -50,7 +50,7 @@ func Load(configPath string) (*Config, error) {
 		}
 	}
 
-	// Env var overrides — check both STEAM_API_KEY and STEAM_WEB_API_KEY
+	// Env var overrides — STEAM_API_KEY is the common convention
 	if v := os.Getenv("STEAM_API_KEY"); v != "" {
 		cfg.SteamWebApiKey = v
 		cfg.AuthSource = "env:STEAM_API_KEY"

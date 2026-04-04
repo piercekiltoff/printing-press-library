@@ -20,9 +20,9 @@ func newIbroadcastServicePostGameDataFrameRtmpCmd(flags *rootFlags) *cobra.Comma
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "post-game-data-frame-rtmp",
+		Use:     "post-game-data-frame-rtmp",
 		Aliases: []string{"create"},
-		Short: "PostGameDataFrameRTMP operation of IBroadcastService",
+		Short:   "PostGameDataFrameRTMP operation of IBroadcastService",
 		Example: "  steam-web-pp-cli ibroadcast-service post-game-data-frame-rtmp --frame-data example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -71,7 +71,9 @@ func newIbroadcastServicePostGameDataFrameRtmpCmd(flags *rootFlags) *cobra.Comma
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

@@ -19,8 +19,9 @@ func newIdota2Ticket570SteamAccountValidForBadgeTypeCmd(flags *rootFlags) *cobra
 	var flagValidBadgeType4 int
 
 	cmd := &cobra.Command{
-		Use:   "steam-account-valid-for-badge-type",
-		Short: "SteamAccountValidForBadgeType operation of IDOTA2Ticket_570",
+		Use:     "steam-account-valid-for-badge-type",
+		Short:   "SteamAccountValidForBadgeType operation of IDOTA2Ticket_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-ticket-570 steam-account-valid-for-badge-type",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

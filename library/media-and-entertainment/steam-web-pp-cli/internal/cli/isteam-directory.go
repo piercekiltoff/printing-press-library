@@ -11,6 +11,7 @@ func newIsteamDirectoryCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "isteam-directory",
 		Short: "Manage isteam directory",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIsteamDirectoryGetCmlistCmd(flags))

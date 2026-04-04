@@ -14,9 +14,10 @@ import (
 func newIgcversion440GetClientVersionCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get-client-version",
+		Use:     "get-client-version",
 		Aliases: []string{"list"},
-		Short: "GetClientVersion operation of IGCVersion_440",
+		Short:   "GetClientVersion operation of IGCVersion_440",
+		Hidden: true,
 		Example: "  steam-web-pp-cli igcversion-440 get-client-version",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

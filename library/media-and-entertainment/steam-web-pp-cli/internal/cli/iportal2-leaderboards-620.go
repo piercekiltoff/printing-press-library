@@ -11,6 +11,7 @@ func newIportal2Leaderboards620Cmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iportal2-leaderboards-620",
 		Short: "Manage iportal2 leaderboards 620",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIportal2Leaderboards620GetBucketizedDataCmd(flags))

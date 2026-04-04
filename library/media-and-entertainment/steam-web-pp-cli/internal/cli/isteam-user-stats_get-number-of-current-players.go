@@ -15,8 +15,9 @@ func newIsteamUserStatsGetNumberOfCurrentPlayersCmd(flags *rootFlags) *cobra.Com
 	var flagAppid string
 
 	cmd := &cobra.Command{
-		Use:   "get-number-of-current-players",
-		Short: "GetNumberOfCurrentPlayers operation of ISteamUserStats",
+		Use:     "get-number-of-current-players",
+		Short:   "GetNumberOfCurrentPlayers operation of ISteamUserStats",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-stats get-number-of-current-players",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

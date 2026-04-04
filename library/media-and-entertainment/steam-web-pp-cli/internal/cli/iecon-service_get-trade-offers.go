@@ -24,8 +24,9 @@ func newIeconServiceGetTradeOffersCmd(flags *rootFlags) *cobra.Command {
 	var flagAll bool
 
 	cmd := &cobra.Command{
-		Use:   "get-trade-offers",
-		Short: "GetTradeOffers operation of IEconService",
+		Use:     "get-trade-offers",
+		Short:   "GetTradeOffers operation of IEconService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-service get-trade-offers",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -35,15 +36,15 @@ func newIeconServiceGetTradeOffersCmd(flags *rootFlags) *cobra.Command {
 
 			path := "/IEconService/GetTradeOffers/v1"
 			data, prov, err := resolvePaginatedRead(c, flags, "iecon-service", path, map[string]string{
-				"key": fmt.Sprintf("%v", flagKey),
-				"get_sent_offers": fmt.Sprintf("%v", flagGetSentOffers),
-				"get_received_offers": fmt.Sprintf("%v", flagGetReceivedOffers),
-				"get_descriptions": fmt.Sprintf("%v", flagGetDescriptions),
-				"language": fmt.Sprintf("%v", flagLanguage),
-				"active_only": fmt.Sprintf("%v", flagActiveOnly),
-				"historical_only": fmt.Sprintf("%v", flagHistoricalOnly),
+				"key":                    fmt.Sprintf("%v", flagKey),
+				"get_sent_offers":        fmt.Sprintf("%v", flagGetSentOffers),
+				"get_received_offers":    fmt.Sprintf("%v", flagGetReceivedOffers),
+				"get_descriptions":       fmt.Sprintf("%v", flagGetDescriptions),
+				"language":               fmt.Sprintf("%v", flagLanguage),
+				"active_only":            fmt.Sprintf("%v", flagActiveOnly),
+				"historical_only":        fmt.Sprintf("%v", flagHistoricalOnly),
 				"time_historical_cutoff": fmt.Sprintf("%v", flagTimeHistoricalCutoff),
-				"cursor": fmt.Sprintf("%v", flagCursor),
+				"cursor":                 fmt.Sprintf("%v", flagCursor),
 			}, flagAll, "cursor", "", "")
 			if err != nil {
 				return classifyAPIError(err)

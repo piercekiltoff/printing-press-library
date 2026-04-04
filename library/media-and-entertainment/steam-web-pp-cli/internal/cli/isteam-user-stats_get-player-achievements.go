@@ -18,8 +18,9 @@ func newIsteamUserStatsGetPlayerAchievementsCmd(flags *rootFlags) *cobra.Command
 	var flagL string
 
 	cmd := &cobra.Command{
-		Use:   "get-player-achievements",
-		Short: "GetPlayerAchievements operation of ISteamUserStats",
+		Use:     "get-player-achievements",
+		Short:   "GetPlayerAchievements operation of ISteamUserStats",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-stats get-player-achievements",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

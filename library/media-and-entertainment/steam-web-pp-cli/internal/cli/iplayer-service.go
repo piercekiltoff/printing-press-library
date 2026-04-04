@@ -11,6 +11,7 @@ func newIplayerServiceCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iplayer-service",
 		Short: "Manage iplayer service",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIplayerServiceGetBadgesCmd(flags))

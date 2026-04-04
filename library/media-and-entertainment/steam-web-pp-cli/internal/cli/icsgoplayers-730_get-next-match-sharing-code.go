@@ -17,9 +17,10 @@ func newIcsgoplayers730GetNextMatchSharingCodeCmd(flags *rootFlags) *cobra.Comma
 	var flagKnowncode string
 
 	cmd := &cobra.Command{
-		Use:   "get-next-match-sharing-code",
+		Use:     "get-next-match-sharing-code",
 		Aliases: []string{"list"},
-		Short: "GetNextMatchSharingCode operation of ICSGOPlayers_730",
+		Short:   "GetNextMatchSharingCode operation of ICSGOPlayers_730",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icsgoplayers-730 get-next-match-sharing-code",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

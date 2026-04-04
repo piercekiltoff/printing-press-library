@@ -50,8 +50,9 @@ func newIpublishedFileServiceGetUserFilesCmd(flags *rootFlags) *cobra.Command {
 	var flagReturnApps bool
 
 	cmd := &cobra.Command{
-		Use:   "get-user-files",
-		Short: "GetUserFiles operation of IPublishedFileService",
+		Use:     "get-user-files",
+		Short:   "GetUserFiles operation of IPublishedFileService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli ipublished-file-service get-user-files",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

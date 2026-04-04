@@ -17,9 +17,10 @@ func newIcontentServerConfigServiceGetSteamCacheNodeParamsCmd(flags *rootFlags) 
 	var flagCacheKey string
 
 	cmd := &cobra.Command{
-		Use:   "get-steam-cache-node-params",
+		Use:     "get-steam-cache-node-params",
 		Aliases: []string{"list"},
-		Short: "GetSteamCacheNodeParams operation of IContentServerConfigService",
+		Short:   "GetSteamCacheNodeParams operation of IContentServerConfigService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icontent-server-config-service get-steam-cache-node-params",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

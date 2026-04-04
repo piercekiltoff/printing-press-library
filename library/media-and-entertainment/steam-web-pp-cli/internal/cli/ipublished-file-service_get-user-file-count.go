@@ -50,8 +50,9 @@ func newIpublishedFileServiceGetUserFileCountCmd(flags *rootFlags) *cobra.Comman
 	var flagReturnApps bool
 
 	cmd := &cobra.Command{
-		Use:   "get-user-file-count",
-		Short: "GetUserFileCount operation of IPublishedFileService",
+		Use:     "get-user-file-count",
+		Short:   "GetUserFileCount operation of IPublishedFileService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli ipublished-file-service get-user-file-count",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

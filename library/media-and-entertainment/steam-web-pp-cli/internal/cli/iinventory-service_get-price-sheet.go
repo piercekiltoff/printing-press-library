@@ -17,9 +17,10 @@ func newIinventoryServiceGetPriceSheetCmd(flags *rootFlags) *cobra.Command {
 	var flagCurrencyCode string
 
 	cmd := &cobra.Command{
-		Use:   "get-price-sheet",
+		Use:     "get-price-sheet",
 		Aliases: []string{"list"},
-		Short: "GetPriceSheet operation of IInventoryService",
+		Short:   "GetPriceSheet operation of IInventoryService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iinventory-service get-price-sheet",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

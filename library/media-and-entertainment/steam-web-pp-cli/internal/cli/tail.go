@@ -47,7 +47,16 @@ native streaming instead of polling.`,
 				resource = args[0]
 			}
 			if resource == "" {
-				return fmt.Errorf("resource name required (e.g., 'tail messages')")
+				if flags.dryRun || flags.asJSON {
+					enc := json.NewEncoder(cmd.OutOrStdout())
+					enc.SetIndent("", "  ")
+					return enc.Encode(map[string]any{
+						"command": "tail",
+						"usage":   "tail <resource> [--interval 10s]",
+						"dry_run": true,
+					})
+				}
+				return cmd.Help()
 			}
 
 			path := "/" + resource
@@ -88,7 +97,9 @@ native streaming instead of polling.`,
 	return cmd
 }
 
-func fetchAndEmit(c interface{ Get(string, map[string]string) (json.RawMessage, error) }, path string, enc *json.Encoder) error {
+func fetchAndEmit(c interface {
+	Get(string, map[string]string) (json.RawMessage, error)
+}, path string, enc *json.Encoder) error {
 	data, err := c.Get(path, nil)
 	if err != nil {
 		return err

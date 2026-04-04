@@ -17,8 +17,9 @@ func newIeconServiceGetTradeHoldDurationsCmd(flags *rootFlags) *cobra.Command {
 	var flagTradeOfferAccessToken string
 
 	cmd := &cobra.Command{
-		Use:   "get-trade-hold-durations",
-		Short: "GetTradeHoldDurations operation of IEconService",
+		Use:     "get-trade-hold-durations",
+		Short:   "GetTradeHoldDurations operation of IEconService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-service get-trade-hold-durations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

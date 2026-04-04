@@ -17,9 +17,10 @@ func newIsteamRemoteStorageGetUgcfileDetailsCmd(flags *rootFlags) *cobra.Command
 	var flagAppid string
 
 	cmd := &cobra.Command{
-		Use:   "get-ugcfile-details",
+		Use:     "get-ugcfile-details",
 		Aliases: []string{"list"},
-		Short: "GetUGCFileDetails operation of ISteamRemoteStorage",
+		Short:   "GetUGCFileDetails operation of ISteamRemoteStorage",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-remote-storage get-ugcfile-details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

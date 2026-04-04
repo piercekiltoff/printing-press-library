@@ -16,8 +16,9 @@ func newIdota2Match570GetTeamInfoByTeamIdCmd(flags *rootFlags) *cobra.Command {
 	var flagTeamsRequested int
 
 	cmd := &cobra.Command{
-		Use:   "get-team-info-by-team-id",
-		Short: "GetTeamInfoByTeamID operation of IDOTA2Match_570",
+		Use:     "get-team-info-by-team-id",
+		Short:   "GetTeamInfoByTeamID operation of IDOTA2Match_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-570 get-team-info-by-team-id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

@@ -11,6 +11,7 @@ func newIsteamWebApiutilCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "isteam-web-apiutil",
 		Short: "Manage isteam web apiutil",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIsteamWebApiutilGetServerInfoCmd(flags))

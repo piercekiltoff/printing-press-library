@@ -16,8 +16,9 @@ func newIdota2Match570GetTopWeekendTourneyGamesCmd(flags *rootFlags) *cobra.Comm
 	var flagHomeDivision int
 
 	cmd := &cobra.Command{
-		Use:   "get-top-weekend-tourney-games",
-		Short: "GetTopWeekendTourneyGames operation of IDOTA2Match_570",
+		Use:     "get-top-weekend-tourney-games",
+		Short:   "GetTopWeekendTourneyGames operation of IDOTA2Match_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-570 get-top-weekend-tourney-games",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

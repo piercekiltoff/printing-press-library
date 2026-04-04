@@ -15,9 +15,10 @@ func newIdota2MatchStats570GetRealtimeStatsCmd(flags *rootFlags) *cobra.Command 
 	var flagServerSteamId string
 
 	cmd := &cobra.Command{
-		Use:   "get-realtime-stats",
+		Use:     "get-realtime-stats",
 		Aliases: []string{"list"},
-		Short: "GetRealtimeStats operation of IDOTA2MatchStats_570",
+		Short:   "GetRealtimeStats operation of IDOTA2MatchStats_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-stats-570 get-realtime-stats",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

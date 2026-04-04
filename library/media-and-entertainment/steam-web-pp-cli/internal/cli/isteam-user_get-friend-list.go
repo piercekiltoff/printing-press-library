@@ -17,9 +17,10 @@ func newIsteamUserGetFriendListCmd(flags *rootFlags) *cobra.Command {
 	var flagRelationship string
 
 	cmd := &cobra.Command{
-		Use:   "get-friend-list",
+		Use:     "get-friend-list",
 		Aliases: []string{"list"},
-		Short: "GetFriendList operation of ISteamUser",
+		Short:   "GetFriendList operation of ISteamUser",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user get-friend-list",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

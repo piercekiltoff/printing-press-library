@@ -15,9 +15,10 @@ func newIgameServersServiceGetAccountListCmd(flags *rootFlags) *cobra.Command {
 	var flagKey string
 
 	cmd := &cobra.Command{
-		Use:   "get-account-list",
+		Use:     "get-account-list",
 		Aliases: []string{"list"},
-		Short: "GetAccountList operation of IGameServersService",
+		Short:   "GetAccountList operation of IGameServersService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli igame-servers-service get-account-list",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

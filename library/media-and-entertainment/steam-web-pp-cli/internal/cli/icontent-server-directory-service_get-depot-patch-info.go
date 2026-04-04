@@ -18,8 +18,9 @@ func newIcontentServerDirectoryServiceGetDepotPatchInfoCmd(flags *rootFlags) *co
 	var flagTargetManifestid string
 
 	cmd := &cobra.Command{
-		Use:   "get-depot-patch-info",
-		Short: "GetDepotPatchInfo operation of IContentServerDirectoryService",
+		Use:     "get-depot-patch-info",
+		Short:   "GetDepotPatchInfo operation of IContentServerDirectoryService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icontent-server-directory-service get-depot-patch-info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

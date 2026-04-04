@@ -20,8 +20,9 @@ func newIcontentServerDirectoryServiceGetServersForSteamPipeCmd(flags *rootFlags
 	var flagCurrentConnections string
 
 	cmd := &cobra.Command{
-		Use:   "get-servers-for-steam-pipe",
-		Short: "GetServersForSteamPipe operation of IContentServerDirectoryService",
+		Use:     "get-servers-for-steam-pipe",
+		Short:   "GetServersForSteamPipe operation of IContentServerDirectoryService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icontent-server-directory-service get-servers-for-steam-pipe",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

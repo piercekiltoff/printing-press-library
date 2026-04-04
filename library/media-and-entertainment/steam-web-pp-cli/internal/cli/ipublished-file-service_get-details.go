@@ -31,9 +31,10 @@ func newIpublishedFileServiceGetDetailsCmd(flags *rootFlags) *cobra.Command {
 	var flagAdminQuery bool
 
 	cmd := &cobra.Command{
-		Use:   "get-details",
+		Use:     "get-details",
 		Aliases: []string{"list"},
-		Short: "GetDetails operation of IPublishedFileService",
+		Short:   "GetDetails operation of IPublishedFileService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli ipublished-file-service get-details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

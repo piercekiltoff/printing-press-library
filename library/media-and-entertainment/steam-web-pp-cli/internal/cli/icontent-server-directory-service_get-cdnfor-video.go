@@ -17,9 +17,10 @@ func newIcontentServerDirectoryServiceGetCdnforVideoCmd(flags *rootFlags) *cobra
 	var flagClientRegion string
 
 	cmd := &cobra.Command{
-		Use:   "get-cdnfor-video",
+		Use:     "get-cdnfor-video",
 		Aliases: []string{"list"},
-		Short: "GetCDNForVideo operation of IContentServerDirectoryService",
+		Short:   "GetCDNForVideo operation of IContentServerDirectoryService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icontent-server-directory-service get-cdnfor-video",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

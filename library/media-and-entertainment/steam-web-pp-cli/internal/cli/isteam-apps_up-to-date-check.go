@@ -16,8 +16,9 @@ func newIsteamAppsUpToDateCheckCmd(flags *rootFlags) *cobra.Command {
 	var flagVersion int
 
 	cmd := &cobra.Command{
-		Use:   "up-to-date-check",
-		Short: "UpToDateCheck operation of ISteamApps",
+		Use:     "up-to-date-check",
+		Short:   "UpToDateCheck operation of ISteamApps",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-apps up-to-date-check",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

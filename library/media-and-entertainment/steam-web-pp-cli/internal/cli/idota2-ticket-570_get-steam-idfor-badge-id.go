@@ -15,9 +15,10 @@ func newIdota2Ticket570GetSteamIdforBadgeIdCmd(flags *rootFlags) *cobra.Command 
 	var flagBadgeID string
 
 	cmd := &cobra.Command{
-		Use:   "get-steam-idfor-badge-id",
+		Use:     "get-steam-idfor-badge-id",
 		Aliases: []string{"list"},
-		Short: "GetSteamIDForBadgeID operation of IDOTA2Ticket_570",
+		Short:   "GetSteamIDForBadgeID operation of IDOTA2Ticket_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-ticket-570 get-steam-idfor-badge-id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

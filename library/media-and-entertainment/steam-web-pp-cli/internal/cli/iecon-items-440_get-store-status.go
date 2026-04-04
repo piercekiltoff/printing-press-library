@@ -14,8 +14,9 @@ import (
 func newIeconItems440GetStoreStatusCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get-store-status",
-		Short: "GetStoreStatus operation of IEconItems_440",
+		Use:     "get-store-status",
+		Short:   "GetStoreStatus operation of IEconItems_440",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-items-440 get-store-status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

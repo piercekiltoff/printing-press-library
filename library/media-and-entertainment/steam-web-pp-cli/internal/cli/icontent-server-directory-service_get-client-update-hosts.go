@@ -15,8 +15,9 @@ func newIcontentServerDirectoryServiceGetClientUpdateHostsCmd(flags *rootFlags) 
 	var flagCachedSignature string
 
 	cmd := &cobra.Command{
-		Use:   "get-client-update-hosts",
-		Short: "GetClientUpdateHosts operation of IContentServerDirectoryService",
+		Use:     "get-client-update-hosts",
+		Short:   "GetClientUpdateHosts operation of IContentServerDirectoryService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icontent-server-directory-service get-client-update-hosts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

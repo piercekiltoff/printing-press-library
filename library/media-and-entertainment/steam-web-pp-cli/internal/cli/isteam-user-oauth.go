@@ -11,6 +11,7 @@ func newIsteamUserOauthCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "isteam-user-oauth",
 		Short: "Manage isteam user oauth",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIsteamUserOauthGetTokenDetailsCmd(flags))

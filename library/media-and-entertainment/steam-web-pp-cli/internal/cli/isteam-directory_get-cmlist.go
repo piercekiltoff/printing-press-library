@@ -16,9 +16,10 @@ func newIsteamDirectoryGetCmlistCmd(flags *rootFlags) *cobra.Command {
 	var flagMaxcount int
 
 	cmd := &cobra.Command{
-		Use:   "get-cmlist",
+		Use:     "get-cmlist",
 		Aliases: []string{"list"},
-		Short: "GetCMList operation of ISteamDirectory",
+		Short:   "GetCMList operation of ISteamDirectory",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-directory get-cmlist",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

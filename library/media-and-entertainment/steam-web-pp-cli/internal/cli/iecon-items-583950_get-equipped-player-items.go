@@ -16,9 +16,10 @@ func newIeconItems583950GetEquippedPlayerItemsCmd(flags *rootFlags) *cobra.Comma
 	var flagClassId string
 
 	cmd := &cobra.Command{
-		Use:   "get-equipped-player-items",
+		Use:     "get-equipped-player-items",
 		Aliases: []string{"list"},
-		Short: "GetEquippedPlayerItems operation of IEconItems_583950",
+		Short:   "GetEquippedPlayerItems operation of IEconItems_583950",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-items-583950 get-equipped-player-items",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

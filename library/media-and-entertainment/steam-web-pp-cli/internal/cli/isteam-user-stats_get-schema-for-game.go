@@ -17,8 +17,9 @@ func newIsteamUserStatsGetSchemaForGameCmd(flags *rootFlags) *cobra.Command {
 	var flagL string
 
 	cmd := &cobra.Command{
-		Use:   "get-schema-for-game",
-		Short: "GetSchemaForGame operation of ISteamUserStats",
+		Use:     "get-schema-for-game",
+		Short:   "GetSchemaForGame operation of ISteamUserStats",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-stats get-schema-for-game",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

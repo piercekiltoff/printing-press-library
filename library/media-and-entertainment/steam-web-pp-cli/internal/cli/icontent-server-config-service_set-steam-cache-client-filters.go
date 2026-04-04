@@ -21,9 +21,10 @@ func newIcontentServerConfigServiceSetSteamCacheClientFiltersCmd(flags *rootFlag
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "set-steam-cache-client-filters",
+		Use:     "set-steam-cache-client-filters",
 		Aliases: []string{"create"},
-		Short: "SetSteamCacheClientFilters operation of IContentServerConfigService",
+		Short:   "SetSteamCacheClientFilters operation of IContentServerConfigService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icontent-server-config-service set-steam-cache-client-filters --allowed-ip-blocks example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -75,7 +76,9 @@ func newIcontentServerConfigServiceSetSteamCacheClientFiltersCmd(flags *rootFlag
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

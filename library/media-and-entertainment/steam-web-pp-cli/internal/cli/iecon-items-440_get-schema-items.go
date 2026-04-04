@@ -16,8 +16,9 @@ func newIeconItems440GetSchemaItemsCmd(flags *rootFlags) *cobra.Command {
 	var flagStart int
 
 	cmd := &cobra.Command{
-		Use:   "get-schema-items",
-		Short: "GetSchemaItems operation of IEconItems_440",
+		Use:     "get-schema-items",
+		Short:   "GetSchemaItems operation of IEconItems_440",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-items-440 get-schema-items",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

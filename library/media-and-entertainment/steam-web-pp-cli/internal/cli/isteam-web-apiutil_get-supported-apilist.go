@@ -15,8 +15,9 @@ func newIsteamWebApiutilGetSupportedApilistCmd(flags *rootFlags) *cobra.Command 
 	var flagKey string
 
 	cmd := &cobra.Command{
-		Use:   "get-supported-apilist",
-		Short: "GetSupportedAPIList operation of ISteamWebAPIUtil",
+		Use:     "get-supported-apilist",
+		Short:   "GetSupportedAPIList operation of ISteamWebAPIUtil",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-web-apiutil get-supported-apilist",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

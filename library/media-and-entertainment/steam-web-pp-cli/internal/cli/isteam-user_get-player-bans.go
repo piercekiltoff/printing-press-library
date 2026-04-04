@@ -16,8 +16,9 @@ func newIsteamUserGetPlayerBansCmd(flags *rootFlags) *cobra.Command {
 	var flagSteamids string
 
 	cmd := &cobra.Command{
-		Use:   "get-player-bans",
-		Short: "GetPlayerBans operation of ISteamUser",
+		Use:     "get-player-bans",
+		Short:   "GetPlayerBans operation of ISteamUser",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user get-player-bans",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

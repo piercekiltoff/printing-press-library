@@ -17,9 +17,10 @@ func newIhelpRequestLogsServiceGetApplicationLogDemandCmd(flags *rootFlags) *cob
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:   "get-application-log-demand",
+		Use:     "get-application-log-demand",
 		Aliases: []string{"create"},
-		Short: "GetApplicationLogDemand operation of IHelpRequestLogsService",
+		Short:   "GetApplicationLogDemand operation of IHelpRequestLogsService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli ihelp-request-logs-service get-application-log-demand",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -59,7 +60,9 @@ func newIhelpRequestLogsServiceGetApplicationLogDemandCmd(flags *rootFlags) *cob
 						return nil
 					}
 				} else {
-					var wrapped struct{ Data []map[string]any `json:"data"` }
+					var wrapped struct {
+						Data []map[string]any `json:"data"`
+					}
 					if json.Unmarshal(data, &wrapped) == nil && len(wrapped.Data) > 0 {
 						if err := printAutoTable(cmd.OutOrStdout(), wrapped.Data); err != nil {
 							fmt.Fprintf(os.Stderr, "warning: table rendering failed, falling back to JSON: %v\n", err)

@@ -19,8 +19,9 @@ func newIdota2Match570GetTournamentPlayerStatsCmd(flags *rootFlags) *cobra.Comma
 	var flagMatchId string
 
 	cmd := &cobra.Command{
-		Use:   "get-tournament-player-stats",
-		Short: "GetTournamentPlayerStats operation of IDOTA2Match_570",
+		Use:     "get-tournament-player-stats",
+		Short:   "GetTournamentPlayerStats operation of IDOTA2Match_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli idota2-match-570 get-tournament-player-stats",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

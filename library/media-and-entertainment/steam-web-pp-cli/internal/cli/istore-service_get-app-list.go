@@ -18,9 +18,10 @@ func newIstoreServiceGetAppListCmd(flags *rootFlags) *cobra.Command {
 	var flagAll bool
 
 	cmd := &cobra.Command{
-		Use:   "get-app-list",
+		Use:     "get-app-list",
 		Aliases: []string{"list"},
-		Short: "Gets a list of all apps available on the Steam Store",
+		Short:   "Gets a list of all apps available on the Steam Store",
+		Hidden: true,
 		Example: "  steam-web-pp-cli istore-service get-app-list",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
@@ -30,9 +31,9 @@ func newIstoreServiceGetAppListCmd(flags *rootFlags) *cobra.Command {
 
 			path := "/IStoreService/GetAppList/v1"
 			data, prov, err := resolvePaginatedRead(c, flags, "istore-service", path, map[string]string{
-				"key": fmt.Sprintf("%v", flagKey),
+				"key":         fmt.Sprintf("%v", flagKey),
 				"max_results": fmt.Sprintf("%v", flagMaxResults),
-				"last_appid": fmt.Sprintf("%v", flagLastAppid),
+				"last_appid":  fmt.Sprintf("%v", flagLastAppid),
 			}, flagAll, "", "", "")
 			if err != nil {
 				return classifyAPIError(err)

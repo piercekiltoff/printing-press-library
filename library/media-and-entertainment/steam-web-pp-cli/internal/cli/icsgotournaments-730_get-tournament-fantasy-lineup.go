@@ -17,9 +17,10 @@ func newIcsgotournaments730GetTournamentFantasyLineupCmd(flags *rootFlags) *cobr
 	var flagSteamidkey string
 
 	cmd := &cobra.Command{
-		Use:   "get-tournament-fantasy-lineup",
+		Use:     "get-tournament-fantasy-lineup",
 		Aliases: []string{"list"},
-		Short: "GetTournamentFantasyLineup operation of ICSGOTournaments_730",
+		Short:   "GetTournamentFantasyLineup operation of ICSGOTournaments_730",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icsgotournaments-730 get-tournament-fantasy-lineup",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

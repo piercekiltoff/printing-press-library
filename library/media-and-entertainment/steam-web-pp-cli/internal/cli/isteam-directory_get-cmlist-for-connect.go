@@ -19,8 +19,9 @@ func newIsteamDirectoryGetCmlistForConnectCmd(flags *rootFlags) *cobra.Command {
 	var flagQoslevel int
 
 	cmd := &cobra.Command{
-		Use:   "get-cmlist-for-connect",
-		Short: "GetCMListForConnect operation of ISteamDirectory",
+		Use:     "get-cmlist-for-connect",
+		Short:   "GetCMListForConnect operation of ISteamDirectory",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-directory get-cmlist-for-connect",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

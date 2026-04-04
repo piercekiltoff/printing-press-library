@@ -11,6 +11,7 @@ func newIbroadcastServiceCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ibroadcast-service",
 		Short: "Manage ibroadcast service",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIbroadcastServicePostGameDataFrameRtmpCmd(flags))

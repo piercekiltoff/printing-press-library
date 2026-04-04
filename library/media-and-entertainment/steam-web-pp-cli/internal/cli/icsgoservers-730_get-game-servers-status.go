@@ -14,8 +14,9 @@ import (
 func newIcsgoservers730GetGameServersStatusCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get-game-servers-status",
-		Short: "GetGameServersStatus operation of ICSGOServers_730",
+		Use:     "get-game-servers-status",
+		Short:   "GetGameServersStatus operation of ICSGOServers_730",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icsgoservers-730 get-game-servers-status",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

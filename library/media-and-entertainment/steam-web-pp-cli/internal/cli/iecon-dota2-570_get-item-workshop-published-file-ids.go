@@ -15,8 +15,9 @@ func newIeconDota2570GetItemWorkshopPublishedFileIdsCmd(flags *rootFlags) *cobra
 	var flagItemdef int
 
 	cmd := &cobra.Command{
-		Use:   "get-item-workshop-published-file-ids",
-		Short: "GetItemWorkshopPublishedFileIDs operation of IEconDOTA2_570",
+		Use:     "get-item-workshop-published-file-ids",
+		Short:   "GetItemWorkshopPublishedFileIDs operation of IEconDOTA2_570",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-dota2-570 get-item-workshop-published-file-ids",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

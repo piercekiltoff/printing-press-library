@@ -15,9 +15,10 @@ func newIsteamUserOauthGetTokenDetailsCmd(flags *rootFlags) *cobra.Command {
 	var flagAccessToken string
 
 	cmd := &cobra.Command{
-		Use:   "get-token-details",
+		Use:     "get-token-details",
 		Aliases: []string{"list"},
-		Short: "GetTokenDetails operation of ISteamUserOAuth",
+		Short:   "GetTokenDetails operation of ISteamUserOAuth",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-oauth get-token-details",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

@@ -15,9 +15,10 @@ func newIsteamUserStatsGetGlobalAchievementPercentagesForAppCmd(flags *rootFlags
 	var flagGameid string
 
 	cmd := &cobra.Command{
-		Use:   "get-global-achievement-percentages-for-app",
+		Use:     "get-global-achievement-percentages-for-app",
 		Aliases: []string{"list"},
-		Short: "GetGlobalAchievementPercentagesForApp operation of ISteamUserStats",
+		Short:   "GetGlobalAchievementPercentagesForApp operation of ISteamUserStats",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-stats get-global-achievement-percentages-for-app",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

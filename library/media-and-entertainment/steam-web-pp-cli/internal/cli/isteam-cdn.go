@@ -11,6 +11,7 @@ func newIsteamCdnCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "isteam-cdn",
 		Short: "Manage isteam cdn",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIsteamCdnSetClientFiltersCmd(flags))

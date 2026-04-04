@@ -11,6 +11,7 @@ func newIauthenticationServiceCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "iauthentication-service",
 		Short: "Manage iauthentication service",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newIauthenticationServiceBeginAuthSessionViaCredentialsCmd(flags))

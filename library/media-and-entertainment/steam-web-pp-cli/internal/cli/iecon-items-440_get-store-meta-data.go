@@ -15,8 +15,9 @@ func newIeconItems440GetStoreMetaDataCmd(flags *rootFlags) *cobra.Command {
 	var flagLanguage string
 
 	cmd := &cobra.Command{
-		Use:   "get-store-meta-data",
-		Short: "GetStoreMetaData operation of IEconItems_440",
+		Use:     "get-store-meta-data",
+		Short:   "GetStoreMetaData operation of IEconItems_440",
+		Hidden: true,
 		Example: "  steam-web-pp-cli iecon-items-440 get-store-meta-data",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

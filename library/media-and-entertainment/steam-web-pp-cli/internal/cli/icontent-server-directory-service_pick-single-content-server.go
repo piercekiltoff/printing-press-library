@@ -17,8 +17,9 @@ func newIcontentServerDirectoryServicePickSingleContentServerCmd(flags *rootFlag
 	var flagClientIp string
 
 	cmd := &cobra.Command{
-		Use:   "pick-single-content-server",
-		Short: "PickSingleContentServer operation of IContentServerDirectoryService",
+		Use:     "pick-single-content-server",
+		Short:   "PickSingleContentServer operation of IContentServerDirectoryService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli icontent-server-directory-service pick-single-content-server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

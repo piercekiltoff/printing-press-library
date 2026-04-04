@@ -19,9 +19,10 @@ func newIsteamEconomyGetAssetClassInfoCmd(flags *rootFlags) *cobra.Command {
 	var flagInstanceid0 int
 
 	cmd := &cobra.Command{
-		Use:   "get-asset-class-info",
+		Use:     "get-asset-class-info",
 		Aliases: []string{"list"},
-		Short: "GetAssetClassInfo operation of ISteamEconomy",
+		Short:   "GetAssetClassInfo operation of ISteamEconomy",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-economy get-asset-class-info",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

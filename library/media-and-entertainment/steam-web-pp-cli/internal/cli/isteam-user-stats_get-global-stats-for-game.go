@@ -19,8 +19,9 @@ func newIsteamUserStatsGetGlobalStatsForGameCmd(flags *rootFlags) *cobra.Command
 	var flagEnddate int
 
 	cmd := &cobra.Command{
-		Use:   "get-global-stats-for-game",
-		Short: "GetGlobalStatsForGame operation of ISteamUserStats",
+		Use:     "get-global-stats-for-game",
+		Short:   "GetGlobalStatsForGame operation of ISteamUserStats",
+		Hidden: true,
 		Example: "  steam-web-pp-cli isteam-user-stats get-global-stats-for-game",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

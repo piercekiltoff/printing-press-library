@@ -16,8 +16,9 @@ func newIgameServersServiceGetServerIpsBySteamIdCmd(flags *rootFlags) *cobra.Com
 	var flagServerSteamids string
 
 	cmd := &cobra.Command{
-		Use:   "get-server-ips-by-steam-id",
-		Short: "GetServerIPsBySteamID operation of IGameServersService",
+		Use:     "get-server-ips-by-steam-id",
+		Short:   "GetServerIPsBySteamID operation of IGameServersService",
+		Hidden: true,
 		Example: "  steam-web-pp-cli igame-servers-service get-server-ips-by-steam-id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
