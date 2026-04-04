@@ -26,22 +26,15 @@ Download from [Releases](https://github.com/mvanhorn/printing-press-library/rele
 
 See [Install](#install) above.
 
-### 2. Authenticate
+### 2. Set Up Credentials
 
-This CLI uses your browser session for authentication. Log in to pagliacci.com in Chrome, then:
-
-```bash
-pagliacci-pizza-pp-cli auth login --chrome
-```
-
-Requires a cookie extraction tool. Install one:
+Get your API key from your API provider's developer portal. The key typically looks like a long alphanumeric string.
 
 ```bash
-pip install pycookiecheat          # Python (recommended)
-brew install barnardb/cookies/cookies  # Homebrew
+export PAGLIACCI_PIZZA_PAGLIACCI_AUTH="<paste-your-key>"
 ```
 
-When your session expires, run `auth login --chrome` again.
+You can also persist this in your config file at `~/.config/pagliacci-pizza-pp-cli/config.toml`.
 
 ### 3. Verify Setup
 
@@ -345,11 +338,13 @@ pagliacci-pizza-pp-cli doctor
 Config file: `~/.config/pagliacci-pizza-pp-cli/config.toml`
 
 Environment variables:
+- `PAGLIACCI_PIZZA_PAGLIACCI_AUTH`
 
 ## Troubleshooting
 
 **Authentication errors (exit code 4)**
 - Run `pagliacci-pizza-pp-cli doctor` to check credentials
+- Verify the environment variable is set: `echo $PAGLIACCI_PIZZA_PAGLIACCI_AUTH`
 
 **Not found errors (exit code 3)**
 - Check the resource ID is correct

@@ -6,8 +6,6 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/mvanhorn/printing-press-library/library/other/pagliacci-pizza-pp-cli/internal/store"
@@ -38,6 +36,28 @@ func isNilOrEmpty(raw json.RawMessage) bool {
 	return true
 }
 
+// extractSearchResults unwraps API search responses by checking common envelope paths.
+func extractSearchResults(data json.RawMessage) []json.RawMessage {
+	// Try direct array first
+	var items []json.RawMessage
+	if json.Unmarshal(data, &items) == nil {
+		return items
+	}
+	// Try common wrapper paths: data, results, items
+	var wrapped map[string]json.RawMessage
+	if json.Unmarshal(data, &wrapped) == nil {
+		for _, key := range []string{"data", "results", "items", "records", "entries"} {
+			if inner, ok := wrapped[key]; ok {
+				if json.Unmarshal(inner, &items) == nil {
+					return items
+				}
+			}
+		}
+	}
+	// Return as single-item array
+	return []json.RawMessage{data}
+}
+
 func newSearchCmd(flags *rootFlags) *cobra.Command {
 	var resourceType string
 	var limit int
@@ -45,25 +65,41 @@ func newSearchCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "search <query>",
-		Short: "Full-text search across locally synced data",
-		Long: `Search locally cached data using FTS5 full-text search.
-Data must be synced first with the sync command. Searches are instant
-(millisecond-fast) since they query local SQLite, not the remote API.`,
-		Example: `  # Search all synced data
+		Short: "Full-text search across synced data or live API",
+		Long: `Search data using FTS5 full-text search on locally synced data,
+or hit the API's search endpoint when available.
+
+In auto mode (default): uses the API search endpoint if the API has one,
+otherwise searches local data. Falls back to local on network failure.
+In live mode: uses the API search endpoint only.
+In local mode: searches locally synced data only.`,
+		Example: `  # Search (uses API endpoint if available, local FTS otherwise)
   pagliacci-pizza-pp-cli search "error timeout"
 
-  # Search a specific resource type
-  pagliacci-pizza-pp-cli search "payment failed" --type transactions
+  # Force local search only
+  pagliacci-pizza-pp-cli search "payment failed" --data-source local
+
+  # Search a specific resource type locally
+  pagliacci-pizza-pp-cli search "critical" --type transactions --data-source local
 
   # JSON output for piping
   pagliacci-pizza-pp-cli search "critical" --json --limit 20`,
-		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				return cmd.Help()
+			}
 			query := args[0]
+			// This API has no search endpoint.
+			if flags.dataSource == "live" {
+				return fmt.Errorf("this API has no search endpoint. Use --data-source local or --data-source auto to search locally synced data")
+			}
+			if flags.dataSource == "auto" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "This API has no search endpoint. Searching local data.\n")
+			}
 
+			// Local FTS search
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".local", "share", "pagliacci-pizza-pp-cli", "data.db")
+				dbPath = defaultDBPath("pagliacci-pizza-pp-cli")
 			}
 
 			db, err := store.Open(dbPath)
@@ -76,8 +112,6 @@ Data must be synced first with the sync command. Searches are instant
 			switch resourceType {
 			case "":
 				// Search all FTS-enabled tables individually to avoid duplicates.
-				// Do NOT use db.Search() here — it queries resources_fts which
-				// overlaps with per-table FTS indexes and causes duplicate results.
 				seen := make(map[string]bool)
 				_ = seen // prevent unused error when no FTS tables exist
 			default:
@@ -88,35 +122,13 @@ Data must be synced first with the sync command. Searches are instant
 				return fmt.Errorf("search failed: %w", err)
 			}
 
-			// Filter out entries with nil or empty identifier fields.
-			filtered := make([]json.RawMessage, 0, len(results))
-			for _, r := range results {
-				if !isNilOrEmpty(r) {
-					filtered = append(filtered, r)
-				}
+			reason := "user_requested"
+			if flags.dataSource != "local" {
+				reason = "no_search_endpoint"
 			}
-			results = filtered
+			prov := localProvenance(db, "search", reason)
 
-			// Enforce limit across aggregated results.
-			if len(results) > limit {
-				results = results[:limit]
-			}
-
-			if len(results) == 0 {
-				fmt.Fprintf(os.Stderr, "No results for %q\n", query)
-				return nil
-			}
-
-			if flags.asJSON {
-				enc := json.NewEncoder(os.Stdout)
-				enc.SetIndent("", "  ")
-				return enc.Encode(results)
-			}
-
-			for _, r := range results {
-				fmt.Println(string(r))
-			}
-			return nil
+			return outputSearchResults(cmd, flags, results, limit, prov)
 		},
 	}
 
@@ -125,4 +137,46 @@ Data must be synced first with the sync command. Searches are instant
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/pagliacci-pizza-pp-cli/data.db)")
 
 	return cmd
+}
+
+// outputSearchResults filters, counts, and outputs search results with provenance.
+func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.RawMessage, limit int, prov DataProvenance) error {
+	// Filter out entries with nil or empty identifier fields.
+	filtered := make([]json.RawMessage, 0, len(results))
+	for _, r := range results {
+		if !isNilOrEmpty(r) {
+			filtered = append(filtered, r)
+		}
+	}
+	results = filtered
+
+	// Enforce limit across aggregated results.
+	if len(results) > limit {
+		results = results[:limit]
+	}
+
+	if len(results) == 0 {
+		fmt.Fprintf(cmd.ErrOrStderr(), "No results (source: %s)\n", prov.Source)
+		return nil
+	}
+
+	// Print provenance to stderr for human output
+	printProvenance(cmd, len(results), prov)
+
+	if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
+		data, err := json.Marshal(results)
+		if err != nil {
+			return err
+		}
+		wrapped, err := wrapWithProvenance(json.RawMessage(data), prov)
+		if err != nil {
+			return err
+		}
+		return printOutput(cmd.OutOrStdout(), wrapped, true)
+	}
+
+	for _, r := range results {
+		fmt.Fprintln(cmd.OutOrStdout(), string(r))
+	}
+	return nil
 }

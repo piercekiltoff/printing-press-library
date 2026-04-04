@@ -32,6 +32,7 @@ type rootFlags struct {
 	configPath   string
 	timeout      time.Duration
 	rateLimit    float64
+	dataSource   string
 }
 
 // Execute runs the CLI in non-interactive mode: never prompts, all values via flags or stdin.
@@ -62,6 +63,7 @@ func Execute() error {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().BoolVar(&humanFriendly, "human-friendly", false, "Enable colored output and rich formatting")
 	rootCmd.PersistentFlags().BoolVar(&flags.agent, "agent", false, "Set all agent-friendly defaults (--json --compact --no-input --no-color --yes)")
+	rootCmd.PersistentFlags().StringVar(&flags.dataSource, "data-source", "auto", "Data source for read commands: auto (live with local fallback), live (API only), local (synced data only)")
 	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 2, "Max requests per second (0 to disable, default 2 for sniffed APIs)")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -81,6 +83,12 @@ func Execute() error {
 			if !cmd.Flags().Changed("no-color") {
 				noColor = true
 			}
+		}
+		switch flags.dataSource {
+		case "auto", "live", "local":
+			// valid
+		default:
+			return fmt.Errorf("invalid --data-source value %q: must be auto, live, or local", flags.dataSource)
 		}
 		return nil
 	}

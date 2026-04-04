@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -62,8 +61,7 @@ Once synced, use the 'search' command for instant full-text search.`,
 			c.NoCache = true
 
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".local", "share", "pagliacci-pizza-pp-cli", "data.db")
+				dbPath = defaultDBPath("pagliacci-pizza-pp-cli")
 			}
 
 			db, err := store.Open(dbPath)
@@ -294,11 +292,11 @@ type paginationDefaults struct {
 }
 
 // determinePaginationDefaults returns the pagination parameter names to use.
-// Uses sensible defaults matching common API conventions.
+// Values are detected from the API spec by the profiler at generation time.
 func determinePaginationDefaults() paginationDefaults {
 	return paginationDefaults{
 		cursorParam: "after",
-		limitParam:  "limit",
+		limitParam:  "pagesize",
 		limit:       100,
 	}
 }

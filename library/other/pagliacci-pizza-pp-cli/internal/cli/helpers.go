@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"time"
 	"unicode"
 
 	"github.com/spf13/cobra"
@@ -137,14 +139,17 @@ func classifyAPIError(err error) error {
 		return nil
 	case strings.Contains(msg, "HTTP 400") && looksLikeAuthError(msg):
 		return authErr(fmt.Errorf("%w\nhint: the API rejected the request — this usually means auth is missing or invalid."+
+			"\n      Set your API key: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>"+
 			"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status."+
 			"\n      Response: "+sanitizeErrorBody(msg), err))
 	case strings.Contains(msg, "HTTP 401"):
-		return authErr(fmt.Errorf("%w\nhint: check your API credentials."+
+		return authErr(fmt.Errorf("%w\nhint: check your API key."+
+			" Set it with: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>"+
 			"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status.", err))
 	case strings.Contains(msg, "HTTP 403"):
 		return authErr(fmt.Errorf("%w\nhint: permission denied. Your credentials are valid but lack access to this resource."+
 			"\n      Check that your API key has the required permissions."+
+			"\n      Set it with: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>"+
 			"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status.", err))
 	case strings.Contains(msg, "HTTP 404"):
 		return notFoundErr(fmt.Errorf("%w\nhint: resource not found. Run the 'list' command to see available items", err))
@@ -972,4 +977,64 @@ func findField(obj map[string]any, names ...string) string {
 		}
 	}
 	return ""
+}
+
+// DataProvenance describes where data came from and when it was last synced.
+type DataProvenance struct {
+	Source       string     `json:"source"`                  // "live" or "local"
+	SyncedAt    *time.Time `json:"synced_at,omitempty"`     // when local data was last synced
+	Reason      string     `json:"reason,omitempty"`        // why local was used: "user_requested", "api_unreachable", "no_search_endpoint"
+	ResourceType string    `json:"resource_type,omitempty"` // which resource type was queried
+}
+
+// printProvenance writes a one-line provenance message to stderr.
+func printProvenance(cmd *cobra.Command, count int, prov DataProvenance) {
+	if prov.Source == "live" {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%d results (live)\n", count)
+		return
+	}
+	age := "unknown"
+	if prov.SyncedAt != nil {
+		d := time.Since(*prov.SyncedAt)
+		switch {
+		case d < time.Minute:
+			age = "just now"
+		case d < time.Hour:
+			age = fmt.Sprintf("%d minutes ago", int(d.Minutes()))
+		case d < 24*time.Hour:
+			age = fmt.Sprintf("%d hours ago", int(d.Hours()))
+		default:
+			age = fmt.Sprintf("%d days ago", int(d.Hours()/24))
+		}
+	}
+	prefix := ""
+	if prov.Reason == "api_unreachable" {
+		prefix = "API unreachable. "
+	}
+	fmt.Fprintf(cmd.ErrOrStderr(), "%s%d results (cached, synced %s)\n", prefix, count, age)
+}
+
+// wrapWithProvenance wraps JSON data in a provenance envelope: {"results": ..., "meta": {...}}.
+func wrapWithProvenance(data json.RawMessage, prov DataProvenance) (json.RawMessage, error) {
+	meta := map[string]any{"source": prov.Source}
+	if prov.SyncedAt != nil {
+		meta["synced_at"] = prov.SyncedAt.UTC().Format(time.RFC3339)
+	}
+	if prov.Reason != "" {
+		meta["reason"] = prov.Reason
+	}
+	if prov.ResourceType != "" {
+		meta["resource_type"] = prov.ResourceType
+	}
+	envelope := map[string]any{
+		"results": json.RawMessage(data),
+		"meta":    meta,
+	}
+	return json.Marshal(envelope)
+}
+
+// defaultDBPath returns the canonical path for the local SQLite database.
+func defaultDBPath(name string) string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".local", "share", name, "data.db")
 }

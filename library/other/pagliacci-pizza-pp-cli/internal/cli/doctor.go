@@ -6,7 +6,7 @@ package cli
 import (
 	"fmt"
 	"net/http"
-	"os/exec"
+	"os"
 	"strings"
 	"time"
 
@@ -36,31 +36,25 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				header := cfg.AuthHeader()
 				if header == "" {
 					report["auth"] = "not configured"
-					report["auth_hint"] = "pagliacci-pizza-pp-cli auth login --chrome"
+					report["auth_hint"] = "export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>"
 				} else {
-					report["auth"] = "configured (browser session)"
+					report["auth"] = "configured"
 					report["auth_source"] = cfg.AuthSource
-					report["auth_domain"] = "pagliacci.com"
 				}
-			}
-			// Check cookie tool availability
-			cookieToolFound := false
-			for _, check := range [][]string{
-				{"python3", "-c", "import pycookiecheat"},
-				{"cookies", "--help"},
-				{"cookie-scoop", "--help"},
-			} {
-				if err := exec.Command(check[0], check[1:]...).Run(); err == nil {
-					cookieToolFound = true
-					report["cookie_tool"] = check[0]
-					break
-				}
-			}
-			if !cookieToolFound {
-				report["cookie_tool"] = "not found (install: pip install pycookiecheat)"
 			}
 
 			// Check auth environment variables
+			authEnvChecked := 0
+			authEnvSet := 0
+			authEnvChecked++
+			if os.Getenv("PAGLIACCI_PIZZA_PAGLIACCI_AUTH") != "" {
+				authEnvSet++
+			}
+			if authEnvSet == 0 {
+				report["env_vars"] = fmt.Sprintf("none set (checked %d)", authEnvChecked)
+			} else {
+				report["env_vars"] = fmt.Sprintf("%d/%d set", authEnvSet, authEnvChecked)
+			}
 
 			// Check API connectivity and validate credentials
 			if cfg != nil && cfg.BaseURL != "" {
@@ -160,6 +154,9 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				}
 			}
 			// Print auth setup hints (indented under Auth line)
+			if hint, ok := report["auth_hint"]; ok {
+				fmt.Fprintf(w, "  hint: %v\n", hint)
+			}
 			return nil
 		},
 	}

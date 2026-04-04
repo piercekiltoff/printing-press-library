@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/mvanhorn/printing-press-library/library/other/pagliacci-pizza-pp-cli/internal/store"
@@ -35,8 +34,7 @@ Data must be synced first with the sync command.`,
   pagliacci-pizza-pp-cli analytics --type messages --group-by channel_id --limit 10 --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".local", "share", "pagliacci-pizza-pp-cli", "data.db")
+				dbPath = defaultDBPath("pagliacci-pizza-pp-cli")
 			}
 
 			db, err := store.Open(dbPath)

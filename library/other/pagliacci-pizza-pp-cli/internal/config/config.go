@@ -23,6 +23,7 @@ type Config struct {
 	ClientID       string `toml:"client_id"`
 	ClientSecret   string `toml:"client_secret"`
 	Path           string `toml:"-"`
+	PagliacciPizzaPagliacciAuth string `toml:"pizza_pagliacci_auth"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -50,6 +51,10 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	// Env var overrides
+	if v := os.Getenv("PAGLIACCI_PIZZA_PAGLIACCI_AUTH"); v != "" {
+		cfg.PagliacciPizzaPagliacciAuth = v
+		cfg.AuthSource = "env:PAGLIACCI_PIZZA_PAGLIACCI_AUTH"
+	}
 
 	// Base URL override (used by printing-press verify to point at mock/test servers)
 	if v := os.Getenv("PAGLIACCI_PIZZA_BASE_URL"); v != "" {
@@ -63,11 +68,14 @@ func (c *Config) AuthHeader() string {
 	if c.AuthHeaderVal != "" {
 		return c.AuthHeaderVal
 	}
-	if c.AccessToken != "" {
-		c.AuthSource = "chrome-composed"
-		return c.AccessToken
+	token := c.PagliacciPizzaPagliacciAuth
+	if token == "" {
+		return ""
 	}
-	return ""
+	if c.PagliacciPizzaPagliacciAuth == "" {
+		return ""
+	}
+	return token
 }
 
 func applyAuthFormat(format string, replacements map[string]string) string {

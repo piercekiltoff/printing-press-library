@@ -2,11 +2,25 @@
   "schema_version": 1,
   "entries": [
     {
+      "name": "espn-pp-cli",
+      "category": "media-and-entertainment",
+      "api": "ESPN",
+      "description": "ESPN sports CLI with live scores, standings, stats, and offline search across 10 leagues",
+      "path": "library/media-and-entertainment/espn-pp-cli"
+    },
+    {
       "name": "linear-pp-cli",
       "category": "project-management",
       "api": "Linear",
       "description": "Offline-capable, agent-native CLI for the Linear API with SQLite-backed sync, search, and cross-entity queries.",
       "path": "library/project-management/linear-pp-cli"
+    },
+    {
+      "name": "pagliacci-pizza-pp-cli",
+      "category": "other",
+      "api": "Pagliacci Pizza",
+      "description": "Order pizza, browse menus, manage rewards, and track deliveries from Pagliacci Pizza",
+      "path": "library/other/pagliacci-pizza-pp-cli"
     },
     {
       "name": "postman-explore-pp-cli",
@@ -21,20 +35,6 @@
       "api": "Steam Web API",
       "description": "Query Steam player profiles, game libraries, achievements, and friends from the terminal. 90/100 Grade A.",
       "path": "library/media-and-entertainment/steam-web-pp-cli"
-    },
-    {
-      "name": "pagliacci-pizza-pp-cli",
-      "category": "other",
-      "api": "Pagliacci Pizza",
-      "description": "Order pizza, browse menu, check rewards, and manage orders for Pagliacci Pizza in Seattle",
-      "path": "library/other/pagliacci-pizza-pp-cli"
-    },
-    {
-      "name": "espn-pp-cli",
-      "category": "media-and-entertainment",
-      "api": "ESPN",
-      "description": "ESPN sports CLI with live scores, standings, stats, and offline search across 10 leagues",
-      "path": "library/media-and-entertainment/espn-pp-cli"
     }
   ]
 }

@@ -383,14 +383,17 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 			case strings.Contains(msg, "HTTP 400") && looksLikeAuthError(msg):
 				return mcplib.NewToolResultError("authentication error: " + sanitizeErrorBody(msg) +
 					"\nhint: the API rejected the request — this usually means auth is missing or invalid." +
+					"\n      Set your API key: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>" +
 					"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 401"):
 				return mcplib.NewToolResultError("authentication failed: " + sanitizeErrorBody(msg) +
-					"\nhint: check your API credentials." +
+					"\nhint: check your API key." +
+					"\n      Set it with: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>" +
 					"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 403"):
 				return mcplib.NewToolResultError("permission denied: " + sanitizeErrorBody(msg) +
 					"\nhint: your credentials are valid but lack access to this resource." +
+					"\n      Set it with: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>" +
 					"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 404"):
 				if method == "DELETE" {
@@ -437,6 +440,8 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "pagliacci-pizza-pp-cli", "data.db")
 }
+// Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
+// The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
 func handleSync(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	return mcplib.NewToolResultText("sync not yet implemented via MCP - use the CLI: pagliacci-pizza-pp-cli sync"), nil
