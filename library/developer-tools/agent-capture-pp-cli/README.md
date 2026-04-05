@@ -2,6 +2,8 @@
 
 Record, screenshot, and convert macOS windows and screens for AI agent evidence.
 
+![agent-capture demo](https://files.catbox.moe/y3wp1q.gif)
+
 Consolidates macOS screen capture, window recording, GIF conversion, frame stitching, and styled code screenshots into one agent-native CLI. Built on ScreenCaptureKit via Swift CoreGraphics bridge.
 
 ## Quick Start
