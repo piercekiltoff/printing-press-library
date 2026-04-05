@@ -95,6 +95,49 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		})
 	}
 
+	// Check 5: VHS (optional - terminal recording)
+	if _, err := exec.LookPath("vhs"); err == nil {
+		checks = append(checks, doctorCheck{
+			Name:    "vhs",
+			Status:  "pass",
+			Message: "VHS available for terminal recording",
+		})
+	} else {
+		checks = append(checks, doctorCheck{
+			Name:    "vhs",
+			Status:  "warn",
+			Message: "VHS not found - terminal recording unavailable",
+			Fix:     "brew install vhs",
+		})
+	}
+
+	// Check 6: Remotion (optional - simulated demo rendering)
+	npxPath, npxErr := exec.LookPath("npx")
+	if npxErr == nil {
+		remCheck := exec.CommandContext(ctx, npxPath, "remotion", "--version")
+		if out, err := remCheck.Output(); err == nil && len(out) > 0 {
+			checks = append(checks, doctorCheck{
+				Name:    "remotion",
+				Status:  "pass",
+				Message: "Remotion available for simulated demo rendering",
+			})
+		} else {
+			checks = append(checks, doctorCheck{
+				Name:    "remotion",
+				Status:  "warn",
+				Message: "Remotion not found - simulated demo rendering unavailable",
+				Fix:     "npm install remotion @remotion/cli",
+			})
+		}
+	} else {
+		checks = append(checks, doctorCheck{
+			Name:    "remotion",
+			Status:  "warn",
+			Message: "npx not found - Remotion unavailable",
+			Fix:     "Install Node.js, then: npm install remotion @remotion/cli",
+		})
+	}
+
 	if jsonOutput {
 		return printJSON(checks)
 	}

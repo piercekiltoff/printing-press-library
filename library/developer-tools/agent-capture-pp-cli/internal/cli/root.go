@@ -43,6 +43,8 @@ func init() {
 	rootCmd.AddCommand(ocrCmd)
 	rootCmd.AddCommand(evidenceCmd)
 	rootCmd.AddCommand(permissionsCmd)
+	rootCmd.AddCommand(vhsCmd)
+	rootCmd.AddCommand(remotionCmd)
 }
 
 var versionCmd = &cobra.Command{

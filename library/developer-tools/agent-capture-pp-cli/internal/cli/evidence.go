@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -35,6 +36,10 @@ var (
 	evRecord      int
 	evOutput      string
 	evMaxSize     string
+	evTier        string
+	evTape        string
+	evEntry       string
+	evComp        string
 )
 
 func init() {
@@ -44,15 +49,40 @@ func init() {
 	evidenceCmd.Flags().IntVar(&evRecord, "record", 0, "Recording duration in seconds (0 = skip recording)")
 	evidenceCmd.Flags().StringVar(&evOutput, "output", "evidence", "Output directory")
 	evidenceCmd.Flags().StringVar(&evMaxSize, "max-size", "5mb", "Max GIF file size")
+	evidenceCmd.Flags().StringVar(&evTier, "tier", "screen", "Capture tier: screen (default), vhs, remotion")
+	evidenceCmd.Flags().StringVar(&evTape, "tape", "", "VHS tape file (required for --tier vhs)")
+	evidenceCmd.Flags().StringVar(&evEntry, "entry", "", "Remotion entry point (required for --tier remotion)")
+	evidenceCmd.Flags().StringVar(&evComp, "comp", "", "Remotion composition ID (required for --tier remotion)")
 }
 
 func runEvidence(cmd *cobra.Command, args []string) error {
 	ctx := context.Background()
 	start := time.Now()
 
-	target, err := resolveTarget(evApp, evWindowID, 0, "")
-	if err != nil {
-		return err
+	// Validate tier-specific flags
+	switch evTier {
+	case "vhs":
+		if evTape == "" {
+			return errorf("VHS tier requires --tape flag")
+		}
+	case "remotion":
+		if evEntry == "" || evComp == "" {
+			return errorf("Remotion tier requires --entry and --comp flags")
+		}
+	case "screen":
+		// default, needs app or window-id
+	default:
+		return errorf("unknown tier %q. Use: screen, vhs, remotion", evTier)
+	}
+
+	// For screen tier, resolve the target
+	var target string
+	if evTier == "screen" {
+		var err error
+		target, err = resolveTarget(evApp, evWindowID, 0, "")
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := os.MkdirAll(evOutput, 0755); err != nil {
@@ -67,28 +97,65 @@ func runEvidence(cmd *cobra.Command, args []string) error {
 	}
 	var artifacts []artifact
 
-	// Step 1: Screenshots
-	ssOpts := capture.ScreenshotOptions{Format: "png", Retina: true}
-	for i := 0; i < evScreenshots; i++ {
-		output := filepath.Join(evOutput, fmt.Sprintf("screenshot-%03d.png", i+1))
-		infof("Screenshot %d/%d...", i+1, evScreenshots)
-		if err := capture.Screenshot(ctx, target, output, ssOpts); err != nil {
-			artifacts = append(artifacts, artifact{Type: "screenshot", Path: output, Error: err.Error()})
+	// Screen tier: screenshots + optional recording
+	if evTier == "screen" {
+		ssOpts := capture.ScreenshotOptions{Format: "png", Retina: true}
+		for i := 0; i < evScreenshots; i++ {
+			output := filepath.Join(evOutput, fmt.Sprintf("screenshot-%03d.png", i+1))
+			infof("Screenshot %d/%d...", i+1, evScreenshots)
+			if err := capture.Screenshot(ctx, target, output, ssOpts); err != nil {
+				artifacts = append(artifacts, artifact{Type: "screenshot", Path: output, Error: err.Error()})
+			} else {
+				fi, _ := os.Stat(output)
+				size := int64(0)
+				if fi != nil {
+					size = fi.Size()
+				}
+				artifacts = append(artifacts, artifact{Type: "screenshot", Path: output, Size: size})
+			}
+			if i < evScreenshots-1 {
+				time.Sleep(2 * time.Second)
+			}
+		}
+	}
+
+	// VHS tier: run tape file
+	if evTier == "vhs" {
+		gifPath := filepath.Join(evOutput, "vhs-recording.gif")
+		infof("Running VHS tape: %s", evTape)
+		vhsExec := exec.CommandContext(ctx, "vhs", evTape, "-o", gifPath)
+		if err := vhsExec.Run(); err != nil {
+			artifacts = append(artifacts, artifact{Type: "vhs", Path: gifPath, Error: err.Error()})
 		} else {
-			fi, _ := os.Stat(output)
+			fi, _ := os.Stat(gifPath)
 			size := int64(0)
 			if fi != nil {
 				size = fi.Size()
 			}
-			artifacts = append(artifacts, artifact{Type: "screenshot", Path: output, Size: size})
-		}
-		if i < evScreenshots-1 {
-			time.Sleep(2 * time.Second) // Brief pause between screenshots
+			artifacts = append(artifacts, artifact{Type: "vhs", Path: gifPath, Size: size})
 		}
 	}
 
-	// Step 2: Recording (optional)
-	if evRecord > 0 {
+	// Remotion tier: render composition
+	if evTier == "remotion" {
+		gifPath := filepath.Join(evOutput, "remotion-demo.gif")
+		infof("Rendering Remotion composition: %s", evComp)
+		npxArgs := []string{"remotion", "render", evEntry, evComp, "--output", gifPath, "--codec", "gif"}
+		npxExec := exec.CommandContext(ctx, "npx", npxArgs...)
+		if err := npxExec.Run(); err != nil {
+			artifacts = append(artifacts, artifact{Type: "remotion", Path: gifPath, Error: err.Error()})
+		} else {
+			fi, _ := os.Stat(gifPath)
+			size := int64(0)
+			if fi != nil {
+				size = fi.Size()
+			}
+			artifacts = append(artifacts, artifact{Type: "remotion", Path: gifPath, Size: size})
+		}
+	}
+
+	// Screen tier: Recording (optional)
+	if evTier == "screen" && evRecord > 0 {
 		videoPath := filepath.Join(evOutput, "recording.mp4")
 		gifPath := filepath.Join(evOutput, "recording.gif")
 
