@@ -12,29 +12,29 @@ The printing press generates both CLIs and MCP servers from the same spec. CLIs 
 
 | CLI | MCP | API | Tools | What it does |
 |-----|-----|-----|-------|-------------|
-| **[espn-pp-cli](library/media-and-entertainment/espn-pp-cli/)** | espn-pp-mcp | ESPN | 3 | Sports data — scores, stats, standings, schedules, news, odds across 17 sports and 139 leagues. |
-| **[postman-explore-pp-cli](library/developer-tools/postman-explore-pp-cli/)** | postman-explore-pp-mcp | Postman Explore | 9 | Search and browse the Postman API Network. |
+| **[espn-pp-cli](library/media-and-entertainment/espn/)** | espn-pp-mcp | ESPN | 3 | Sports data — scores, stats, standings, schedules, news, odds across 17 sports and 139 leagues. |
+| **[postman-explore-pp-cli](library/developer-tools/postman-explore/)** | postman-explore-pp-mcp | Postman Explore | 9 | Search and browse the Postman API Network. |
 
 ### API key required
 
 | CLI | MCP | API | Tools | What it does |
 |-----|-----|-----|-------|-------------|
-| **[dub-pp-cli](library/marketing/dub-pp-cli/)** | dub-pp-mcp | Dub | 53 | Create short links, track analytics, manage domains, and run affiliate programs. |
-| **[linear-pp-cli](library/project-management/linear-pp-cli/)** | linear-pp-mcp | Linear | 63 | Issues, cycles, teams, projects via GraphQL. Local sync, stale detection, team health scoring. |
-| **[steam-web-pp-cli](library/media-and-entertainment/steam-web-pp-cli/)** | steam-web-pp-mcp | Steam Web | 164 (29 public) | Look up Steam players, games, achievements, friends, and stats. 29 tools work without an API key. |
-| **[cal-com-pp-cli](library/productivity/cal-com-pp-cli/)** | cal-com-pp-mcp | Cal.com | 288 | Manage bookings, event types, schedules, and availability. |
+| **[dub-pp-cli](library/marketing/dub/)** | dub-pp-mcp | Dub | 53 | Create short links, track analytics, manage domains, and run affiliate programs. |
+| **[linear-pp-cli](library/project-management/linear/)** | linear-pp-mcp | Linear | 63 | Issues, cycles, teams, projects via GraphQL. Local sync, stale detection, team health scoring. |
+| **[steam-web-pp-cli](library/media-and-entertainment/steam-web/)** | steam-web-pp-mcp | Steam Web | 164 (29 public) | Look up Steam players, games, achievements, friends, and stats. 29 tools work without an API key. |
+| **[cal-com-pp-cli](library/productivity/cal-com/)** | cal-com-pp-mcp | Cal.com | 288 | Manage bookings, event types, schedules, and availability. |
 
 ### Partial MCP (some tools work without auth)
 
 | CLI | MCP | API | Tools | What it does |
 |-----|-----|-----|-------|-------------|
-| **[pagliacci-pizza-pp-cli](library/other/pagliacci-pizza-pp-cli/)** | pagliacci-pizza-pp-mcp | Pagliacci Pizza | 41 (10 public) | Order pizza, browse menus, manage rewards. 10 tools (stores, menus, pricing, scheduling) work without login. |
+| **[pagliacci-pizza-pp-cli](library/other/pagliacci-pizza/)** | pagliacci-pizza-pp-mcp | Pagliacci Pizza | 41 (10 public) | Order pizza, browse menus, manage rewards. 10 tools (stores, menus, pricing, scheduling) work without login. |
 
 ### CLI only (no MCP server)
 
 | CLI | API | What it does |
 |-----|-----|-------------|
-| **[agent-capture-pp-cli](library/developer-tools/agent-capture-pp-cli/)** | agent-capture | Record, screenshot, and convert macOS windows and screens for AI agent evidence. |
+| **[agent-capture-pp-cli](library/developer-tools/agent-capture/)** | agent-capture | Record, screenshot, and convert macOS windows and screens for AI agent evidence. |
 
 ## Install
 
@@ -44,32 +44,32 @@ Each CLI is a standalone Go module with both a CLI and MCP binary. You need [Go 
 
 ```bash
 # ESPN — sports scores, stats, standings (no auth)
-go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/cmd/espn-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn/cmd/espn-pp-cli@latest
 
 # Dub — link management (set DUB_TOKEN env var)
-go install github.com/mvanhorn/printing-press-library/library/marketing/dub-pp-cli/cmd/dub-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/marketing/dub/cmd/dub-pp-cli@latest
 
 # Linear — project management (set LINEAR_API_KEY env var)
-go install github.com/mvanhorn/printing-press-library/library/project-management/linear-pp-cli/cmd/linear-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/project-management/linear/cmd/linear-pp-cli@latest
 
 # Cal.com — scheduling (set CAL_COM_TOKEN env var)
-go install github.com/mvanhorn/printing-press-library/library/productivity/cal-com-pp-cli/cmd/cal-com-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/productivity/cal-com/cmd/cal-com-pp-cli@latest
 
 # Steam Web — gaming data (set STEAM_WEB_API_KEY env var)
-go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/steam-web-pp-cli/cmd/steam-web-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/steam-web/cmd/steam-web-pp-cli@latest
 
 # Postman Explore — API network browser (no auth)
-go install github.com/mvanhorn/printing-press-library/library/developer-tools/postman-explore-pp-cli/cmd/postman-explore-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/developer-tools/postman-explore/cmd/postman-explore-pp-cli@latest
 
 # Pagliacci Pizza — pizza ordering (browser login for full access)
-go install github.com/mvanhorn/printing-press-library/library/other/pagliacci-pizza-pp-cli/cmd/pagliacci-pizza-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/other/pagliacci-pizza/cmd/pagliacci-pizza-pp-cli@latest
 ```
 
 ### MCP Server (Claude Desktop / Cursor)
 
 ```bash
 # Install the MCP binary
-go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn-pp-cli/cmd/espn-pp-mcp@latest
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/espn/cmd/espn-pp-mcp@latest
 
 # Add to Claude Code
 claude mcp add espn-pp-mcp -- espn-pp-mcp
@@ -160,7 +160,7 @@ CLIs may be improved after generation (emboss passes, manual refinements). The m
       "category": "media-and-entertainment",
       "api": "ESPN",
       "description": "ESPN sports CLI with live scores, standings, stats, and offline search",
-      "path": "library/media-and-entertainment/espn-pp-cli",
+      "path": "library/media-and-entertainment/espn",
       "mcp": {
         "binary": "espn-pp-mcp",
         "transport": "stdio",
