@@ -372,6 +372,26 @@ func printOutputWithFlags(w io.Writer, data json.RawMessage, flags *rootFlags) e
 // avoids false positives on APIs where "data" is a regular field (e.g., Stripe
 // returns {"data":[...],"has_more":true} where "data" is the list, not an
 // envelope wrapper).
+// checkSlackAPIError inspects the response for Slack's {"ok": false} pattern
+// and returns a user-friendly error when found. Returns nil if the response is ok.
+func checkSlackAPIError(data json.RawMessage) error {
+	var resp struct {
+		OK     bool   `json:"ok"`
+		Error  string `json:"error"`
+		Needed string `json:"needed"`
+	}
+	if json.Unmarshal(data, &resp) != nil {
+		return nil
+	}
+	if resp.OK || resp.Error == "" {
+		return nil
+	}
+	if resp.Error == "missing_scope" && resp.Needed != "" {
+		return fmt.Errorf("missing Slack scope: %s\nAdd it in your app's OAuth & Permissions settings at https://api.slack.com/apps and reinstall", resp.Needed)
+	}
+	return fmt.Errorf("Slack API error: %s", resp.Error)
+}
+
 func extractResponseData(data json.RawMessage) json.RawMessage {
 	var envelope struct {
 		Status string          `json:"status"`

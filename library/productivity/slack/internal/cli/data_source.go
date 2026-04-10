@@ -88,11 +88,17 @@ func resolveRead(c *client.Client, flags *rootFlags, resourceType string, isList
 		if err != nil {
 			return nil, DataProvenance{}, err
 		}
+		if slackErr := checkSlackAPIError(data); slackErr != nil {
+			return nil, DataProvenance{}, slackErr
+		}
 		return data, DataProvenance{Source: "live"}, nil
 
 	default: // "auto"
 		data, err := c.Get(path, params)
 		if err == nil {
+			if slackErr := checkSlackAPIError(data); slackErr != nil {
+				return nil, DataProvenance{}, slackErr
+			}
 			return data, DataProvenance{Source: "live"}, nil
 		}
 		if !isNetworkError(err) {

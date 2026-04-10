@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -37,6 +38,9 @@ func newConversationsHistoryCmd(flags *rootFlags) *cobra.Command {
 				params["channel"] = fmt.Sprintf("%v", flagChannel)
 			}
 			if flagLimit != "" {
+				if _, parseErr := strconv.Atoi(flagLimit); parseErr != nil {
+					return fmt.Errorf("invalid --limit %q: expected a positive integer", flagLimit)
+				}
 				params["limit"] = fmt.Sprintf("%v", flagLimit)
 			}
 			if flagCursor != "" {

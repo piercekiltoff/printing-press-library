@@ -53,18 +53,23 @@ func newResponseTimesCmd(flags *rootFlags) *cobra.Command {
 			}
 			defer rows.Close()
 			type row struct {
+				ChannelID          string  `json:"-"`
 				Channel            string  `json:"channel"`
 				AvgResponseMinutes float64 `json:"avg_response_minutes"`
 				Threads            int     `json:"threads"`
 			}
 			var out []row
 			for rows.Next() {
-				var channelID string
 				var item row
-				if rows.Scan(&channelID, &item.AvgResponseMinutes, &item.Threads) == nil {
-					item.Channel = resourceName(db, "conversations", channelID)
+				if rows.Scan(&item.ChannelID, &item.AvgResponseMinutes, &item.Threads) == nil {
 					out = append(out, item)
 				}
+			}
+			rows.Close()
+			// Resolve channel names after closing the cursor to avoid deadlock
+			// (resourceName opens a nested query, which deadlocks with MaxOpenConns=1).
+			for i := range out {
+				out[i].Channel = resourceName(db, "conversations", out[i].ChannelID)
 			}
 			if len(out) == 0 {
 				return fmt.Errorf("no thread reply data found. Run 'slack-pp-cli sync' first")

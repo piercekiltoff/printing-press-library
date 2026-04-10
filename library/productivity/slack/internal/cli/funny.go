@@ -27,6 +27,9 @@ func newFunnyCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 			defer db.Close()
+			if limit <= 0 {
+				return fmt.Errorf("invalid --limit %d: must be a positive integer", limit)
+			}
 			days := map[string]int{"week": 7, "month": 30}[period]
 			if days == 0 {
 				return fmt.Errorf("invalid --period %q: must be week or month", period)

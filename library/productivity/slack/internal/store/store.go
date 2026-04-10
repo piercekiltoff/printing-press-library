@@ -272,9 +272,29 @@ func (s *Store) List(resourceType string, limit int) ([]json.RawMessage, error) 
 	return results, rows.Err()
 }
 
+// sanitizeFTSQuery wraps each whitespace-delimited token in double quotes
+// to prevent FTS5 operator injection (AND, OR, NOT, NEAR, *, etc.).
+// Empty input returns "" so callers can short-circuit to empty results.
+func sanitizeFTSQuery(query string) string {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return ""
+	}
+	tokens := strings.Fields(query)
+	for i, t := range tokens {
+		t = strings.ReplaceAll(t, `"`, `""`)
+		tokens[i] = `"` + t + `"`
+	}
+	return strings.Join(tokens, " ")
+}
+
 func (s *Store) Search(query string, limit int) ([]json.RawMessage, error) {
 	if limit <= 0 {
 		limit = 50
+	}
+	q := sanitizeFTSQuery(query)
+	if q == "" {
+		return nil, nil
 	}
 	rows, err := s.db.Query(
 		`SELECT r.data FROM resources r
@@ -282,7 +302,7 @@ func (s *Store) Search(query string, limit int) ([]json.RawMessage, error) {
 		 WHERE resources_fts MATCH ?
 		 ORDER BY rank
 		 LIMIT ?`,
-		query, limit,
+		q, limit,
 	)
 	if err != nil {
 		return nil, err
@@ -458,6 +478,21 @@ func (s *Store) UpsertMessage(channelID, userID, ts, threadTS, text string, repl
 	return nil
 }
 
+func (s *Store) ListMessages(limit int) ([]json.RawMessage, error) {
+	if limit <= 0 {
+		limit = 10000
+	}
+	rows, err := s.db.Query(
+		`SELECT data FROM messages ORDER BY CAST(ts AS REAL) DESC LIMIT ?`,
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return rawMessagesFromRows(rows)
+}
+
 func (s *Store) MessagesByChannel(channelID string, limit int) ([]json.RawMessage, error) {
 	if limit <= 0 {
 		limit = 200
@@ -526,7 +561,7 @@ func (s *Store) StaleThreads(days int, limit int) ([]json.RawMessage, error) {
 
 	cutoff := float64(time.Now().AddDate(0, 0, -days).Unix())
 	stmt, err := s.db.Prepare(
-		`SELECT parent.data
+		`SELECT json_set(parent.data, '$.channel', parent.channel_id)
 		 FROM messages parent
 		 JOIN messages reply ON reply.thread_ts = parent.ts
 		 WHERE parent.thread_ts IS NULL
@@ -559,14 +594,14 @@ func (s *Store) TopReactedMessages(channelID string, emoji string, limit int) ([
 		limit = 50
 	}
 
-	baseQuery := `SELECT m.data
+	baseQuery := `SELECT json_set(m.data, '$.channel', m.channel_id)
 		FROM messages m
 		LEFT JOIN json_each(COALESCE(m.reactions_json, '[]')) reaction
 		WHERE (? = '' OR m.channel_id = ?)
 		GROUP BY m.id`
 	args := []any{channelID, channelID}
 	if emoji != "" {
-		baseQuery = `SELECT m.data
+		baseQuery = `SELECT json_set(m.data, '$.channel', m.channel_id)
 			FROM messages m
 			JOIN json_each(COALESCE(m.reactions_json, '[]')) reaction
 			WHERE (? = '' OR m.channel_id = ?)
@@ -709,12 +744,16 @@ func (s *Store) SearchUsergroups(query string, limit int) ([]json.RawMessage, er
 	if limit <= 0 {
 		limit = 50
 	}
+	q := sanitizeFTSQuery(query)
+	if q == "" {
+		return nil, nil
+	}
 	rows, err := s.db.Query(
 		`SELECT t.data FROM usergroups t
 		 JOIN usergroups_fts ON usergroups_fts.rowid = t.rowid
 		 WHERE usergroups_fts MATCH ?
 		 ORDER BY rank LIMIT ?`,
-		query, limit,
+		q, limit,
 	)
 	if err != nil {
 		return nil, err
@@ -737,12 +776,16 @@ func (s *Store) SearchFiles(query string, limit int) ([]json.RawMessage, error) 
 	if limit <= 0 {
 		limit = 50
 	}
+	q := sanitizeFTSQuery(query)
+	if q == "" {
+		return nil, nil
+	}
 	rows, err := s.db.Query(
 		`SELECT t.data FROM files t
 		 JOIN files_fts ON files_fts.rowid = t.rowid
 		 WHERE files_fts MATCH ?
 		 ORDER BY rank LIMIT ?`,
-		query, limit,
+		q, limit,
 	)
 	if err != nil {
 		return nil, err

@@ -196,12 +196,16 @@ func newHealthCmd(flags *rootFlags) *cobra.Command {
 				avg := math.Round((float64(msgs)/30)*10) / 10
 				grade := "F"
 				switch {
-				case avg >= 100 || users >= 25:
+				case avg >= 10 && users >= 3:
 					grade = "A"
-				case avg >= 40 || users >= 12:
+				case avg >= 5 && users >= 2:
 					grade = "B"
-				case avg >= 10 || users >= 5:
-					grade = "C"
+				case avg >= 1:
+					if users <= 1 {
+						grade = "C" // single-poster (bot) channels cap at C
+					} else {
+						grade = "C"
+					}
 				case avg > 0:
 					grade = "D"
 				}

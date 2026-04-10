@@ -217,7 +217,7 @@ func outputSearchResults(cmd *cobra.Command, flags *rootFlags, results []json.Ra
 	results = filtered
 
 	// Enforce limit across aggregated results.
-	if len(results) > limit {
+	if limit > 0 && len(results) > limit {
 		results = results[:limit]
 	}
 

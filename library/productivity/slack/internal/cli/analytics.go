@@ -98,13 +98,22 @@ func runGroupBy(db *store.Store, resourceType, field string, limit int, flags *r
 	}
 
 	counts := make(map[string]int)
+	nilCount := 0
 	for _, item := range items {
 		var obj map[string]any
 		if err := json.Unmarshal(item, &obj); err != nil {
 			continue
 		}
-		val := fmt.Sprintf("%v", obj[field])
+		v, exists := obj[field]
+		if !exists || v == nil {
+			nilCount++
+			continue
+		}
+		val := fmt.Sprintf("%v", v)
 		counts[val]++
+	}
+	if len(counts) == 0 && nilCount > 0 {
+		return fmt.Errorf("field %q not found in %s records", field, resourceType)
 	}
 
 	type kv struct {

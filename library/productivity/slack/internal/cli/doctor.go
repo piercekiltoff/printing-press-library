@@ -4,6 +4,7 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -93,29 +94,31 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 					report["api"] = "reachable"
 				}
 
-				// Step 2: Validate credentials with an authenticated request
+				// Step 2: Validate credentials with Slack's auth.test endpoint
 				authHeader := cfg.AuthHeader()
 				if authHeader == "" {
 					// No auth configured — skip credential validation
 				} else if !apiReachable {
 					report["credentials"] = "skipped (API unreachable)"
 				} else {
-					authReq, _ := http.NewRequest("GET", baseURL, nil)
+					authReq, _ := http.NewRequest("POST", baseURL+"/auth.test", nil)
 					authReq.Header.Set("Authorization", authHeader)
 					authReq.Header.Set("User-Agent", "slack-pp-cli")
 					authResp, authErr := httpClient.Do(authReq)
 					if authErr != nil {
 						report["credentials"] = "error: could not reach API"
 					} else {
-						authResp.Body.Close()
-						switch {
-						case authResp.StatusCode >= 200 && authResp.StatusCode < 300:
+						defer authResp.Body.Close()
+						var result struct {
+							OK    bool   `json:"ok"`
+							Error string `json:"error"`
+						}
+						if json.NewDecoder(authResp.Body).Decode(&result) == nil && result.OK {
 							report["credentials"] = "valid"
-						case authResp.StatusCode == 401 || authResp.StatusCode == 403:
-							report["credentials"] = fmt.Sprintf("invalid (HTTP %d) — check your credentials", authResp.StatusCode)
-						default:
-							// Non-auth HTTP error (404, 500, etc.) — don't blame credentials
-							report["credentials"] = fmt.Sprintf("ok (HTTP %d from base URL, but auth was accepted)", authResp.StatusCode)
+						} else if result.Error != "" {
+							report["credentials"] = fmt.Sprintf("invalid (%s)", result.Error)
+						} else {
+							report["credentials"] = fmt.Sprintf("invalid (HTTP %d)", authResp.StatusCode)
 						}
 					}
 				}
