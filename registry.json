@@ -155,6 +155,13 @@
       "api": "Trigger.dev",
       "description": "Monitor runs, trigger tasks, manage schedules, and detect failures via the Trigger.dev API",
       "path": "library/developer-tools/trigger-dev"
+    },
+    {
+      "name": "slack",
+      "category": "productivity",
+      "api": "Slack",
+      "description": "Send messages, search conversations, monitor channels, and manage your Slack workspace from the terminal",
+      "path": "library/productivity/slack"
     }
   ]
 }
