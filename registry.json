@@ -141,6 +141,13 @@
         "spec_format": "openapi3",
         "manifest_url": "library/productivity/cal-com/tools-manifest.json"
       }
+    },
+    {
+      "name": "hubspot-pp-cli",
+      "category": "sales-and-crm",
+      "api": "HubSpot",
+      "description": "Manage HubSpot CRM contacts, companies, deals, tickets, engagements, pipelines, and associations with offline search and pipeline analytics",
+      "path": "library/sales-and-crm/hubspot"
     }
   ]
 }
