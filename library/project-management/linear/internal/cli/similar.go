@@ -4,76 +4,79 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
+	"strings"
 
 	"github.com/mvanhorn/printing-press-library/library/project-management/linear/internal/store"
+
 	"github.com/spf13/cobra"
 )
 
 func newSimilarCmd(flags *rootFlags) *cobra.Command {
 	var dbPath string
+	var jsonOut bool
 	var limit int
-
 	cmd := &cobra.Command{
-		Use:   "similar <text>",
-		Short: "Find potentially duplicate issues using FTS5 search",
-		Long: `Search locally synced issues for potential duplicates using
-full-text search. Run before creating a new issue to avoid duplicates.`,
-		Example: `  linear-pp-cli similar "login page broken"
-  linear-pp-cli similar "auth timeout" --limit 10 --json`,
+		Use:   "similar <query>",
+		Short: "Find potentially duplicate issues using fuzzy text search",
+		Long:  "Search locally synced issues using FTS5 full-text search to find potential duplicates. Works offline.",
+		Example: `  linear-pp-cli similar "login bug"
+  linear-pp-cli similar "payment failed" --limit 20
+  linear-pp-cli similar "onboarding" --json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			query := args[0]
-
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".config", "linear-pp-cli", "store.db")
+				dbPath = defaultDBPath("linear-pp-cli")
 			}
 			db, err := store.Open(dbPath)
 			if err != nil {
-				return fmt.Errorf("opening database: %w\nRun 'workflow archive' first.", err)
+				return fmt.Errorf("opening database: %w\nRun 'linear-pp-cli sync' first.", err)
 			}
 			defer db.Close()
 
-			results, err := db.SearchIssues(query, limit)
+			if strings.TrimSpace(args[0]) == "" {
+				return fmt.Errorf("search query cannot be empty")
+			}
+			results, err := db.SearchIssues(args[0])
 			if err != nil {
-				return fmt.Errorf("searching issues: %w", err)
+				return fmt.Errorf("searching: %w", err)
 			}
 
-			if flags.asJSON {
-				enc := json.NewEncoder(cmd.OutOrStdout())
+			if limit > 0 && len(results) > limit {
+				results = results[:limit]
+			}
+
+			if jsonOut {
+				enc := json.NewEncoder(os.Stdout)
 				enc.SetIndent("", "  ")
 				return enc.Encode(results)
 			}
 
 			if len(results) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No similar issues found.")
+				fmt.Printf("No issues matching %q\n", args[0])
 				return nil
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Found %d similar issues:\n\n", len(results))
-			fmt.Fprintf(cmd.OutOrStdout(), "  %-12s %-45s %-15s\n", "ID", "TITLE", "STATE")
-			fmt.Fprintf(cmd.OutOrStdout(), "  %-12s %-45s %-15s\n", "----", "-----", "-----")
-
+			fmt.Printf("%-12s %-15s %s\n", "ID", "STATE", "TITLE")
+			fmt.Println(strings.Repeat("-", 70))
 			for _, raw := range results {
-				var obj map[string]any
-				if json.Unmarshal(raw, &obj) != nil {
-					continue
+				var row struct {
+					Identifier string                `json:"identifier"`
+					Title      string                `json:"title"`
+					State      struct{ Name string } `json:"state"`
 				}
-				ident, _ := obj["identifier"].(string)
-				title, _ := obj["title"].(string)
-				stateName := ""
-				if s, ok := obj["state"].(map[string]any); ok {
-					stateName, _ = s["name"].(string)
+				json.Unmarshal(raw, &row)
+				title := row.Title
+				if len(title) > 45 {
+					title = title[:42] + "..."
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "  %-12s %-45s %-15s\n",
-					ident, truncate(title, 45), stateName)
+				fmt.Printf("%-12s %-15s %s\n", row.Identifier, row.State.Name, title)
 			}
+			fmt.Fprintf(os.Stderr, "\n%d results for %q\n", len(results), args[0])
 			return nil
 		},
 	}
-
-	cmd.Flags().IntVar(&limit, "limit", 10, "Max results to show")
+	cmd.Flags().IntVar(&limit, "limit", 50, "Maximum results to return")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Output as JSON")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path")
 	return cmd
 }

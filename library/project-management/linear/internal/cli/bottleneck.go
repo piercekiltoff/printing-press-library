@@ -4,217 +4,117 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/mvanhorn/printing-press-library/library/project-management/linear/internal/store"
+
 	"github.com/spf13/cobra"
 )
 
 func newBottleneckCmd(flags *rootFlags) *cobra.Command {
-	var team string
 	var dbPath string
-	var limit int
-
+	var jsonOut bool
+	var teamFilter string
 	cmd := &cobra.Command{
 		Use:   "bottleneck",
-		Short: "Detect who/what is blocking the most issues",
-		Long: `Analyze issue relations in locally synced data to find the biggest
-bottlenecks — issues that block the most other issues, and people whose
-assigned issues block the most work.`,
-		Example: `  linear-pp-cli bottleneck --team ENG
-  linear-pp-cli bottleneck --limit 10 --json`,
+		Short: "Find overloaded team members and blocked issues",
+		Long:  "Analyze issue distribution per assignee to find bottlenecks. Shows who has too many active issues and which issues are blocking others.",
+		Example: `  linear-pp-cli bottleneck
+  linear-pp-cli bottleneck --team ENG
+  linear-pp-cli bottleneck --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".config", "linear-pp-cli", "store.db")
+				dbPath = defaultDBPath("linear-pp-cli")
 			}
 			db, err := store.Open(dbPath)
 			if err != nil {
-				return fmt.Errorf("opening database: %w", err)
+				return fmt.Errorf("opening database: %w\nRun 'linear-pp-cli sync' first.", err)
 			}
 			defer db.Close()
 
-			// Load issue relations of type "blocks"
-			relRows, err := db.Query(
-				`SELECT data FROM resources WHERE resource_type = 'issue_relations'`)
+			filter := map[string]string{}
+			if teamFilter != "" {
+				filter["team_id"] = teamFilter
+			}
+			issues, err := db.ListIssues(filter, 5000)
 			if err != nil {
-				return fmt.Errorf("querying relations: %w", err)
-			}
-			defer relRows.Close()
-
-			// blockerID -> list of blocked issue IDs
-			blocksMap := map[string][]string{}
-			for relRows.Next() {
-				var data []byte
-				if relRows.Scan(&data) != nil {
-					continue
-				}
-				var obj map[string]any
-				if json.Unmarshal(data, &obj) != nil {
-					continue
-				}
-				relType, _ := obj["type"].(string)
-				if relType != "blocks" {
-					continue
-				}
-				// The issue that blocks
-				issue, _ := obj["issue"].(map[string]any)
-				issueID, _ := issue["id"].(string)
-				// The issue being blocked
-				related, _ := obj["relatedIssue"].(map[string]any)
-				relatedID, _ := related["id"].(string)
-				if issueID != "" && relatedID != "" {
-					blocksMap[issueID] = append(blocksMap[issueID], relatedID)
-				}
+				return err
 			}
 
-			if len(blocksMap) == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "No blocking relations found. Sync relations with 'workflow archive'.")
+			type assigneeLoad struct {
+				Name   string `json:"name"`
+				ID     string `json:"id"`
+				Active int    `json:"active"`
+				Urgent int    `json:"urgent"`
+				High   int    `json:"high"`
+			}
+
+			loads := map[string]*assigneeLoad{}
+			for _, raw := range issues {
+				var row struct {
+					Priority int                   `json:"priority"`
+					State    struct{ Type string } `json:"state"`
+					Assignee *struct {
+						ID   string `json:"id"`
+						Name string `json:"name"`
+					} `json:"assignee"`
+				}
+				json.Unmarshal(raw, &row)
+				if row.State.Type == "completed" || row.State.Type == "canceled" {
+					continue
+				}
+				if row.Assignee == nil {
+					continue
+				}
+				al, ok := loads[row.Assignee.ID]
+				if !ok {
+					al = &assigneeLoad{Name: row.Assignee.Name, ID: row.Assignee.ID}
+					loads[row.Assignee.ID] = al
+				}
+				al.Active++
+				if row.Priority == 1 {
+					al.Urgent++
+				} else if row.Priority == 2 {
+					al.High++
+				}
+			}
+
+			sorted := make([]*assigneeLoad, 0, len(loads))
+			for _, al := range loads {
+				sorted = append(sorted, al)
+			}
+			sort.Slice(sorted, func(i, j int) bool {
+				return sorted[i].Active > sorted[j].Active
+			})
+
+			if jsonOut {
+				enc := json.NewEncoder(os.Stdout)
+				enc.SetIndent("", "  ")
+				return enc.Encode(sorted)
+			}
+
+			if len(sorted) == 0 {
+				fmt.Println("No active issues with assignees found.")
 				return nil
 			}
 
-			// Build issue lookup
-			issueLookup := map[string]map[string]any{}
-			issueRows, err := db.Query(`SELECT id, data FROM issues`)
-			if err == nil {
-				defer issueRows.Close()
-				for issueRows.Next() {
-					var id string
-					var data []byte
-					if issueRows.Scan(&id, &data) != nil {
-						continue
-					}
-					var obj map[string]any
-					if json.Unmarshal(data, &obj) == nil {
-						issueLookup[id] = obj
-					}
+			fmt.Printf("%-25s %-8s %-8s %-8s %s\n", "ASSIGNEE", "ACTIVE", "URGENT", "HIGH", "ALERT")
+			fmt.Println(strings.Repeat("-", 70))
+			for _, al := range sorted {
+				alert := ""
+				if al.Active > 15 {
+					alert = "OVERLOADED"
+				} else if al.Urgent > 3 {
+					alert = "TOO MANY URGENT"
 				}
+				fmt.Printf("%-25s %-8d %-8d %-8d %s\n", al.Name, al.Active, al.Urgent, al.High, alert)
 			}
-
-			// Build user name lookup
-			userNames := map[string]string{}
-			userRows, err := db.Query(`SELECT id, data FROM resources WHERE resource_type = 'users'`)
-			if err == nil {
-				defer userRows.Close()
-				for userRows.Next() {
-					var uid string
-					var data []byte
-					if userRows.Scan(&uid, &data) == nil {
-						var obj map[string]any
-						if json.Unmarshal(data, &obj) == nil {
-							if n, ok := obj["name"].(string); ok {
-								userNames[uid] = n
-							}
-						}
-					}
-				}
-			}
-
-			// Rank blocking issues
-			type blockerInfo struct {
-				IssueID    string `json:"issue_id"`
-				Identifier string `json:"identifier"`
-				Title      string `json:"title"`
-				Assignee   string `json:"assignee"`
-				BlockCount int    `json:"blocks_count"`
-				State      string `json:"state"`
-			}
-
-			var blockers []blockerInfo
-			for issueID, blocked := range blocksMap {
-				iss := issueLookup[issueID]
-				identifier, _ := iss["identifier"].(string)
-				title, _ := iss["title"].(string)
-				assignee := ""
-				if a, ok := iss["assignee"].(map[string]any); ok {
-					if aid, ok := a["id"].(string); ok {
-						assignee = userNames[aid]
-						if assignee == "" {
-							assignee = aid[:8]
-						}
-					}
-				}
-				stateName := ""
-				if s, ok := iss["state"].(map[string]any); ok {
-					stateName, _ = s["name"].(string)
-				}
-
-				blockers = append(blockers, blockerInfo{
-					IssueID:    issueID,
-					Identifier: identifier,
-					Title:      title,
-					Assignee:   assignee,
-					BlockCount: len(blocked),
-					State:      stateName,
-				})
-			}
-
-			sort.Slice(blockers, func(i, j int) bool {
-				return blockers[i].BlockCount > blockers[j].BlockCount
-			})
-
-			if limit > 0 && len(blockers) > limit {
-				blockers = blockers[:limit]
-			}
-
-			// Also aggregate by person
-			personBlocks := map[string]int{}
-			for issueID, blocked := range blocksMap {
-				iss := issueLookup[issueID]
-				if a, ok := iss["assignee"].(map[string]any); ok {
-					if aid, ok := a["id"].(string); ok {
-						personBlocks[aid] += len(blocked)
-					}
-				}
-			}
-
-			type personInfo struct {
-				Name       string `json:"name"`
-				BlockCount int    `json:"total_blocks"`
-			}
-			var persons []personInfo
-			for uid, count := range personBlocks {
-				name := userNames[uid]
-				if name == "" {
-					name = uid[:8]
-				}
-				persons = append(persons, personInfo{Name: name, BlockCount: count})
-			}
-			sort.Slice(persons, func(i, j int) bool {
-				return persons[i].BlockCount > persons[j].BlockCount
-			})
-
-			if flags.asJSON {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				return enc.Encode(map[string]any{
-					"blocking_issues": blockers,
-					"blocking_people": persons,
-				})
-			}
-
-			fmt.Fprintln(cmd.OutOrStdout(), "Top Blocking Issues:")
-			fmt.Fprintf(cmd.OutOrStdout(), "  %-12s %-35s %-15s %-10s %s\n",
-				"ID", "TITLE", "ASSIGNEE", "STATE", "BLOCKS")
-			for _, b := range blockers {
-				fmt.Fprintf(cmd.OutOrStdout(), "  %-12s %-35s %-15s %-10s %d\n",
-					b.Identifier, truncate(b.Title, 35), truncate(b.Assignee, 15), truncate(b.State, 10), b.BlockCount)
-			}
-
-			if len(persons) > 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), "\nBlocking by Person:")
-				for _, p := range persons {
-					fmt.Fprintf(cmd.OutOrStdout(), "  %-25s %d issues blocked\n", p.Name, p.BlockCount)
-				}
-			}
-
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVar(&team, "team", "", "Filter by team key or name")
-	cmd.Flags().IntVar(&limit, "limit", 15, "Max blocking issues to show")
+	cmd.Flags().StringVar(&teamFilter, "team", "", "Filter by team key or ID")
+	cmd.Flags().BoolVar(&jsonOut, "json", false, "Output as JSON")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path")
 	return cmd
 }
