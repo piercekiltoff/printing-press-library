@@ -28,6 +28,11 @@ func newPartnersCreateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Create or update a partner",
 		Example: "  dub-pp-cli partners create --email user@example.com",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("email") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "email")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -140,7 +145,6 @@ func newPartnersCreateCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&bodyCountry, "country", "", "The partner's country of residence. Must be passed as a 2-letter ISO 3166-1 country code. See https://d.to/geo for...")
 	cmd.Flags().StringVar(&bodyDescription, "description", "", "A brief description of the partner and their background. Max 5,000 characters.")
 	cmd.Flags().StringVar(&bodyEmail, "email", "", "The partner's email address. Partners will be able to claim their profile by signing up at `partners.dub.co` with...")
-	_ = cmd.MarkFlagRequired("email")
 	cmd.Flags().StringVar(&bodyGroupId, "group-id", "", "The group ID to add the partner to. If not provided, the partner will be added to the default group.")
 	cmd.Flags().StringVar(&bodyImage, "image", "", "The partner's avatar image. If not provided, a default avatar will be used.")
 	cmd.Flags().StringVar(&bodyName, "name", "", "The partner's full name. If undefined, the partner's email will be used in lieu of their name (e.g. `john@acme.com`)")

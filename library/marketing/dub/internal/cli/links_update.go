@@ -48,6 +48,7 @@ func newLinksUpdateCmd(flags *rootFlags) *cobra.Command {
 	var bodyUtmSource string
 	var bodyUtmTerm string
 	var bodyVideo string
+	var bodyWebhookIds string
 	var stdinBody bool
 
 	cmd := &cobra.Command{
@@ -57,6 +58,8 @@ func newLinksUpdateCmd(flags *rootFlags) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()
+			}
+			if !stdinBody {
 			}
 			c, err := flags.newClient()
 			if err != nil {
@@ -183,6 +186,9 @@ func newLinksUpdateCmd(flags *rootFlags) *cobra.Command {
 				if bodyVideo != "" {
 					body["video"] = bodyVideo
 				}
+				if bodyWebhookIds != "" {
+					body["webhookIds"] = bodyWebhookIds
+				}
 			}
 			data, statusCode, err := c.Patch(path, body)
 			if err != nil {
@@ -284,6 +290,7 @@ func newLinksUpdateCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&bodyUtmSource, "utm-source", "", "The UTM source of the short link. If set, this will populate or override the UTM source in the destination URL.")
 	cmd.Flags().StringVar(&bodyUtmTerm, "utm-term", "", "The UTM term of the short link. If set, this will populate or override the UTM term in the destination URL.")
 	cmd.Flags().StringVar(&bodyVideo, "video", "", "The custom link preview video (og:video). Will be used for Custom Link Previews if `proxy` is true. Learn more:...")
+	cmd.Flags().StringVar(&bodyWebhookIds, "webhook-ids", "", "An array of webhook IDs to trigger when the link is clicked. These webhooks will receive click event data.")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

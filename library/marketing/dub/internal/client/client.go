@@ -148,13 +148,17 @@ func (c *Client) RateLimit() float64 {
 }
 
 func (c *Client) Get(path string, params map[string]string) (json.RawMessage, error) {
+	return c.GetWithHeaders(path, params, nil)
+}
+
+func (c *Client) GetWithHeaders(path string, params map[string]string, headers map[string]string) (json.RawMessage, error) {
 	// Check cache for GET requests
 	if !c.NoCache && !c.DryRun && c.cacheDir != "" {
 		if cached, ok := c.readCache(path, params); ok {
 			return cached, nil
 		}
 	}
-	result, _, err := c.do("GET", path, params, nil)
+	result, _, err := c.do("GET", path, params, nil, headers)
 	if err == nil && !c.NoCache && !c.DryRun && c.cacheDir != "" {
 		c.writeCache(path, params, result)
 	}
@@ -190,22 +194,40 @@ func (c *Client) writeCache(path string, params map[string]string, data json.Raw
 }
 
 func (c *Client) Post(path string, body any) (json.RawMessage, int, error) {
-	return c.do("POST", path, nil, body)
+	return c.do("POST", path, nil, body, nil)
+}
+
+func (c *Client) PostWithHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, error) {
+	return c.do("POST", path, nil, body, headers)
 }
 
 func (c *Client) Delete(path string) (json.RawMessage, int, error) {
-	return c.do("DELETE", path, nil, nil)
+	return c.do("DELETE", path, nil, nil, nil)
+}
+
+func (c *Client) DeleteWithHeaders(path string, headers map[string]string) (json.RawMessage, int, error) {
+	return c.do("DELETE", path, nil, nil, headers)
 }
 
 func (c *Client) Put(path string, body any) (json.RawMessage, int, error) {
-	return c.do("PUT", path, nil, body)
+	return c.do("PUT", path, nil, body, nil)
+}
+
+func (c *Client) PutWithHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, error) {
+	return c.do("PUT", path, nil, body, headers)
 }
 
 func (c *Client) Patch(path string, body any) (json.RawMessage, int, error) {
-	return c.do("PATCH", path, nil, body)
+	return c.do("PATCH", path, nil, body, nil)
 }
 
-func (c *Client) do(method, path string, params map[string]string, body any) (json.RawMessage, int, error) {
+func (c *Client) PatchWithHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, error) {
+	return c.do("PATCH", path, nil, body, headers)
+}
+
+// do executes an HTTP request. headerOverrides, when non-nil, override global
+// RequiredHeaders for this specific request (used for per-endpoint API versioning).
+func (c *Client) do(method, path string, params map[string]string, body any, headerOverrides map[string]string) (json.RawMessage, int, error) {
 	targetURL := c.BaseURL + path
 
 	var bodyBytes []byte
@@ -219,7 +241,7 @@ func (c *Client) do(method, path string, params map[string]string, body any) (js
 
 	// Build the request for dry-run display or actual execution
 	if c.DryRun {
-		return c.dryRun(method, targetURL, path, params, bodyBytes)
+		return c.dryRun(method, targetURL, path, params, bodyBytes, headerOverrides)
 	}
 
 	const maxRetries = 3
@@ -257,6 +279,10 @@ func (c *Client) do(method, path string, params map[string]string, body any) (js
 		}
 		if authHeader != "" {
 			req.Header.Set("Authorization", authHeader)
+		}
+		// Per-endpoint header overrides (e.g., different API version per resource)
+		for k, v := range headerOverrides {
+			req.Header.Set(k, v)
 		}
 		req.Header.Set("User-Agent", "dub-pp-cli/0.0.1")
 
@@ -312,7 +338,7 @@ func (c *Client) do(method, path string, params map[string]string, body any) (js
 	return nil, 0, lastErr
 }
 
-func (c *Client) dryRun(method, targetURL, path string, params map[string]string, body []byte) (json.RawMessage, int, error) {
+func (c *Client) dryRun(method, targetURL, path string, params map[string]string, body []byte, headerOverrides map[string]string) (json.RawMessage, int, error) {
 	fmt.Fprintf(os.Stderr, "%s %s\n", method, targetURL)
 	if params != nil {
 		for k, v := range params {
@@ -335,16 +361,14 @@ func (c *Client) dryRun(method, targetURL, path string, params map[string]string
 		return nil, 0, err
 	}
 	if authHeader != "" {
-		// Mask token for safety
-		auth := authHeader
-		if len(auth) > 20 {
-			auth = auth[:15] + "..."
-		}
-		fmt.Fprintf(os.Stderr, "  Authorization: %s\n", auth)
+		fmt.Fprintf(os.Stderr, "  Authorization: %s\n", maskToken(authHeader))
 	}
 	fmt.Fprintf(os.Stderr, "\n(dry run - no request sent)\n")
 	return json.RawMessage(`{"dry_run": true}`), 0, nil
 }
+
+// authScheme is the expected auth header format: "Bearer " token.
+const authScheme = "Bearer "
 
 func (c *Client) authHeader() (string, error) {
 	if c.Config == nil {
@@ -355,12 +379,7 @@ func (c *Client) authHeader() (string, error) {
 			return "", err
 		}
 	}
-	h := c.Config.AuthHeader()
-	// Ensure Bearer prefix for token-based auth
-	if h != "" && c.Config.DubToken != "" && !strings.HasPrefix(h, "Bearer ") {
-		h = "Bearer " + h
-	}
-	return h, nil
+	return c.Config.AuthHeader(), nil
 }
 
 func (c *Client) refreshAccessToken() error {
@@ -426,15 +445,23 @@ func (c *Client) refreshAccessToken() error {
 }
 
 func retryAfter(resp *http.Response) time.Duration {
+	const maxWait = 60 * time.Second
 	header := resp.Header.Get("Retry-After")
 	if header == "" {
 		return 5 * time.Second
 	}
 	if seconds, err := strconv.Atoi(header); err == nil {
-		return time.Duration(seconds) * time.Second
+		d := time.Duration(seconds) * time.Second
+		if d > maxWait {
+			return maxWait
+		}
+		return d
 	}
 	if t, err := http.ParseTime(header); err == nil {
 		wait := time.Until(t)
+		if wait > maxWait {
+			return maxWait
+		}
 		if wait > 0 {
 			return wait
 		}
@@ -465,6 +492,17 @@ func sanitizeJSONResponse(body []byte) []byte {
 		}
 	}
 	return body
+}
+
+// maskToken redacts all but the last 4 characters of a token for safe display.
+func maskToken(token string) string {
+	if token == "" {
+		return ""
+	}
+	if len(token) <= 4 {
+		return "****"
+	}
+	return "****" + token[len(token)-4:]
 }
 
 func truncateBody(b []byte) string {

@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"text/tabwriter"
 	"time"
 
 	"github.com/mvanhorn/printing-press-library/library/marketing/dub/internal/store"
@@ -16,15 +17,15 @@ func newLinksStaleCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "stale",
-		Short: "Find links with zero clicks in the last N days",
-		Long: `Identify links that haven't received any clicks recently.
-Useful for cleaning up unused links or identifying underperforming campaigns.
-Requires a prior sync.`,
-		Example: `  # Find links with zero clicks in 30 days
+		Short: "Find links with zero or declining clicks — stale campaign detector",
+		Long: `Identifies links that have received zero clicks within the specified
+time window, suggesting they may be stale or underperforming. Uses locally
+synced link data including click counts and creation dates.`,
+		Example: `  # Links with zero clicks in last 30 days
   dub-pp-cli links stale --days 30
 
-  # Show as JSON
-  dub-pp-cli links stale --days 7 --json`,
+  # Top 50 stale links as JSON
+  dub-pp-cli links stale --days 14 --limit 50 --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if dbPath == "" {
 				dbPath = defaultDBPath("dub-pp-cli")
@@ -35,100 +36,92 @@ Requires a prior sync.`,
 			}
 			defer s.Close()
 
-			items, err := s.List("links", 5000)
-			if err != nil {
-				return fmt.Errorf("listing links: %w", err)
-			}
-			if len(items) == 0 {
-				fmt.Fprintln(cmd.ErrOrStderr(), "No links in local store. Run 'sync' first.")
-				return nil
-			}
+			cutoff := time.Now().AddDate(0, 0, -days).Format(time.RFC3339)
 
-			cutoff := time.Now().AddDate(0, 0, -days)
+			query := `
+				SELECT
+					json_extract(l.data, '$.shortLink') AS short_link,
+					json_extract(l.data, '$.url') AS destination,
+					CAST(json_extract(l.data, '$.clicks') AS INTEGER) AS clicks,
+					json_extract(l.data, '$.createdAt') AS created_at,
+					json_extract(l.data, '$.lastClicked') AS last_clicked
+				FROM links l
+				WHERE CAST(json_extract(l.data, '$.clicks') AS INTEGER) = 0
+				   OR json_extract(l.data, '$.lastClicked') IS NULL
+				   OR json_extract(l.data, '$.lastClicked') < ?
+				ORDER BY clicks ASC, created_at ASC
+				LIMIT ?
+			`
+
+			rows, err := s.Query(query, cutoff, limit)
+			if err != nil {
+				return fmt.Errorf("querying stale links: %w", err)
+			}
+			defer rows.Close()
 
 			type staleLink struct {
-				ID        string `json:"id"`
-				Key       string `json:"key"`
-				Domain    string `json:"domain"`
-				URL       string `json:"url"`
-				Clicks    int    `json:"clicks"`
-				CreatedAt string `json:"createdAt"`
-				LastClick string `json:"lastClicked,omitempty"`
+				ShortLink   string `json:"short_link"`
+				Destination string `json:"destination"`
+				Clicks      int    `json:"clicks"`
+				CreatedAt   string `json:"created_at"`
+				LastClicked string `json:"last_clicked"`
 			}
 
-			var stale []staleLink
-			for _, item := range items {
-				var obj map[string]any
-				if err := json.Unmarshal(item, &obj); err != nil {
-					continue
+			var results []staleLink
+			for rows.Next() {
+				var r staleLink
+				var lastClicked *string
+				if err := rows.Scan(&r.ShortLink, &r.Destination, &r.Clicks, &r.CreatedAt, &lastClicked); err != nil {
+					return fmt.Errorf("scanning row: %w", err)
 				}
-
-				clicks := intVal(obj, "clicks")
-				lastClicked := strVal(obj, "lastClicked")
-				createdAt := strVal(obj, "createdAt")
-
-				isStale := false
-				if clicks == 0 {
-					isStale = true
-				} else if lastClicked != "" {
-					if t, err := time.Parse(time.RFC3339, lastClicked); err == nil {
-						if t.Before(cutoff) {
-							isStale = true
-						}
-					}
+				if lastClicked != nil {
+					r.LastClicked = *lastClicked
+				} else {
+					r.LastClicked = "never"
 				}
-
-				if isStale {
-					stale = append(stale, staleLink{
-						ID:        strVal(obj, "id"),
-						Key:       strVal(obj, "key"),
-						Domain:    strVal(obj, "domain"),
-						URL:       strVal(obj, "url"),
-						Clicks:    clicks,
-						CreatedAt: createdAt,
-						LastClick: lastClicked,
-					})
-				}
+				results = append(results, r)
 			}
-
-			if limit > 0 && limit < len(stale) {
-				stale = stale[:limit]
+			if err := rows.Err(); err != nil {
+				return err
 			}
 
 			if flags.asJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(stale)
+				return enc.Encode(results)
 			}
 
-			if len(stale) == 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "No stale links found (all links have clicks in the last %d days).\n", days)
+			if len(results) == 0 {
+				fmt.Fprintln(cmd.OutOrStdout(), "No stale links found. All links are active!")
 				return nil
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Found %d stale links (no clicks in %d days):\n\n", len(stale), days)
-			fmt.Fprintf(cmd.OutOrStdout(), "%-25s %-20s %8s %s\n", "Short Link", "Domain", "Clicks", "Last Click")
-			fmt.Fprintf(cmd.OutOrStdout(), "%-25s %-20s %8s %s\n", "-------------------------", "--------------------", "--------", "----------")
-			for _, sl := range stale {
-				lastClick := sl.LastClick
-				if lastClick == "" {
-					lastClick = "never"
-				} else if t, err := time.Parse(time.RFC3339, lastClick); err == nil {
-					lastClick = t.Format("2006-01-02")
+			fmt.Fprintf(cmd.OutOrStdout(), "Found %d stale links (no clicks in %d days):\n\n", len(results), days)
+
+			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 4, 2, ' ', 0)
+			fmt.Fprintln(w, "LINK\tCLICKS\tCREATED\tLAST CLICKED")
+			for _, r := range results {
+				link := r.ShortLink
+				if len(link) > 40 {
+					link = link[:37] + "..."
 				}
-				key := sl.Key
-				if len(key) > 25 {
-					key = key[:22] + "..."
+				created := r.CreatedAt
+				if len(created) > 10 {
+					created = created[:10]
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "%-25s %-20s %8d %s\n", key, sl.Domain, sl.Clicks, lastClick)
+				lastClicked := r.LastClicked
+				if len(lastClicked) > 10 {
+					lastClicked = lastClicked[:10]
+				}
+				fmt.Fprintf(w, "%s\t%d\t%s\t%s\n", link, r.Clicks, created, lastClicked)
 			}
-			return nil
+			return w.Flush()
 		},
 	}
 
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path")
 	cmd.Flags().IntVar(&days, "days", 30, "Number of days to consider a link stale")
-	cmd.Flags().IntVar(&limit, "limit", 50, "Maximum number of stale links to show")
+	cmd.Flags().IntVar(&limit, "limit", 25, "Max stale links to show")
 
 	return cmd
 }

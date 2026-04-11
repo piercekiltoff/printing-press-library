@@ -9,8 +9,9 @@ import (
 
 func newTrackCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "track",
-		Short: "Manage track",
+		Use:    "track",
+		Short:  "Manage track",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newTrackLeadCmd(flags))

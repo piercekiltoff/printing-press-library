@@ -40,18 +40,18 @@ native streaming instead of polling.`,
 			if len(args) > 0 {
 				resource = args[0]
 			}
-			if resource == "" {
-				if flags.dryRun || flags.asJSON {
-					enc := json.NewEncoder(cmd.OutOrStdout())
-					enc.SetIndent("", "  ")
-					return enc.Encode(map[string]any{
-						"command":  "tail",
-						"usage":    "tail <resource> [--interval 10s]",
-						"dry_run":  true,
-						"resource": "required (e.g., links, events, domains)",
-					})
+
+			if flags.dryRun {
+				r := resource
+				if r == "" {
+					r = "<resource>"
 				}
-				return cmd.Help()
+				fmt.Fprintf(cmd.OutOrStdout(), "GET /%s (polling every %s)\n\n(dry run - no request sent)\n", r, interval)
+				return nil
+			}
+
+			if resource == "" {
+				return fmt.Errorf("resource name required (e.g., 'tail messages')")
 			}
 
 			c, err := flags.newClient()

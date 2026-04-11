@@ -21,6 +21,11 @@ func newDomainsRegisterCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Register a domain",
 		Example: "  dub-pp-cli domains register --domain example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("domain") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "domain")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -110,7 +115,6 @@ func newDomainsRegisterCmd(flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&bodyDomain, "domain", "", "The domain to claim. We only support .link domains for now.")
-	_ = cmd.MarkFlagRequired("domain")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

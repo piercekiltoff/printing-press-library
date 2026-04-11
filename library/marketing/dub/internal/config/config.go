@@ -73,7 +73,6 @@ func (c *Config) AuthHeader() string {
 		return "Bearer " + c.AccessToken
 	}
 	if c.DubToken != "" {
-		c.AuthSource = "bearer"
 		return "Bearer " + c.DubToken
 	}
 	return ""

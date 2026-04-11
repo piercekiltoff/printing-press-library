@@ -25,6 +25,8 @@ func newPartnersCreateLinkCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Create a link for a partner",
 		Example: "  dub-pp-cli partners create-link",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

@@ -28,6 +28,11 @@ func newDomainsCreateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Create a domain",
 		Example: "  dub-pp-cli domains create --slug example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("slug") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "slug")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -145,7 +150,6 @@ func newDomainsCreateCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&bodyNotFoundUrl, "not-found-url", "", "Redirect users to a specific URL when a link under this domain doesn't exist.")
 	cmd.Flags().StringVar(&bodyPlaceholder, "placeholder", "", "Provide context to your teammates in the link creation modal by showing them an example of a link to be shortened.")
 	cmd.Flags().StringVar(&bodySlug, "slug", "", "Name of the domain.")
-	_ = cmd.MarkFlagRequired("slug")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

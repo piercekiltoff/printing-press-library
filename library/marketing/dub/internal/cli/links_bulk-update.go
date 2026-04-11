@@ -13,6 +13,8 @@ import (
 )
 
 func newLinksBulkUpdateCmd(flags *rootFlags) *cobra.Command {
+	var bodyExternalIds string
+	var bodyLinkIds string
 	var stdinBody bool
 
 	cmd := &cobra.Command{
@@ -20,6 +22,8 @@ func newLinksBulkUpdateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Bulk update links",
 		Example: "  dub-pp-cli links bulk-update",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -39,6 +43,12 @@ func newLinksBulkUpdateCmd(flags *rootFlags) *cobra.Command {
 				body = jsonBody
 			} else {
 				body = map[string]any{}
+				if bodyExternalIds != "" {
+					body["externalIds"] = bodyExternalIds
+				}
+				if bodyLinkIds != "" {
+					body["linkIds"] = bodyLinkIds
+				}
 			}
 			data, statusCode, err := c.Patch(path, body)
 			if err != nil {
@@ -105,6 +115,8 @@ func newLinksBulkUpdateCmd(flags *rootFlags) *cobra.Command {
 			return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
 		},
 	}
+	cmd.Flags().StringVar(&bodyExternalIds, "external-ids", "", "The external IDs of the links to update as stored in your database.")
+	cmd.Flags().StringVar(&bodyLinkIds, "link-ids", "", "The IDs of the links to update. Takes precedence over `externalIds`.")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
+	"time"
 	"unicode"
 
 	"github.com/spf13/cobra"
@@ -373,6 +375,34 @@ func printOutputWithFlags(w io.Writer, data json.RawMessage, flags *rootFlags) e
 		return printCSV(w, data)
 	}
 	return printOutput(w, data, flags.asJSON)
+}
+
+// extractResponseData unwraps common API response envelopes for display.
+// Many APIs return {"status":"success","data":[...]} instead of a bare array.
+// This extracts the inner data for output helpers (filterFields, compactFields,
+// printAutoTable) that expect arrays or flat objects.
+//
+// Only unwraps when a "status" field is present and indicates success — this
+// avoids false positives on APIs where "data" is a regular field (e.g., Stripe
+// returns {"data":[...],"has_more":true} where "data" is the list, not an
+// envelope wrapper).
+func extractResponseData(data json.RawMessage) json.RawMessage {
+	var envelope struct {
+		Status string          `json:"status"`
+		Data   json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(data, &envelope); err != nil {
+		return data
+	}
+	if envelope.Data == nil || envelope.Status == "" {
+		return data // No status field = not an envelope, might be regular "data" field
+	}
+	switch envelope.Status {
+	case "success", "ok", "OK", "Success":
+		return envelope.Data
+	default:
+		return data
+	}
 }
 
 // compactFields keeps only the most important fields for agent consumption.
@@ -973,4 +1003,64 @@ func findField(obj map[string]any, names ...string) string {
 		}
 	}
 	return ""
+}
+
+// DataProvenance describes where data came from and when it was last synced.
+type DataProvenance struct {
+	Source       string     `json:"source"`                  // "live" or "local"
+	SyncedAt     *time.Time `json:"synced_at,omitempty"`     // when local data was last synced
+	Reason       string     `json:"reason,omitempty"`        // why local was used: "user_requested", "api_unreachable", "no_search_endpoint"
+	ResourceType string     `json:"resource_type,omitempty"` // which resource type was queried
+}
+
+// printProvenance writes a one-line provenance message to stderr.
+func printProvenance(cmd *cobra.Command, count int, prov DataProvenance) {
+	if prov.Source == "live" {
+		fmt.Fprintf(cmd.ErrOrStderr(), "%d results (live)\n", count)
+		return
+	}
+	age := "unknown"
+	if prov.SyncedAt != nil {
+		d := time.Since(*prov.SyncedAt)
+		switch {
+		case d < time.Minute:
+			age = "just now"
+		case d < time.Hour:
+			age = fmt.Sprintf("%d minutes ago", int(d.Minutes()))
+		case d < 24*time.Hour:
+			age = fmt.Sprintf("%d hours ago", int(d.Hours()))
+		default:
+			age = fmt.Sprintf("%d days ago", int(d.Hours()/24))
+		}
+	}
+	prefix := ""
+	if prov.Reason == "api_unreachable" {
+		prefix = "API unreachable. "
+	}
+	fmt.Fprintf(cmd.ErrOrStderr(), "%s%d results (cached, synced %s)\n", prefix, count, age)
+}
+
+// wrapWithProvenance wraps JSON data in a provenance envelope: {"results": ..., "meta": {...}}.
+func wrapWithProvenance(data json.RawMessage, prov DataProvenance) (json.RawMessage, error) {
+	meta := map[string]any{"source": prov.Source}
+	if prov.SyncedAt != nil {
+		meta["synced_at"] = prov.SyncedAt.UTC().Format(time.RFC3339)
+	}
+	if prov.Reason != "" {
+		meta["reason"] = prov.Reason
+	}
+	if prov.ResourceType != "" {
+		meta["resource_type"] = prov.ResourceType
+	}
+	envelope := map[string]any{
+		"results": json.RawMessage(data),
+		"meta":    meta,
+	}
+	return json.Marshal(envelope)
+}
+
+// defaultDBPath returns the canonical path for the local SQLite database.
+func defaultDBPath(name string) string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".local", "share", name, "data.db")
 }

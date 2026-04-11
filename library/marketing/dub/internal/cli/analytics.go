@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/mvanhorn/printing-press-library/library/marketing/dub/internal/store"
@@ -35,8 +34,7 @@ Data must be synced first with the sync command.`,
   dub-pp-cli analytics --type messages --group-by channel_id --limit 10 --json`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if dbPath == "" {
-				home, _ := os.UserHomeDir()
-				dbPath = filepath.Join(home, ".local", "share", "dub-pp-cli", "data.db")
+				dbPath = defaultDBPath("dub-pp-cli")
 			}
 
 			db, err := store.Open(dbPath)
@@ -89,6 +87,8 @@ Data must be synced first with the sync command.`,
 	cmd.Flags().StringVar(&groupBy, "group-by", "", "Field to group by")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path")
 	cmd.Flags().IntVar(&limit, "limit", 25, "Max groups to show")
+
+	cmd.AddCommand(newAnalyticsRetrieveCmd(flags))
 
 	return cmd
 }

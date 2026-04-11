@@ -22,6 +22,8 @@ func newPartnersDeactivateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Deactivate a partner",
 		Example: "  dub-pp-cli partners deactivate",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

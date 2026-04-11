@@ -23,6 +23,11 @@ func newPartnersBanCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Ban a partner",
 		Example: "  dub-pp-cli partners ban --reason example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("reason") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "reason")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -119,7 +124,6 @@ func newPartnersBanCmd(flags *rootFlags) *cobra.Command {
 	}
 	cmd.Flags().StringVar(&bodyPartnerId, "partner-id", "", "The ID of the partner to create a link for. Will take precedence over `tenantId` if provided.")
 	cmd.Flags().StringVar(&bodyReason, "reason", "", "Reason")
-	_ = cmd.MarkFlagRequired("reason")
 	cmd.Flags().StringVar(&bodyTenantId, "tenant-id", "", "The ID of the partner in your system. If both `partnerId` and `tenantId` are not provided, an error will be thrown.")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 

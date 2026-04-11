@@ -76,16 +76,6 @@ func (s *Store) migrate() error {
 		`CREATE VIRTUAL TABLE IF NOT EXISTS resources_fts USING fts5(
 			id, resource_type, content, tokenize='porter unicode61'
 		)`,
-		`CREATE TABLE IF NOT EXISTS customers (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS qr (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
 		`CREATE TABLE IF NOT EXISTS tags (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
@@ -97,6 +87,11 @@ func (s *Store) migrate() error {
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE TABLE IF NOT EXISTS track (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS analytics (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -113,7 +108,7 @@ func (s *Store) migrate() error {
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_submissions_bounties_id ON submissions(bounties_id)`,
-		`CREATE TABLE IF NOT EXISTS commissions (
+		`CREATE TABLE IF NOT EXISTS customers (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -134,81 +129,44 @@ func (s *Store) migrate() error {
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE VIRTUAL TABLE IF NOT EXISTS folders_fts USING fts5(
+			id,
 			description,
 			name,
-			content='folders',
-			content_rowid='rowid'
+			tokenize='porter unicode61'
 		)`,
-		`CREATE TRIGGER IF NOT EXISTS folders_ai AFTER INSERT ON folders BEGIN
-			INSERT INTO folders_fts(rowid, description, name)
-			VALUES (new.rowid,new.description, new.name);
-		END`,
-		`CREATE TRIGGER IF NOT EXISTS folders_ad AFTER DELETE ON folders BEGIN
-			INSERT INTO folders_fts(folders_fts, rowid, description, name)
-			VALUES ('delete', old.rowid,old.description, old.name);
-		END`,
-		`CREATE TRIGGER IF NOT EXISTS folders_au AFTER UPDATE ON folders BEGIN
-			INSERT INTO folders_fts(folders_fts, rowid, description, name)
-			VALUES ('delete', old.rowid,old.description, old.name);
-			INSERT INTO folders_fts(rowid, description, name)
-			VALUES (new.rowid,new.description, new.name);
-		END`,
-		`CREATE TABLE IF NOT EXISTS links (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE VIRTUAL TABLE IF NOT EXISTS links_fts USING fts5(
-			description,
-			title,
-			content='links',
-			content_rowid='rowid'
-		)`,
-		`CREATE TRIGGER IF NOT EXISTS links_ai AFTER INSERT ON links BEGIN
-			INSERT INTO links_fts(rowid, description, title)
-			VALUES (new.rowid,new.description, new.title);
-		END`,
-		`CREATE TRIGGER IF NOT EXISTS links_ad AFTER DELETE ON links BEGIN
-			INSERT INTO links_fts(links_fts, rowid, description, title)
-			VALUES ('delete', old.rowid,old.description, old.title);
-		END`,
-		`CREATE TRIGGER IF NOT EXISTS links_au AFTER UPDATE ON links BEGIN
-			INSERT INTO links_fts(links_fts, rowid, description, title)
-			VALUES ('delete', old.rowid,old.description, old.title);
-			INSERT INTO links_fts(rowid, description, title)
-			VALUES (new.rowid,new.description, new.title);
-		END`,
 		`CREATE TABLE IF NOT EXISTS partners (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE VIRTUAL TABLE IF NOT EXISTS partners_fts USING fts5(
+			id,
 			description,
 			name,
-			content='partners',
-			content_rowid='rowid'
+			tokenize='porter unicode61'
 		)`,
-		`CREATE TRIGGER IF NOT EXISTS partners_ai AFTER INSERT ON partners BEGIN
-			INSERT INTO partners_fts(rowid, description, name)
-			VALUES (new.rowid,new.description, new.name);
-		END`,
-		`CREATE TRIGGER IF NOT EXISTS partners_ad AFTER DELETE ON partners BEGIN
-			INSERT INTO partners_fts(partners_fts, rowid, description, name)
-			VALUES ('delete', old.rowid,old.description, old.name);
-		END`,
-		`CREATE TRIGGER IF NOT EXISTS partners_au AFTER UPDATE ON partners BEGIN
-			INSERT INTO partners_fts(partners_fts, rowid, description, name)
-			VALUES ('delete', old.rowid,old.description, old.name);
-			INSERT INTO partners_fts(rowid, description, name)
-			VALUES (new.rowid,new.description, new.name);
-		END`,
 		`CREATE TABLE IF NOT EXISTS payouts (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE TABLE IF NOT EXISTS analytics (
+		`CREATE TABLE IF NOT EXISTS commissions (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS links (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE VIRTUAL TABLE IF NOT EXISTS links_fts USING fts5(
+			id,
+			description,
+			title,
+			tokenize='porter unicode61'
+		)`,
+		`CREATE TABLE IF NOT EXISTS qr (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -303,6 +261,17 @@ func (s *Store) List(resourceType string, limit int) ([]json.RawMessage, error) 
 		results = append(results, json.RawMessage(data))
 	}
 	return results, rows.Err()
+}
+
+// ftsQuote wraps each token in double quotes so FTS5 treats hyphens and
+// other punctuation as literals instead of operators.
+func ftsQuote(query string) string {
+	tokens := strings.Fields(query)
+	for i, t := range tokens {
+		t = strings.ReplaceAll(t, `"`, `""`)
+		tokens[i] = `"` + t + `"`
+	}
+	return strings.Join(tokens, " ")
 }
 
 func (s *Store) Search(query string, limit int) ([]json.RawMessage, error) {
@@ -424,6 +393,13 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) error 
 		if err != nil {
 			return fmt.Errorf("upserting %s/%s: %w", resourceType, id, err)
 		}
+
+		// Update FTS index
+		tx.Exec(`DELETE FROM resources_fts WHERE id = ?`, id)
+		tx.Exec(
+			`INSERT INTO resources_fts (id, resource_type, content) VALUES (?, ?, ?)`,
+			id, resourceType, string(item),
+		)
 	}
 
 	return tx.Commit()
@@ -439,35 +415,7 @@ func (s *Store) SearchFolders(query string, limit int) ([]json.RawMessage, error
 		 JOIN folders_fts ON folders_fts.rowid = t.rowid
 		 WHERE folders_fts MATCH ?
 		 ORDER BY rank LIMIT ?`,
-		query, limit,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []json.RawMessage
-	for rows.Next() {
-		var data string
-		if err := rows.Scan(&data); err != nil {
-			return nil, err
-		}
-		results = append(results, json.RawMessage(data))
-	}
-	return results, rows.Err()
-}
-
-// SearchLinks searches the links_fts index with optional filters.
-func (s *Store) SearchLinks(query string, limit int) ([]json.RawMessage, error) {
-	if limit <= 0 {
-		limit = 50
-	}
-	rows, err := s.db.Query(
-		`SELECT t.data FROM links t
-		 JOIN links_fts ON links_fts.rowid = t.rowid
-		 WHERE links_fts MATCH ?
-		 ORDER BY rank LIMIT ?`,
-		query, limit,
+		ftsQuote(query), limit,
 	)
 	if err != nil {
 		return nil, err
@@ -495,7 +443,35 @@ func (s *Store) SearchPartners(query string, limit int) ([]json.RawMessage, erro
 		 JOIN partners_fts ON partners_fts.rowid = t.rowid
 		 WHERE partners_fts MATCH ?
 		 ORDER BY rank LIMIT ?`,
-		query, limit,
+		ftsQuote(query), limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []json.RawMessage
+	for rows.Next() {
+		var data string
+		if err := rows.Scan(&data); err != nil {
+			return nil, err
+		}
+		results = append(results, json.RawMessage(data))
+	}
+	return results, rows.Err()
+}
+
+// SearchLinks searches the links_fts index with optional filters.
+func (s *Store) SearchLinks(query string, limit int) ([]json.RawMessage, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	rows, err := s.db.Query(
+		`SELECT t.data FROM links t
+		 JOIN links_fts ON links_fts.rowid = t.rowid
+		 WHERE links_fts MATCH ?
+		 ORDER BY rank LIMIT ?`,
+		ftsQuote(query), limit,
 	)
 	if err != nil {
 		return nil, err

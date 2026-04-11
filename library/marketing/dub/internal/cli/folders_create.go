@@ -23,6 +23,11 @@ func newFoldersCreateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Create a folder",
 		Example: "  dub-pp-cli folders create --name example-resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("name") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "name")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -120,7 +125,6 @@ func newFoldersCreateCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&bodyAccessLevel, "access-level", "", "The access level of the folder within the workspace.")
 	cmd.Flags().StringVar(&bodyDescription, "description", "", "The description of the folder.")
 	cmd.Flags().StringVar(&bodyName, "name", "", "The name of the folder.")
-	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd
