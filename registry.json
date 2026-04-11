@@ -230,6 +230,21 @@
         ],
         "mcp_ready": "full"
       }
+    },
+    {
+      "name": "archive-is",
+      "category": "media-and-entertainment",
+      "api": "Archive.today",
+      "description": "Bypass paywalls and look up web archives via archive.today. Hero command: find or create an archive for any URL with lookup-before-submit, Wayback Machine fallback, and agent-hints on stderr when called non-interactively.",
+      "path": "library/media-and-entertainment/archive-is",
+      "mcp": {
+        "binary": "archive-is-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 6,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full"
+      }
     }
   ]
 }
