@@ -9,7 +9,7 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X github.com/mvanhorn/printing-press-library/library/developer-tools/postman-explore-pp-cli/internal/cli.version={{ .Version }}
+      - -s -w -X github.com/mvanhorn/printing-press-library/library/developer-tools/postman-explore/internal/cli.version={{ .Version }}
     targets:
       - darwin_amd64
       - darwin_arm64
@@ -17,9 +17,9 @@ builds:
       - linux_arm64
       - windows_amd64
       - windows_arm64
-  - id: postman-explore-pp-mcp
-    main: ./cmd/postman-explore-pp-mcp
-    binary: postman-explore-pp-mcp
+  - id: postman-explore-mcp
+    main: ./cmd/postman-explore-mcp
+    binary: postman-explore-mcp
     env:
       - CGO_ENABLED=0
     ldflags:
@@ -52,4 +52,4 @@ All requests go through a proxy endpoint as POST requests with a JSON body conta
 No authentication required for public browsing and search."
     install: |
       bin.install "postman-explore-pp-cli"
-      bin.install "postman-explore-pp-mcp"
+      bin.install "postman-explore-mcp"

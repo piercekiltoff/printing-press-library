@@ -13,7 +13,7 @@ import (
 
 func main() {
 	s := server.NewMCPServer(
-		"postman-explore-pp-mcp",
+		"postman-explore-mcp",
 		"1.0.0",
 		server.WithToolCapabilities(false),
 	)
