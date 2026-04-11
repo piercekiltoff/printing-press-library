@@ -1,0 +1,2533 @@
+{
+  "api_name": "kalshi-trade-manual",
+  "base_url": "https://api.elections.kalshi.com/trade-api/v2",
+  "description": "Manually defined OpenAPI spec for endpoints being migrated to spec-first approach",
+  "mcp_ready": "full",
+  "auth": {
+    "type": "api_key",
+    "header": "KALSHI-ACCESS-KEY",
+    "in": "header",
+    "env_vars": [
+      "KALSHI_TRADE_MANUAL_KALSHI_ACCESS_KEY"
+    ]
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "account_get-api-limits",
+      "description": "Get Account API Limits",
+      "method": "GET",
+      "path": "/account/limits",
+      "params": []
+    },
+    {
+      "name": "api-keys_create",
+      "description": "Create API Key",
+      "method": "POST",
+      "path": "/api_keys",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name for the API key. This helps identify the key's purpose",
+          "required": true
+        },
+        {
+          "name": "public_key",
+          "type": "string",
+          "location": "body",
+          "description": "RSA public key in PEM format. This will be used to verify signatures on API requests",
+          "required": true
+        },
+        {
+          "name": "scopes",
+          "type": "array",
+          "location": "body",
+          "description": "List of scopes to grant to the API key. Valid values are 'read' and 'write'. If 'write' is included, 'read' must also be included. Defaults to full access (['read', 'write']) if not provided."
+        }
+      ]
+    },
+    {
+      "name": "api-keys_delete",
+      "description": "Delete API Key",
+      "method": "DELETE",
+      "path": "/api_keys/{api_key}",
+      "params": [
+        {
+          "name": "api_key",
+          "type": "string",
+          "location": "path",
+          "description": "API key ID to delete",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "api-keys_generate",
+      "description": "Generate API Key",
+      "method": "POST",
+      "path": "/api_keys/generate",
+      "params": [
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name for the API key. This helps identify the key's purpose",
+          "required": true
+        },
+        {
+          "name": "scopes",
+          "type": "array",
+          "location": "body",
+          "description": "List of scopes to grant to the API key. Valid values are 'read' and 'write'. If 'write' is included, 'read' must also be included. Defaults to full access (['read', 'write']) if not provided."
+        }
+      ]
+    },
+    {
+      "name": "api-keys_get",
+      "description": "Get API Keys",
+      "method": "GET",
+      "path": "/api_keys",
+      "params": []
+    },
+    {
+      "name": "communications_accept-quote",
+      "description": "Accept Quote",
+      "method": "PUT",
+      "path": "/communications/quotes/{quote_id}/accept",
+      "params": [
+        {
+          "name": "quote_id",
+          "type": "string",
+          "location": "path",
+          "description": "Quote ID",
+          "required": true
+        },
+        {
+          "name": "accepted_side",
+          "type": "string",
+          "location": "body",
+          "description": "The side of the quote to accept (yes or no)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "communications_confirm-quote",
+      "description": "Confirm Quote",
+      "method": "PUT",
+      "path": "/communications/quotes/{quote_id}/confirm",
+      "params": [
+        {
+          "name": "quote_id",
+          "type": "string",
+          "location": "path",
+          "description": "Quote ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "communications_create-quote",
+      "description": "Create Quote",
+      "method": "POST",
+      "path": "/communications/quotes",
+      "params": [
+        {
+          "name": "no_bid",
+          "type": "string",
+          "location": "body",
+          "description": "US dollar amount as a fixed-point decimal string with up to 6 decimal places of precision. This is the maximum supported precision; valid quote intervals for a given market are constrained by that market's price level structure.",
+          "required": true
+        },
+        {
+          "name": "rest_remainder",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to rest the remainder of the quote after execution",
+          "required": true
+        },
+        {
+          "name": "rfq_id",
+          "type": "string",
+          "location": "body",
+          "description": "The ID of the RFQ to quote on",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "Optional subaccount number to place the quote under (0 for primary, 1-32 for subaccounts)"
+        },
+        {
+          "name": "yes_bid",
+          "type": "string",
+          "location": "body",
+          "description": "US dollar amount as a fixed-point decimal string with up to 6 decimal places of precision. This is the maximum supported precision; valid quote intervals for a given market are constrained by that market's price level structure.",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "communications_create-rfq",
+      "description": "Create RFQ",
+      "method": "POST",
+      "path": "/communications/rfqs",
+      "params": [
+        {
+          "name": "contracts",
+          "type": "int",
+          "location": "body",
+          "description": "The number of contracts for the RFQ. Whole contracts only. Contracts may be provided via contracts or contracts_fp; if both provided they must match."
+        },
+        {
+          "name": "contracts_fp",
+          "type": "string",
+          "location": "body",
+          "description": "Fixed-point contract count string (2 decimals, e.g., \"10.00\"; referred to as \"fp\" in field names). Requests accept 0–2 decimal places (e.g., \"10\", \"10.0\", \"10.00\"); responses always emit 2 decimals. Fractional contract values (e.g., \"2.50\") are supported on markets with fractional trading enabled; the minimum granularity is 0.01 contracts. Integer contract count fields are legacy and will be deprecated; when both integer and fp fields are provided, they must match."
+        },
+        {
+          "name": "market_ticker",
+          "type": "string",
+          "location": "body",
+          "description": "The ticker of the market for which to create an RFQ",
+          "required": true
+        },
+        {
+          "name": "replace_existing",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to delete existing RFQs as part of this RFQ's creation"
+        },
+        {
+          "name": "rest_remainder",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to rest the remainder of the RFQ after execution",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "The subaccount number to create the RFQ for (direct members only; 0 for primary, 1-32 for subaccounts)"
+        },
+        {
+          "name": "subtrader_id",
+          "type": "string",
+          "location": "body",
+          "description": "The subtrader to create the RFQ for (FCM members only)"
+        },
+        {
+          "name": "target_cost_centi_cents",
+          "type": "int",
+          "location": "body",
+          "description": "DEPRECATED: The target cost for the RFQ in centi-cents. Use target_cost_dollars instead."
+        },
+        {
+          "name": "target_cost_dollars",
+          "type": "string",
+          "location": "body",
+          "description": "US dollar amount as a fixed-point decimal string with up to 6 decimal places of precision. This is the maximum supported precision; valid quote intervals for a given market are constrained by that market's price level structure."
+        }
+      ]
+    },
+    {
+      "name": "communications_delete-quote",
+      "description": "Delete Quote",
+      "method": "DELETE",
+      "path": "/communications/quotes/{quote_id}",
+      "params": [
+        {
+          "name": "quote_id",
+          "type": "string",
+          "location": "path",
+          "description": "Quote ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "communications_delete-rfq",
+      "description": "Delete RFQ",
+      "method": "DELETE",
+      "path": "/communications/rfqs/{rfq_id}",
+      "params": [
+        {
+          "name": "rfq_id",
+          "type": "string",
+          "location": "path",
+          "description": "RFQ ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "communications_get-id",
+      "description": "Get Communications ID",
+      "method": "GET",
+      "path": "/communications/id",
+      "params": []
+    },
+    {
+      "name": "communications_get-quote",
+      "description": "Get Quote",
+      "method": "GET",
+      "path": "/communications/quotes/{quote_id}",
+      "params": [
+        {
+          "name": "quote_id",
+          "type": "string",
+          "location": "path",
+          "description": "Quote ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "communications_get-quotes",
+      "description": "Get Quotes",
+      "method": "GET",
+      "path": "/communications/quotes",
+      "params": [
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by. Only a single event ticker is supported."
+        },
+        {
+          "name": "market_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Parameter to specify the number of results per page. Defaults to 500."
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Filter quotes by status"
+        },
+        {
+          "name": "quote_creator_user_id",
+          "type": "string",
+          "location": "query",
+          "description": "Filter quotes by quote creator user ID"
+        },
+        {
+          "name": "rfq_creator_user_id",
+          "type": "string",
+          "location": "query",
+          "description": "Filter quotes by RFQ creator user ID"
+        },
+        {
+          "name": "rfq_creator_subtrader_id",
+          "type": "string",
+          "location": "query",
+          "description": "Filter quotes by RFQ creator subtrader ID (FCM members only)"
+        },
+        {
+          "name": "rfq_id",
+          "type": "string",
+          "location": "query",
+          "description": "Filter quotes by RFQ ID"
+        }
+      ]
+    },
+    {
+      "name": "communications_get-rfq",
+      "description": "Get RFQ",
+      "method": "GET",
+      "path": "/communications/rfqs/{rfq_id}",
+      "params": [
+        {
+          "name": "rfq_id",
+          "type": "string",
+          "location": "path",
+          "description": "RFQ ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "communications_get-rfqs",
+      "description": "Get RFQs",
+      "method": "GET",
+      "path": "/communications/rfqs",
+      "params": [
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by. Only a single event ticker is supported."
+        },
+        {
+          "name": "market_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). If omitted, defaults to all subaccounts."
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Parameter to specify the number of results per page. Defaults to 100."
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Filter RFQs by status"
+        },
+        {
+          "name": "creator_user_id",
+          "type": "string",
+          "location": "query",
+          "description": "Filter RFQs by creator user ID"
+        }
+      ]
+    },
+    {
+      "name": "events_get",
+      "description": "Get Events",
+      "method": "GET",
+      "path": "/events",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Parameter to specify the number of results per page. Defaults to 200. Maximum value is 200."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Parameter to specify the pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "with_nested_markets",
+          "type": "bool",
+          "location": "query",
+          "description": "Parameter to specify if nested markets should be included in the response. When true, each event will include a 'markets' field containing a list of Market objects associated with that event. Historical markets settled before the historical cutoff will not be included."
+        },
+        {
+          "name": "with_milestones",
+          "type": "bool",
+          "location": "query",
+          "description": "If true, includes related milestones as a field alongside events."
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by event status. Possible values are 'unopened', 'open', 'closed', 'settled'. Leave empty to return events with any status."
+        },
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by series ticker"
+        },
+        {
+          "name": "min_close_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter events with at least one market with close timestamp greater than this Unix timestamp (in seconds)."
+        },
+        {
+          "name": "min_updated_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter events with metadata updated after this Unix timestamp (in seconds). Use this to efficiently poll for changes."
+        }
+      ]
+    },
+    {
+      "name": "events_get-eventticker",
+      "description": "Get Event",
+      "method": "GET",
+      "path": "/events/{event_ticker}",
+      "params": [
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Event ticker",
+          "required": true
+        },
+        {
+          "name": "with_nested_markets",
+          "type": "bool",
+          "location": "query",
+          "description": "If true, markets are included within the event object. If false (default), markets are returned as a separate top-level field in the response. Historical markets settled before the historical cutoff will not be included."
+        }
+      ]
+    },
+    {
+      "name": "events_get-multivariate",
+      "description": "Get Multivariate Events",
+      "method": "GET",
+      "path": "/events/multivariate",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100. Maximum value is 200."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results."
+        },
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by series ticker"
+        },
+        {
+          "name": "collection_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter events by collection ticker. Returns only multivariate events belonging to the specified collection. Cannot be used together with series_ticker."
+        },
+        {
+          "name": "with_nested_markets",
+          "type": "bool",
+          "location": "query",
+          "description": "Parameter to specify if nested markets should be included in the response. When true, each event will include a 'markets' field containing a list of Market objects associated with that event."
+        }
+      ]
+    },
+    {
+      "name": "events_metadata_get-event",
+      "description": "Get Event Metadata",
+      "method": "GET",
+      "path": "/events/{event_ticker}/metadata",
+      "params": [
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Event ticker",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "exchange_get-announcements",
+      "description": "Get Exchange Announcements",
+      "method": "GET",
+      "path": "/exchange/announcements",
+      "params": []
+    },
+    {
+      "name": "exchange_get-schedule",
+      "description": "Get Exchange Schedule",
+      "method": "GET",
+      "path": "/exchange/schedule",
+      "params": []
+    },
+    {
+      "name": "exchange_get-status",
+      "description": "Get Exchange Status",
+      "method": "GET",
+      "path": "/exchange/status",
+      "params": []
+    },
+    {
+      "name": "exchange_get-user-data-timestamp",
+      "description": "Get User Data Timestamp",
+      "method": "GET",
+      "path": "/exchange/user_data_timestamp",
+      "params": []
+    },
+    {
+      "name": "fcm_get-fcmorders",
+      "description": "Get FCM Orders",
+      "method": "GET",
+      "path": "/fcm/orders",
+      "params": [
+        {
+          "name": "subtrader_id",
+          "type": "string",
+          "location": "query",
+          "description": "Restricts the response to orders for a specific subtrader (FCM members only)",
+          "required": true
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by. Only a single event ticker is supported."
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "min_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Restricts the response to orders after a timestamp, formatted as a Unix Timestamp"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Restricts the response to orders before a timestamp, formatted as a Unix Timestamp"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Restricts the response to orders that have a certain status"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Parameter to specify the number of results per page. Defaults to 100"
+        }
+      ]
+    },
+    {
+      "name": "fcm_get-fcmpositions",
+      "description": "Get FCM Positions",
+      "method": "GET",
+      "path": "/fcm/positions",
+      "params": [
+        {
+          "name": "subtrader_id",
+          "type": "string",
+          "location": "query",
+          "description": "Restricts the response to positions for a specific subtrader (FCM members only)",
+          "required": true
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Ticker of desired positions"
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker of desired positions"
+        },
+        {
+          "name": "count_filter",
+          "type": "string",
+          "location": "query",
+          "description": "Restricts the positions to those with any of following fields with non-zero values, as a comma separated list"
+        },
+        {
+          "name": "settlement_status",
+          "type": "string",
+          "location": "query",
+          "description": "Settlement status of the markets to return. Defaults to unsettled"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Parameter to specify the number of results per page. Defaults to 100"
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "The Cursor represents a pointer to the next page of records in the pagination"
+        }
+      ]
+    },
+    {
+      "name": "historical_get-cutoff",
+      "description": "Get Historical Cutoff Timestamps",
+      "method": "GET",
+      "path": "/historical/cutoff",
+      "params": []
+    },
+    {
+      "name": "historical_get-fills",
+      "description": "Get Historical Fills",
+      "method": "GET",
+      "path": "/historical/fills",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items before this Unix timestamp"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        }
+      ]
+    },
+    {
+      "name": "historical_get-market",
+      "description": "Get Historical Market",
+      "method": "GET",
+      "path": "/historical/markets/{ticker}",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Market ticker",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "historical_get-market-candlesticks",
+      "description": "Get Historical Market Candlesticks",
+      "method": "GET",
+      "path": "/historical/markets/{ticker}/candlesticks",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Market ticker - unique identifier for the specific market",
+          "required": true
+        },
+        {
+          "name": "start_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Start timestamp (Unix timestamp). Candlesticks will include those ending on or after this time.",
+          "required": true
+        },
+        {
+          "name": "end_ts",
+          "type": "int",
+          "location": "query",
+          "description": "End timestamp (Unix timestamp). Candlesticks will include those ending on or before this time.",
+          "required": true
+        },
+        {
+          "name": "period_interval",
+          "type": "int",
+          "location": "query",
+          "description": "Time period length of each candlestick in minutes. Valid values are 1 (1 minute), 60 (1 hour), or 1440 (1 day).",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "historical_get-markets",
+      "description": "Get Historical Markets",
+      "method": "GET",
+      "path": "/historical/markets",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100. Maximum value is 1000."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "tickers",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by specific market tickers. Comma-separated list of market tickers to retrieve."
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by. Only a single event ticker is supported."
+        },
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by series ticker"
+        },
+        {
+          "name": "mve_filter",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by multivariate events (combos). By default, MVE markets are included."
+        }
+      ]
+    },
+    {
+      "name": "historical_get-orders",
+      "description": "Get Historical Orders",
+      "method": "GET",
+      "path": "/historical/orders",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items before this Unix timestamp"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        }
+      ]
+    },
+    {
+      "name": "historical_get-trades",
+      "description": "Get Historical Trades",
+      "method": "GET",
+      "path": "/historical/trades",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "min_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items after this Unix timestamp"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items before this Unix timestamp"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100. Maximum value is 1000."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        }
+      ]
+    },
+    {
+      "name": "incentive-programs_get",
+      "description": "Get Incentives",
+      "method": "GET",
+      "path": "/incentive_programs",
+      "params": [
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Status filter. Can be \"all\", \"active\", \"upcoming\", \"closed\", or \"paid_out\". Default is \"all\"."
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "query",
+          "description": "Type filter. Can be \"all\", \"liquidity\", or \"volume\". Default is \"all\"."
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100. Maximum value is 10000."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Cursor for pagination"
+        }
+      ]
+    },
+    {
+      "name": "live-data_get",
+      "description": "Get Multiple Live Data",
+      "method": "GET",
+      "path": "/live_data/batch",
+      "params": [
+        {
+          "name": "milestone_ids",
+          "type": "array",
+          "location": "query",
+          "description": "Array of milestone IDs",
+          "required": true
+        },
+        {
+          "name": "include_player_stats",
+          "type": "bool",
+          "location": "query",
+          "description": "When true, includes player-level statistics in the live data response. Supported for Pro Football, Pro Basketball, and College Men's Basketball milestones that have player ID mappings configured. Has no effect for other sports or milestones without player mappings."
+        }
+      ]
+    },
+    {
+      "name": "live-data_get-by-milestone",
+      "description": "Get Live Data",
+      "method": "GET",
+      "path": "/live_data/milestone/{milestone_id}",
+      "params": [
+        {
+          "name": "milestone_id",
+          "type": "string",
+          "location": "path",
+          "description": "Milestone ID",
+          "required": true
+        },
+        {
+          "name": "include_player_stats",
+          "type": "bool",
+          "location": "query",
+          "description": "When true, includes player-level statistics in the live data response. Supported for Pro Football, Pro Basketball, and College Men's Basketball milestones that have player ID mappings configured. Has no effect for other sports or milestones without player mappings."
+        }
+      ]
+    },
+    {
+      "name": "live-data_get-game-stats",
+      "description": "Get Game Stats",
+      "method": "GET",
+      "path": "/live_data/milestone/{milestone_id}/game_stats",
+      "params": [
+        {
+          "name": "milestone_id",
+          "type": "string",
+          "location": "path",
+          "description": "Milestone ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "live-data_milestone_get-live-data",
+      "description": "Get Live Data (with type)",
+      "method": "GET",
+      "path": "/live_data/{type}/milestone/{milestone_id}",
+      "params": [
+        {
+          "name": "type",
+          "type": "string",
+          "location": "path",
+          "description": "Type of live data",
+          "required": true
+        },
+        {
+          "name": "milestone_id",
+          "type": "string",
+          "location": "path",
+          "description": "Milestone ID",
+          "required": true
+        },
+        {
+          "name": "include_player_stats",
+          "type": "bool",
+          "location": "query",
+          "description": "When true, includes player-level statistics in the live data response. Supported for Pro Football, Pro Basketball, and College Men's Basketball milestones that have player ID mappings configured. Has no effect for other sports or milestones without player mappings."
+        }
+      ]
+    },
+    {
+      "name": "markets_batch-get-candlesticks",
+      "description": "Batch Get Market Candlesticks",
+      "method": "GET",
+      "path": "/markets/candlesticks",
+      "params": [
+        {
+          "name": "market_tickers",
+          "type": "string",
+          "location": "query",
+          "description": "Comma-separated list of market tickers (maximum 100)",
+          "required": true
+        },
+        {
+          "name": "start_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Start timestamp in Unix seconds",
+          "required": true
+        },
+        {
+          "name": "end_ts",
+          "type": "int",
+          "location": "query",
+          "description": "End timestamp in Unix seconds",
+          "required": true
+        },
+        {
+          "name": "period_interval",
+          "type": "int",
+          "location": "query",
+          "description": "Candlestick period interval in minutes",
+          "required": true
+        },
+        {
+          "name": "include_latest_before_start",
+          "type": "bool",
+          "location": "query",
+          "description": "If true, prepends the latest candlestick available before the start_ts. This synthetic candlestick is created by:\n1. Finding the most recent real candlestick before start_ts\n2. Projecting it forward to the first period boundary (calculated as the next period interval after start_ts)\n3. Setting all OHLC prices to null, and `previous_price` to the close price from the real candlestick"
+        }
+      ]
+    },
+    {
+      "name": "markets_get",
+      "description": "Get Markets",
+      "method": "GET",
+      "path": "/markets",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100. Maximum value is 1000."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by. Only a single event ticker is supported."
+        },
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by series ticker"
+        },
+        {
+          "name": "min_created_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items that created after this Unix timestamp"
+        },
+        {
+          "name": "max_created_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items that created before this Unix timestamp"
+        },
+        {
+          "name": "min_updated_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Return markets with metadata updated later than this Unix timestamp. Tracks non-trading changes only. Incompatible with any other filters."
+        },
+        {
+          "name": "max_close_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items that close before this Unix timestamp"
+        },
+        {
+          "name": "min_close_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items that close after this Unix timestamp"
+        },
+        {
+          "name": "min_settled_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items that settled after this Unix timestamp"
+        },
+        {
+          "name": "max_settled_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items that settled before this Unix timestamp"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market status. Leave empty to return markets with any status."
+        },
+        {
+          "name": "tickers",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by specific market tickers. Comma-separated list of market tickers to retrieve."
+        },
+        {
+          "name": "mve_filter",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by multivariate events (combos). 'only' returns only multivariate events, 'exclude' excludes multivariate events."
+        }
+      ]
+    },
+    {
+      "name": "markets_get-orderbooks",
+      "description": "Get Multiple Market Orderbooks",
+      "method": "GET",
+      "path": "/markets/orderbooks",
+      "params": [
+        {
+          "name": "tickers",
+          "type": "array",
+          "location": "query",
+          "description": "List of market tickers to fetch orderbooks for",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "markets_get-ticker",
+      "description": "Get Market",
+      "method": "GET",
+      "path": "/markets/{ticker}",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Market ticker",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "markets_get-trades",
+      "description": "Get Trades",
+      "method": "GET",
+      "path": "/markets/trades",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100. Maximum value is 1000."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "min_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items after this Unix timestamp"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items before this Unix timestamp"
+        }
+      ]
+    },
+    {
+      "name": "markets_orderbook_get-market",
+      "description": "Get Market Orderbook",
+      "method": "GET",
+      "path": "/markets/{ticker}/orderbook",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Market ticker",
+          "required": true
+        },
+        {
+          "name": "depth",
+          "type": "int",
+          "location": "query",
+          "description": "Depth of the orderbook to retrieve (0 or negative means all levels, 1-100 for specific depth)"
+        }
+      ]
+    },
+    {
+      "name": "milestones_get",
+      "description": "Get Milestones",
+      "method": "GET",
+      "path": "/milestones",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of milestones to return per page",
+          "required": true
+        },
+        {
+          "name": "minimum_start_date",
+          "type": "string",
+          "location": "query",
+          "description": "Minimum start date to filter milestones. Format RFC3339 timestamp"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by milestone category. E.g. Sports, Elections, Esports, Crypto."
+        },
+        {
+          "name": "competition",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by competition. E.g. Pro Football, Pro Basketball (M), Pro Baseball, Pro Hockey, College Football."
+        },
+        {
+          "name": "source_id",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by source id"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by milestone type. E.g. football_game, basketball_game, soccer_tournament_multi_leg, baseball_game, hockey_match, political_race."
+        },
+        {
+          "name": "related_event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by related event ticker"
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results"
+        },
+        {
+          "name": "min_updated_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter milestones with metadata updated after this Unix timestamp (in seconds). Use this to efficiently poll for changes."
+        }
+      ]
+    },
+    {
+      "name": "milestones_get-milestoneid",
+      "description": "Get Milestone",
+      "method": "GET",
+      "path": "/milestones/{milestone_id}",
+      "params": [
+        {
+          "name": "milestone_id",
+          "type": "string",
+          "location": "path",
+          "description": "Milestone ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "multivariate-event-collections_create-market-in",
+      "description": "Create Market In Multivariate Event Collection",
+      "method": "POST",
+      "path": "/multivariate_event_collections/{collection_ticker}",
+      "params": [
+        {
+          "name": "collection_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Collection ticker",
+          "required": true
+        },
+        {
+          "name": "with_market_payload",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to include the market payload in the response."
+        }
+      ]
+    },
+    {
+      "name": "multivariate-event-collections_get",
+      "description": "Get Multivariate Event Collections",
+      "method": "GET",
+      "path": "/multivariate_event_collections",
+      "params": [
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Only return collections of a certain status. Can be unopened, open, or closed."
+        },
+        {
+          "name": "associated_event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Only return collections associated with a particular event ticker."
+        },
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Only return collections with a particular series ticker."
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Specify the maximum number of results."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "The Cursor represents a pointer to the next page of records in the pagination. This optional parameter, when filled, should be filled with the cursor string returned in a previous request to this end-point."
+        }
+      ]
+    },
+    {
+      "name": "multivariate-event-collections_get-multivariateeventcollections",
+      "description": "Get Multivariate Event Collection",
+      "method": "GET",
+      "path": "/multivariate_event_collections/{collection_ticker}",
+      "params": [
+        {
+          "name": "collection_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Collection ticker",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "multivariate-event-collections_lookup_get-multivariate-event-collection-history",
+      "description": "Get Multivariate Event Collection Lookup History",
+      "method": "GET",
+      "path": "/multivariate_event_collections/{collection_ticker}/lookup",
+      "params": [
+        {
+          "name": "collection_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Collection ticker",
+          "required": true
+        },
+        {
+          "name": "lookback_seconds",
+          "type": "int",
+          "location": "query",
+          "description": "Number of seconds to look back for lookup history. Must be one of 10, 60, 300, or 3600.",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "multivariate-event-collections_lookup_tickers-for-market-in-multivariate-event-collection",
+      "description": "Lookup Tickers For Market In Multivariate Event Collection",
+      "method": "PUT",
+      "path": "/multivariate_event_collections/{collection_ticker}/lookup",
+      "params": [
+        {
+          "name": "collection_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Collection ticker",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "portfolio_amend-order",
+      "description": "Amend Order",
+      "method": "POST",
+      "path": "/portfolio/orders/{order_id}/amend",
+      "params": [
+        {
+          "name": "order_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order ID",
+          "required": true
+        },
+        {
+          "name": "action",
+          "type": "string",
+          "location": "body",
+          "description": "Action of the order",
+          "required": true
+        },
+        {
+          "name": "client_order_id",
+          "type": "string",
+          "location": "body",
+          "description": "The original client-specified order ID to be amended"
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "location": "body",
+          "description": "Updated quantity for the order (whole contracts only). If updating quantity, provide count or count_fp; if both provided they must match."
+        },
+        {
+          "name": "count_fp",
+          "type": "string",
+          "location": "body",
+          "description": "Fixed-point contract count string (2 decimals, e.g., \"10.00\"; referred to as \"fp\" in field names). Requests accept 0–2 decimal places (e.g., \"10\", \"10.0\", \"10.00\"); responses always emit 2 decimals. Fractional contract values (e.g., \"2.50\") are supported on markets with fractional trading enabled; the minimum granularity is 0.01 contracts. Integer contract count fields are legacy and will be deprecated; when both integer and fp fields are provided, they must match."
+        },
+        {
+          "name": "no_price",
+          "type": "int",
+          "location": "body",
+          "description": "Updated no price for the order in cents"
+        },
+        {
+          "name": "no_price_dollars",
+          "type": "string",
+          "location": "body",
+          "description": "US dollar amount as a fixed-point decimal string with up to 6 decimal places of precision. This is the maximum supported precision; valid quote intervals for a given market are constrained by that market's price level structure."
+        },
+        {
+          "name": "side",
+          "type": "string",
+          "location": "body",
+          "description": "Side of the order",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "Optional subaccount number to use for this amendment (0 for primary, 1-32 for subaccounts)"
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "body",
+          "description": "Market ticker",
+          "required": true
+        },
+        {
+          "name": "updated_client_order_id",
+          "type": "string",
+          "location": "body",
+          "description": "The new client-specified order ID after amendment"
+        },
+        {
+          "name": "yes_price",
+          "type": "int",
+          "location": "body",
+          "description": "Updated yes price for the order in cents"
+        },
+        {
+          "name": "yes_price_dollars",
+          "type": "string",
+          "location": "body",
+          "description": "US dollar amount as a fixed-point decimal string with up to 6 decimal places of precision. This is the maximum supported precision; valid quote intervals for a given market are constrained by that market's price level structure."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_apply-subaccount-transfer",
+      "description": "Transfer Between Subaccounts",
+      "method": "POST",
+      "path": "/portfolio/subaccounts/transfer",
+      "params": [
+        {
+          "name": "amount_cents",
+          "type": "int",
+          "location": "body",
+          "description": "Amount to transfer in cents.",
+          "required": true
+        },
+        {
+          "name": "client_transfer_id",
+          "type": "string",
+          "location": "body",
+          "description": "Unique client-provided transfer ID for idempotency.",
+          "required": true
+        },
+        {
+          "name": "from_subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "Source subaccount number (0 for primary, 1-32 for numbered subaccounts).",
+          "required": true
+        },
+        {
+          "name": "to_subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "Destination subaccount number (0 for primary, 1-32 for numbered subaccounts).",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "portfolio_batch-cancel-orders",
+      "description": "Batch Cancel Orders",
+      "method": "DELETE",
+      "path": "/portfolio/orders/batched",
+      "params": [
+        {
+          "name": "ids",
+          "type": "array",
+          "location": "body",
+          "description": "An array of order IDs to cancel"
+        }
+      ]
+    },
+    {
+      "name": "portfolio_batch-create-orders",
+      "description": "Batch Create Orders",
+      "method": "POST",
+      "path": "/portfolio/orders/batched",
+      "params": []
+    },
+    {
+      "name": "portfolio_cancel-order",
+      "description": "Cancel Order",
+      "method": "DELETE",
+      "path": "/portfolio/orders/{order_id}",
+      "params": [
+        {
+          "name": "order_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order ID",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). Defaults to 0."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_create-order",
+      "description": "Create Order",
+      "method": "POST",
+      "path": "/portfolio/orders",
+      "params": [
+        {
+          "name": "action",
+          "type": "string",
+          "location": "body",
+          "description": "Action",
+          "required": true
+        },
+        {
+          "name": "buy_max_cost",
+          "type": "int",
+          "location": "body",
+          "description": "Maximum cost in cents. When specified, the order will automatically have Fill-or-Kill (FoK) behavior."
+        },
+        {
+          "name": "cancel_order_on_pause",
+          "type": "bool",
+          "location": "body",
+          "description": "If this flag is set to true, the order will be canceled if the order is open and trading on the exchange is paused for any reason."
+        },
+        {
+          "name": "client_order_id",
+          "type": "string",
+          "location": "body",
+          "description": "Client order id"
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "location": "body",
+          "description": "Order quantity in contracts (whole contracts only). Provide count or count_fp; if both provided they must match."
+        },
+        {
+          "name": "count_fp",
+          "type": "string",
+          "location": "body",
+          "description": "Fixed-point contract count string (2 decimals, e.g., \"10.00\"; referred to as \"fp\" in field names). Requests accept 0–2 decimal places (e.g., \"10\", \"10.0\", \"10.00\"); responses always emit 2 decimals. Fractional contract values (e.g., \"2.50\") are supported on markets with fractional trading enabled; the minimum granularity is 0.01 contracts. Integer contract count fields are legacy and will be deprecated; when both integer and fp fields are provided, they must match."
+        },
+        {
+          "name": "expiration_ts",
+          "type": "int",
+          "location": "body",
+          "description": "Expiration ts"
+        },
+        {
+          "name": "no_price",
+          "type": "int",
+          "location": "body",
+          "description": "No price"
+        },
+        {
+          "name": "no_price_dollars",
+          "type": "string",
+          "location": "body",
+          "description": "US dollar amount as a fixed-point decimal string with up to 6 decimal places of precision. This is the maximum supported precision; valid quote intervals for a given market are constrained by that market's price level structure."
+        },
+        {
+          "name": "order_group_id",
+          "type": "string",
+          "location": "body",
+          "description": "The order group this order is part of"
+        },
+        {
+          "name": "post_only",
+          "type": "bool",
+          "location": "body",
+          "description": "Post only"
+        },
+        {
+          "name": "reduce_only",
+          "type": "bool",
+          "location": "body",
+          "description": "Reduce only"
+        },
+        {
+          "name": "sell_position_floor",
+          "type": "int",
+          "location": "body",
+          "description": "Deprecated: Use reduce_only instead. Only accepts value of 0."
+        },
+        {
+          "name": "side",
+          "type": "string",
+          "location": "body",
+          "description": "Side",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "The subaccount number to use for this order. 0 is the primary subaccount."
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "body",
+          "description": "Ticker",
+          "required": true
+        },
+        {
+          "name": "time_in_force",
+          "type": "string",
+          "location": "body",
+          "description": "Time in force"
+        },
+        {
+          "name": "yes_price",
+          "type": "int",
+          "location": "body",
+          "description": "Yes price"
+        },
+        {
+          "name": "yes_price_dollars",
+          "type": "string",
+          "location": "body",
+          "description": "US dollar amount as a fixed-point decimal string with up to 6 decimal places of precision. This is the maximum supported precision; valid quote intervals for a given market are constrained by that market's price level structure."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_create-order-group",
+      "description": "Create Order Group",
+      "method": "POST",
+      "path": "/portfolio/order_groups/create",
+      "params": [
+        {
+          "name": "contracts_limit",
+          "type": "int",
+          "location": "body",
+          "description": "Specifies the maximum number of contracts that can be matched within this group over a rolling 15-second window. Whole contracts only. Provide contracts_limit or contracts_limit_fp; if both provided they must match."
+        },
+        {
+          "name": "contracts_limit_fp",
+          "type": "string",
+          "location": "body",
+          "description": "Fixed-point contract count string (2 decimals, e.g., \"10.00\"; referred to as \"fp\" in field names). Requests accept 0–2 decimal places (e.g., \"10\", \"10.0\", \"10.00\"); responses always emit 2 decimals. Fractional contract values (e.g., \"2.50\") are supported on markets with fractional trading enabled; the minimum granularity is 0.01 contracts. Integer contract count fields are legacy and will be deprecated; when both integer and fp fields are provided, they must match."
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "Optional subaccount number to use for this order group (0 for primary, 1-32 for subaccounts)"
+        }
+      ]
+    },
+    {
+      "name": "portfolio_create-subaccount",
+      "description": "Create Subaccount",
+      "method": "POST",
+      "path": "/portfolio/subaccounts",
+      "params": []
+    },
+    {
+      "name": "portfolio_decrease-order",
+      "description": "Decrease Order",
+      "method": "POST",
+      "path": "/portfolio/orders/{order_id}/decrease",
+      "params": [
+        {
+          "name": "order_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order ID",
+          "required": true
+        },
+        {
+          "name": "reduce_by",
+          "type": "int",
+          "location": "body",
+          "description": "Number of contracts to reduce by (whole contracts only). Reduce-by may be provided via reduce_by or reduce_by_fp; if both provided they must match. Exactly one of reduce_by(/reduce_by_fp) or reduce_to(/reduce_to_fp) must be provided."
+        },
+        {
+          "name": "reduce_by_fp",
+          "type": "string",
+          "location": "body",
+          "description": "Fixed-point contract count string (2 decimals, e.g., \"10.00\"; referred to as \"fp\" in field names). Requests accept 0–2 decimal places (e.g., \"10\", \"10.0\", \"10.00\"); responses always emit 2 decimals. Fractional contract values (e.g., \"2.50\") are supported on markets with fractional trading enabled; the minimum granularity is 0.01 contracts. Integer contract count fields are legacy and will be deprecated; when both integer and fp fields are provided, they must match."
+        },
+        {
+          "name": "reduce_to",
+          "type": "int",
+          "location": "body",
+          "description": "Number of contracts to reduce to (whole contracts only). Reduce-to may be provided via reduce_to or reduce_to_fp; if both provided they must match. Exactly one of reduce_by(/reduce_by_fp) or reduce_to(/reduce_to_fp) must be provided."
+        },
+        {
+          "name": "reduce_to_fp",
+          "type": "string",
+          "location": "body",
+          "description": "Fixed-point contract count string (2 decimals, e.g., \"10.00\"; referred to as \"fp\" in field names). Requests accept 0–2 decimal places (e.g., \"10\", \"10.0\", \"10.00\"); responses always emit 2 decimals. Fractional contract values (e.g., \"2.50\") are supported on markets with fractional trading enabled; the minimum granularity is 0.01 contracts. Integer contract count fields are legacy and will be deprecated; when both integer and fp fields are provided, they must match."
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "body",
+          "description": "Optional subaccount number to use for this decrease (0 for primary, 1-32 for subaccounts)"
+        }
+      ]
+    },
+    {
+      "name": "portfolio_delete-order-group",
+      "description": "Delete Order Group",
+      "method": "DELETE",
+      "path": "/portfolio/order_groups/{order_group_id}",
+      "params": [
+        {
+          "name": "order_group_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order group ID",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). Defaults to 0."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-balance",
+      "description": "Get Balance",
+      "method": "GET",
+      "path": "/portfolio/balance",
+      "params": [
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). Defaults to 0."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-fills",
+      "description": "Get Fills",
+      "method": "GET",
+      "path": "/portfolio/fills",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "order_id",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by order ID"
+        },
+        {
+          "name": "min_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items after this Unix timestamp"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items before this Unix timestamp"
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). If omitted, defaults to all subaccounts."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-order",
+      "description": "Get Order",
+      "method": "GET",
+      "path": "/portfolio/orders/{order_id}",
+      "params": [
+        {
+          "name": "order_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-order-group",
+      "description": "Get Order Group",
+      "method": "GET",
+      "path": "/portfolio/order_groups/{order_group_id}",
+      "params": [
+        {
+          "name": "order_group_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order group ID",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). If omitted, defaults to all subaccounts."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-order-groups",
+      "description": "Get Order Groups",
+      "method": "GET",
+      "path": "/portfolio/order_groups",
+      "params": [
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). If omitted, defaults to all subaccounts."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-order-queue-position",
+      "description": "Get Order Queue Position",
+      "method": "GET",
+      "path": "/portfolio/orders/{order_id}/queue_position",
+      "params": [
+        {
+          "name": "order_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-order-queue-positions",
+      "description": "Get Queue Positions for Orders",
+      "method": "GET",
+      "path": "/portfolio/orders/queue_positions",
+      "params": [
+        {
+          "name": "market_tickers",
+          "type": "string",
+          "location": "query",
+          "description": "Comma-separated list of market tickers to filter by"
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by"
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). Defaults to 0."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-orders",
+      "description": "Get Orders",
+      "method": "GET",
+      "path": "/portfolio/orders",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event tickers to filter by, as a comma-separated list (maximum 10)."
+        },
+        {
+          "name": "min_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items after this Unix timestamp"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items before this Unix timestamp"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by status. Possible values depend on the endpoint."
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). If omitted, defaults to all subaccounts."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-positions",
+      "description": "Get Positions",
+      "method": "GET",
+      "path": "/portfolio/positions",
+      "params": [
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "The Cursor represents a pointer to the next page of records in the pagination. Use the value returned from the previous response to get the next page."
+        },
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Parameter to specify the number of results per page. Defaults to 100."
+        },
+        {
+          "name": "count_filter",
+          "type": "string",
+          "location": "query",
+          "description": "Restricts the positions to those with any of following fields with non-zero values, as a comma separated list. The following values are accepted - position, total_traded"
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by. Only a single event ticker is supported."
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). Defaults to 0."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-resting-order-total-value",
+      "description": "Get Total Resting Order Value",
+      "method": "GET",
+      "path": "/portfolio/summary/total_resting_order_value",
+      "params": []
+    },
+    {
+      "name": "portfolio_get-settlements",
+      "description": "Get Settlements",
+      "method": "GET",
+      "path": "/portfolio/settlements",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by market ticker"
+        },
+        {
+          "name": "event_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Event ticker to filter by. Only a single event ticker is supported."
+        },
+        {
+          "name": "min_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items after this Unix timestamp"
+        },
+        {
+          "name": "max_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter items before this Unix timestamp"
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). If omitted, defaults to all subaccounts."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_get-subaccount-balances",
+      "description": "Get All Subaccount Balances",
+      "method": "GET",
+      "path": "/portfolio/subaccounts/balances",
+      "params": []
+    },
+    {
+      "name": "portfolio_get-subaccount-netting",
+      "description": "Get Subaccount Netting",
+      "method": "GET",
+      "path": "/portfolio/subaccounts/netting",
+      "params": []
+    },
+    {
+      "name": "portfolio_get-subaccount-transfers",
+      "description": "Get Subaccount Transfers",
+      "method": "GET",
+      "path": "/portfolio/subaccounts/transfers",
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Number of results per page. Defaults to 100."
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor. Use the cursor value returned from the previous response to get the next page of results. Leave empty for the first page."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_reset-order-group",
+      "description": "Reset Order Group",
+      "method": "PUT",
+      "path": "/portfolio/order_groups/{order_group_id}/reset",
+      "params": [
+        {
+          "name": "order_group_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order group ID",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). Defaults to 0."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_trigger-order-group",
+      "description": "Trigger Order Group",
+      "method": "PUT",
+      "path": "/portfolio/order_groups/{order_group_id}/trigger",
+      "params": [
+        {
+          "name": "order_group_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order group ID",
+          "required": true
+        },
+        {
+          "name": "subaccount",
+          "type": "int",
+          "location": "query",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts). Defaults to 0."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_update-order-group-limit",
+      "description": "Update Order Group Limit",
+      "method": "PUT",
+      "path": "/portfolio/order_groups/{order_group_id}/limit",
+      "params": [
+        {
+          "name": "order_group_id",
+          "type": "string",
+          "location": "path",
+          "description": "Order group ID",
+          "required": true
+        },
+        {
+          "name": "contracts_limit",
+          "type": "int",
+          "location": "body",
+          "description": "New maximum number of contracts that can be matched within this group over a rolling 15-second window. Whole contracts only. Provide contracts_limit or contracts_limit_fp; if both provided they must match."
+        },
+        {
+          "name": "contracts_limit_fp",
+          "type": "string",
+          "location": "body",
+          "description": "Fixed-point contract count string (2 decimals, e.g., \"10.00\"; referred to as \"fp\" in field names). Requests accept 0–2 decimal places (e.g., \"10\", \"10.0\", \"10.00\"); responses always emit 2 decimals. Fractional contract values (e.g., \"2.50\") are supported on markets with fractional trading enabled; the minimum granularity is 0.01 contracts. Integer contract count fields are legacy and will be deprecated; when both integer and fp fields are provided, they must match."
+        }
+      ]
+    },
+    {
+      "name": "portfolio_update-subaccount-netting",
+      "description": "Update Subaccount Netting",
+      "method": "PUT",
+      "path": "/portfolio/subaccounts/netting",
+      "params": [
+        {
+          "name": "enabled",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether netting is enabled for this subaccount.",
+          "required": true
+        },
+        {
+          "name": "subaccount_number",
+          "type": "int",
+          "location": "body",
+          "description": "Subaccount number (0 for primary, 1-32 for subaccounts).",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "search_get-filters-for-sports",
+      "description": "Get Filters for Sports",
+      "method": "GET",
+      "path": "/search/filters_by_sport",
+      "params": []
+    },
+    {
+      "name": "search_get-tags-for-series-categories",
+      "description": "Get Tags for Series Categories",
+      "method": "GET",
+      "path": "/search/tags_by_categories",
+      "params": []
+    },
+    {
+      "name": "series_get",
+      "description": "Get Series",
+      "method": "GET",
+      "path": "/series/{series_ticker}",
+      "params": [
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "The ticker of the series to retrieve",
+          "required": true
+        },
+        {
+          "name": "include_volume",
+          "type": "bool",
+          "location": "query",
+          "description": "If true, includes the total volume traded across all events in this series."
+        }
+      ]
+    },
+    {
+      "name": "series_get-fee-changes",
+      "description": "Get Series Fee Changes",
+      "method": "GET",
+      "path": "/series/fee_changes",
+      "params": [
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "query",
+          "description": "Series ticker"
+        },
+        {
+          "name": "show_historical",
+          "type": "bool",
+          "location": "query",
+          "description": "Show historical"
+        }
+      ]
+    },
+    {
+      "name": "series_get-list",
+      "description": "Get Series List",
+      "method": "GET",
+      "path": "/series",
+      "params": [
+        {
+          "name": "category",
+          "type": "string",
+          "location": "query",
+          "description": "Category"
+        },
+        {
+          "name": "tags",
+          "type": "string",
+          "location": "query",
+          "description": "Tags"
+        },
+        {
+          "name": "include_product_metadata",
+          "type": "bool",
+          "location": "query",
+          "description": "Include product metadata"
+        },
+        {
+          "name": "include_volume",
+          "type": "bool",
+          "location": "query",
+          "description": "If true, includes the total volume traded across all events in each series."
+        },
+        {
+          "name": "min_updated_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Filter series with metadata updated after this Unix timestamp (in seconds). Use this to efficiently poll for changes."
+        }
+      ]
+    },
+    {
+      "name": "series_events_get-forecast-percentiles-history",
+      "description": "Get Event Forecast Percentile History",
+      "method": "GET",
+      "path": "/series/{series_ticker}/events/{ticker}/forecast_percentile_history",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "path",
+          "description": "The event ticker",
+          "required": true
+        },
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "The series ticker",
+          "required": true
+        },
+        {
+          "name": "percentiles",
+          "type": "array",
+          "location": "query",
+          "description": "Array of percentile values to retrieve (0-10000, max 10 values)",
+          "required": true
+        },
+        {
+          "name": "start_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Start timestamp for the range",
+          "required": true
+        },
+        {
+          "name": "end_ts",
+          "type": "int",
+          "location": "query",
+          "description": "End timestamp for the range",
+          "required": true
+        },
+        {
+          "name": "period_interval",
+          "type": "int",
+          "location": "query",
+          "description": "Specifies the length of each forecast period, in minutes. 0 for 5-second intervals, or 1, 60, or 1440 for minute-based intervals.",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "series_events_get-market-candlesticks-by",
+      "description": "Get Event Candlesticks",
+      "method": "GET",
+      "path": "/series/{series_ticker}/events/{ticker}/candlesticks",
+      "params": [
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "path",
+          "description": "The event ticker",
+          "required": true
+        },
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "The series ticker",
+          "required": true
+        },
+        {
+          "name": "start_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Start timestamp for the range",
+          "required": true
+        },
+        {
+          "name": "end_ts",
+          "type": "int",
+          "location": "query",
+          "description": "End timestamp for the range",
+          "required": true
+        },
+        {
+          "name": "period_interval",
+          "type": "int",
+          "location": "query",
+          "description": "Specifies the length of each candlestick period, in minutes. Must be one minute, one hour, or one day.",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "series_markets_get-candlesticks",
+      "description": "Get Market Candlesticks",
+      "method": "GET",
+      "path": "/series/{series_ticker}/markets/{ticker}/candlesticks",
+      "params": [
+        {
+          "name": "series_ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Series ticker - the series that contains the target market",
+          "required": true
+        },
+        {
+          "name": "ticker",
+          "type": "string",
+          "location": "path",
+          "description": "Market ticker - unique identifier for the specific market",
+          "required": true
+        },
+        {
+          "name": "start_ts",
+          "type": "int",
+          "location": "query",
+          "description": "Start timestamp (Unix timestamp). Candlesticks will include those ending on or after this time.",
+          "required": true
+        },
+        {
+          "name": "end_ts",
+          "type": "int",
+          "location": "query",
+          "description": "End timestamp (Unix timestamp). Candlesticks will include those ending on or before this time.",
+          "required": true
+        },
+        {
+          "name": "period_interval",
+          "type": "int",
+          "location": "query",
+          "description": "Time period length of each candlestick in minutes. Valid values are 1 (1 minute), 60 (1 hour), or 1440 (1 day).",
+          "required": true
+        },
+        {
+          "name": "include_latest_before_start",
+          "type": "bool",
+          "location": "query",
+          "description": "If true, prepends the latest candlestick available before the start_ts. This synthetic candlestick is created by:\n1. Finding the most recent real candlestick before start_ts\n2. Projecting it forward to the first period boundary (calculated as the next period interval after start_ts)\n3. Setting all OHLC prices to null, and `previous_price` to the close price from the real candlestick"
+        }
+      ]
+    },
+    {
+      "name": "structured-targets_get",
+      "description": "Get Structured Targets",
+      "method": "GET",
+      "path": "/structured_targets",
+      "params": [
+        {
+          "name": "ids",
+          "type": "array",
+          "location": "query",
+          "description": "Filter by specific structured target IDs. Pass multiple IDs by repeating the parameter (e.g. `?ids=uuid1\u0026ids=uuid2`)."
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by structured target type"
+        },
+        {
+          "name": "competition",
+          "type": "string",
+          "location": "query",
+          "description": "Filter by competition. Matches against the league, conference, division, or tour in the structured target details."
+        },
+        {
+          "name": "page_size",
+          "type": "int",
+          "location": "query",
+          "description": "Number of items per page (min 1, max 2000, default 100)"
+        },
+        {
+          "name": "cursor",
+          "type": "string",
+          "location": "query",
+          "description": "Pagination cursor"
+        }
+      ]
+    },
+    {
+      "name": "structured-targets_get-structuredtargets",
+      "description": "Get Structured Target",
+      "method": "GET",
+      "path": "/structured_targets/{structured_target_id}",
+      "params": [
+        {
+          "name": "structured_target_id",
+          "type": "string",
+          "location": "path",
+          "description": "Structured target ID",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

@@ -9,6 +9,27 @@
       "path": "library/developer-tools/agent-capture"
     },
     {
+      "name": "cal-com",
+      "category": "productivity",
+      "api": "Cal.com",
+      "description": "Manage bookings, event types, schedules, and availability via the Cal.com API",
+      "path": "library/productivity/cal-com",
+      "mcp": {
+        "binary": "cal-com-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 285,
+        "public_tool_count": 0,
+        "auth_type": "api_key",
+        "env_vars": [
+          "CAL_COM_TOKEN"
+        ],
+        "mcp_ready": "full",
+        "manifest_checksum": "sha256:dd568fada6bf4f8ba272b1075d6c1a6f0899c2deb15f4af954bf914f14a0e280",
+        "spec_format": "openapi3",
+        "manifest_url": "library/productivity/cal-com/tools-manifest.json"
+      }
+    },
+    {
       "name": "dominos-pp-cli",
       "category": "commerce",
       "api": "Dominos Pizza",
@@ -59,6 +80,44 @@
         "auth_type": "none",
         "mcp_ready": "full",
         "spec_format": "internal"
+      }
+    },
+    {
+      "name": "hubspot-pp-cli",
+      "category": "sales-and-crm",
+      "api": "HubSpot",
+      "description": "Manage HubSpot CRM contacts, companies, deals, tickets, engagements, pipelines, and associations with offline search and pipeline analytics",
+      "path": "library/sales-and-crm/hubspot-pp-cli",
+      "mcp": {
+        "binary": "hubspot-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 62,
+        "auth_type": "api_key",
+        "env_vars": [
+          "HUBSPOT_ACCESS_TOKEN"
+        ],
+        "mcp_ready": "full"
+      }
+    },
+    {
+      "name": "kalshi",
+      "category": "payments",
+      "api": "Kalshi",
+      "description": "Trade prediction markets, track portfolios, and analyze odds on Kalshi from the command line",
+      "path": "library/payments/kalshi",
+      "mcp": {
+        "binary": "kalshi-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 89,
+        "public_tool_count": 0,
+        "auth_type": "api_key",
+        "env_vars": [
+          "KALSHI_API_KEY"
+        ],
+        "mcp_ready": "full",
+        "manifest_checksum": "sha256:85ba3641afafdec77e1b40d5961291352a80632baa40b9f8000482f6bb3726a7",
+        "spec_format": "openapi3",
+        "manifest_url": "library/payments/kalshi/tools-manifest.json"
       }
     },
     {
@@ -118,6 +177,23 @@
       }
     },
     {
+      "name": "slack",
+      "category": "productivity",
+      "api": "Slack",
+      "description": "Send messages, search conversations, monitor channels, and manage your Slack workspace from the terminal",
+      "path": "library/productivity/slack",
+      "mcp": {
+        "binary": "slack-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 66,
+        "auth_type": "api_key",
+        "env_vars": [
+          "SLACK_BOT_TOKEN"
+        ],
+        "mcp_ready": "full"
+      }
+    },
+    {
       "name": "steam-web",
       "category": "media-and-entertainment",
       "api": "Steam Web",
@@ -139,44 +215,6 @@
       }
     },
     {
-      "name": "cal-com",
-      "category": "productivity",
-      "api": "Cal.com",
-      "description": "Manage bookings, event types, schedules, and availability via the Cal.com API",
-      "path": "library/productivity/cal-com",
-      "mcp": {
-        "binary": "cal-com-pp-mcp",
-        "transport": "stdio",
-        "tool_count": 285,
-        "public_tool_count": 0,
-        "auth_type": "api_key",
-        "env_vars": [
-          "CAL_COM_TOKEN"
-        ],
-        "mcp_ready": "full",
-        "manifest_checksum": "sha256:dd568fada6bf4f8ba272b1075d6c1a6f0899c2deb15f4af954bf914f14a0e280",
-        "spec_format": "openapi3",
-        "manifest_url": "library/productivity/cal-com/tools-manifest.json"
-      }
-    },
-    {
-      "name": "hubspot-pp-cli",
-      "category": "sales-and-crm",
-      "api": "HubSpot",
-      "description": "Manage HubSpot CRM contacts, companies, deals, tickets, engagements, pipelines, and associations with offline search and pipeline analytics",
-      "path": "library/sales-and-crm/hubspot-pp-cli",
-      "mcp": {
-        "binary": "hubspot-pp-mcp",
-        "transport": "stdio",
-        "tool_count": 62,
-        "auth_type": "api_key",
-        "env_vars": [
-          "HUBSPOT_ACCESS_TOKEN"
-        ],
-        "mcp_ready": "full"
-      }
-    },
-    {
       "name": "trigger-dev",
       "category": "developer-tools",
       "api": "Trigger.dev",
@@ -189,23 +227,6 @@
         "auth_type": "api_key",
         "env_vars": [
           "TRIGGER_SECRET_KEY"
-        ],
-        "mcp_ready": "full"
-      }
-    },
-    {
-      "name": "slack",
-      "category": "productivity",
-      "api": "Slack",
-      "description": "Send messages, search conversations, monitor channels, and manage your Slack workspace from the terminal",
-      "path": "library/productivity/slack",
-      "mcp": {
-        "binary": "slack-pp-mcp",
-        "transport": "stdio",
-        "tool_count": 66,
-        "auth_type": "api_key",
-        "env_vars": [
-          "SLACK_BOT_TOKEN"
         ],
         "mcp_ready": "full"
       }

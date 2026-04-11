@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-11T04:22:24.229774Z",
+  "printing_press_version": "1.2.2-0.20260411023050-cbcd67dbddd8+dirty",
+  "api_name": "kalshi",
+  "cli_name": "kalshi-pp-cli",
+  "spec_path": "https://docs.kalshi.com/openapi.yaml",
+  "spec_format": "openapi3",
+  "spec_checksum": "sha256:31deffe4befe587fe94449dd0341012d172502d6441e7426656a47538555e586",
+  "run_id": "20260410-204716",
+  "mcp_binary": "kalshi-pp-mcp",
+  "mcp_tool_count": 89,
+  "mcp_ready": "full",
+  "auth_type": "api_key",
+  "auth_env_vars": [
+    "KALSHI_API_KEY"
+  ]
+}

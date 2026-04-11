@@ -1,0 +1,40 @@
+{
+  "dir": "/Users/tmchow/printing-press/library/kalshi",
+  "spec_path": "/Users/tmchow/printing-press/library/kalshi/spec.yaml",
+  "verdict": "PASS",
+  "path_check": {
+    "tested": 7,
+    "valid": 7,
+    "valid_pct": 100
+  },
+  "auth_check": {
+    "spec_scheme": "",
+    "generated_format": "unknown",
+    "match": true,
+    "detail": "spec not provided or no bot/bearer scheme detected"
+  },
+  "dead_flags": {
+    "total": 15,
+    "dead": 0
+  },
+  "dead_functions": {
+    "total": 47,
+    "dead": 0
+  },
+  "pipeline_check": {
+    "sync_calls_domain": true,
+    "search_calls_domain": false,
+    "domain_tables": 1,
+    "detail": "sync uses domain-specific Upsert methods; search uses generic Search only; 1 domain tables found"
+  },
+  "example_check": {
+    "tested": 10,
+    "with_examples": 9,
+    "valid_examples": 9,
+    "missing": [
+      "promoted historical"
+    ],
+    "detail": "9/10 commands have examples"
+  },
+  "issues": null
+}
