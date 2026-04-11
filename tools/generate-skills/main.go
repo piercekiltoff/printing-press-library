@@ -112,7 +112,7 @@ func main() {
 	// Snapshot existing pp-* skill dirs before generation
 	beforeDirs := existingSkillDirs()
 
-	var totalGenerated, enrichedCount, registryOnlyCount int
+	var totalGenerated, enrichedCount, registryOnlyCount, skippedCount int
 
 	for _, entry := range registry.Entries {
 		// Derive skill name: strip -pp-cli suffix, prepend pp-
@@ -176,12 +176,27 @@ func main() {
 
 		// Write skill file
 		skillDir := filepath.Join("skills", skillName)
+		skillFile := filepath.Join(skillDir, "SKILL.md")
+
+		// Downgrade protection: don't overwrite an enriched skill with a registry-only one.
+		// This prevents CI (where CLIs aren't installed) from replacing locally-enriched skills.
+		if !isEnriched {
+			if existing, err := os.ReadFile(skillFile); err == nil {
+				if strings.Contains(string(existing), "Key commands:") {
+					fmt.Printf("  %s -> %s (skipped: existing skill is enriched, new would be registry-only)\n", entry.Name, skillFile)
+					totalGenerated++
+					registryOnlyCount-- // undo the count since we're skipping
+					skippedCount++
+					continue
+				}
+			}
+		}
+
 		if err := os.MkdirAll(skillDir, 0755); err != nil {
 			log.Printf("Warning: could not create directory %s: %v", skillDir, err)
 			continue
 		}
 
-		skillFile := filepath.Join(skillDir, "SKILL.md")
 		f, err := os.Create(skillFile)
 		if err != nil {
 			log.Printf("Warning: could not create %s: %v", skillFile, err)
@@ -203,7 +218,12 @@ func main() {
 		fmt.Printf("  %s -> %s (%s)\n", entry.Name, skillFile, status)
 	}
 
-	fmt.Printf("\nGenerated %d skills (%d enriched, %d registry-only)\n", totalGenerated, enrichedCount, registryOnlyCount)
+	summary := fmt.Sprintf("\nGenerated %d skills (%d enriched, %d registry-only", totalGenerated, enrichedCount, registryOnlyCount)
+	if skippedCount > 0 {
+		summary += fmt.Sprintf(", %d skipped to preserve enrichment", skippedCount)
+	}
+	summary += ")\n"
+	fmt.Print(summary)
 
 	// Bump plugin.json version if skill set changed
 	afterDirs := existingSkillDirs()
