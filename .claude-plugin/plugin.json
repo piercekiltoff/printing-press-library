@@ -1,0 +1,12 @@
+{
+  "name": "printing-press-library",
+  "version": "1.0.0",
+  "description": "Discover, install, and use CLI tools and MCP servers for dozens of APIs",
+  "author": {
+    "name": "mvanhorn"
+  },
+  "repository": "https://github.com/mvanhorn/printing-press-library",
+  "license": "MIT",
+  "keywords": ["cli", "mcp", "api", "printing-press"],
+  "skills": "./skills/"
+}
