@@ -6,8 +6,6 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/mvanhorn/printing-press-library/library/marketing/dub/internal/store"
@@ -22,10 +20,6 @@ func newWorkflowCmd(flags *rootFlags) *cobra.Command {
 
 	cmd.AddCommand(newWorkflowArchiveCmd(flags))
 	cmd.AddCommand(newWorkflowStatusCmd(flags))
-	cmd.AddCommand(newWorkflowCampaignCmd(flags))
-	cmd.AddCommand(newWorkflowTagsReportCmd(flags))
-	cmd.AddCommand(newWorkflowDomainsHealthCmd(flags))
-	cmd.AddCommand(newWorkflowPartnersLeaderboardCmd(flags))
 
 	return cmd
 }
@@ -143,7 +137,7 @@ and full resync. After archiving, use 'search' for instant full-text search.`,
 		},
 	}
 
-	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.config/dub-pp-cli/store.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/dub-pp-cli/data.db)")
 	cmd.Flags().BoolVar(&full, "full", false, "Full re-archive (ignore previous sync state)")
 
 	return cmd
@@ -203,7 +197,4 @@ func newWorkflowStatusCmd(flags *rootFlags) *cobra.Command {
 	return cmd
 }
 
-func defaultDBPath(name string) string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", name, "store.db")
-}
+// defaultDBPath is defined in helpers.go

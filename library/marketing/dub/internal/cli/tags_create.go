@@ -23,6 +23,8 @@ func newTagsCreateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Create a tag",
 		Example: "  dub-pp-cli tags create",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

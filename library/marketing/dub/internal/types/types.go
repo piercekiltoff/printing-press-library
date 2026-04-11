@@ -3,6 +3,8 @@
 
 package types
 
+import "encoding/json"
+
 type AnalyticsBrowsers struct {
 	Browser    string  `json:"browser"`
 	Clicks     float64 `json:"clicks"`
@@ -185,57 +187,57 @@ type LinkErrorSchema struct {
 }
 
 type LinkSchema struct {
-	Android         string  `json:"android"`
-	Archived        bool    `json:"archived"`
-	Clicks          float64 `json:"clicks"`
-	Comments        string  `json:"comments"`
-	Conversions     float64 `json:"conversions"`
-	CreatedAt       string  `json:"createdAt"`
-	Description     string  `json:"description"`
-	DisabledAt      string  `json:"disabledAt"`
-	DoIndex         bool    `json:"doIndex"`
-	Domain          string  `json:"domain"`
-	ExpiredUrl      string  `json:"expiredUrl"`
-	ExpiresAt       string  `json:"expiresAt"`
-	ExternalId      string  `json:"externalId"`
-	FolderId        string  `json:"folderId"`
-	Geo             string  `json:"geo"`
-	Id              string  `json:"id"`
-	Image           string  `json:"image"`
-	Ios             string  `json:"ios"`
-	Key             string  `json:"key"`
-	LastClicked     string  `json:"lastClicked"`
-	Leads           float64 `json:"leads"`
-	PartnerId       string  `json:"partnerId"`
-	Password        string  `json:"password"`
-	ProgramId       string  `json:"programId"`
-	ProjectId       string  `json:"projectId"`
-	Proxy           bool    `json:"proxy"`
-	PublicStats     bool    `json:"publicStats"`
-	QrCode          string  `json:"qrCode"`
-	Rewrite         bool    `json:"rewrite"`
-	SaleAmount      float64 `json:"saleAmount"`
-	Sales           float64 `json:"sales"`
-	ShortLink       string  `json:"shortLink"`
-	TagId           string  `json:"tagId"`
-	Tags            string  `json:"tags"`
-	TenantId        string  `json:"tenantId"`
-	TestCompletedAt string  `json:"testCompletedAt"`
-	TestStartedAt   string  `json:"testStartedAt"`
-	TestVariants    string  `json:"testVariants"`
-	Title           string  `json:"title"`
-	TrackConversion bool    `json:"trackConversion"`
-	UpdatedAt       string  `json:"updatedAt"`
-	Url             string  `json:"url"`
-	UserId          string  `json:"userId"`
-	UtmCampaign     string  `json:"utm_campaign"`
-	UtmContent      string  `json:"utm_content"`
-	UtmMedium       string  `json:"utm_medium"`
-	UtmSource       string  `json:"utm_source"`
-	UtmTerm         string  `json:"utm_term"`
-	Video           string  `json:"video"`
-	WebhookIds      string  `json:"webhookIds"`
-	WorkspaceId     string  `json:"workspaceId"`
+	Android         string          `json:"android"`
+	Archived        bool            `json:"archived"`
+	Clicks          float64         `json:"clicks"`
+	Comments        string          `json:"comments"`
+	Conversions     float64         `json:"conversions"`
+	CreatedAt       string          `json:"createdAt"`
+	Description     string          `json:"description"`
+	DisabledAt      string          `json:"disabledAt"`
+	DoIndex         bool            `json:"doIndex"`
+	Domain          string          `json:"domain"`
+	ExpiredUrl      string          `json:"expiredUrl"`
+	ExpiresAt       string          `json:"expiresAt"`
+	ExternalId      string          `json:"externalId"`
+	FolderId        string          `json:"folderId"`
+	Geo             string          `json:"geo"`
+	Id              string          `json:"id"`
+	Image           string          `json:"image"`
+	Ios             string          `json:"ios"`
+	Key             string          `json:"key"`
+	LastClicked     string          `json:"lastClicked"`
+	Leads           float64         `json:"leads"`
+	PartnerId       string          `json:"partnerId"`
+	Password        string          `json:"password"`
+	ProgramId       string          `json:"programId"`
+	ProjectId       string          `json:"projectId"`
+	Proxy           bool            `json:"proxy"`
+	PublicStats     bool            `json:"publicStats"`
+	QrCode          string          `json:"qrCode"`
+	Rewrite         bool            `json:"rewrite"`
+	SaleAmount      float64         `json:"saleAmount"`
+	Sales           float64         `json:"sales"`
+	ShortLink       string          `json:"shortLink"`
+	TagId           string          `json:"tagId"`
+	Tags            json.RawMessage `json:"tags"`
+	TenantId        string          `json:"tenantId"`
+	TestCompletedAt string          `json:"testCompletedAt"`
+	TestStartedAt   string          `json:"testStartedAt"`
+	TestVariants    json.RawMessage `json:"testVariants"`
+	Title           string          `json:"title"`
+	TrackConversion bool            `json:"trackConversion"`
+	UpdatedAt       string          `json:"updatedAt"`
+	Url             string          `json:"url"`
+	UserId          string          `json:"userId"`
+	UtmCampaign     string          `json:"utm_campaign"`
+	UtmContent      string          `json:"utm_content"`
+	UtmMedium       string          `json:"utm_medium"`
+	UtmSource       string          `json:"utm_source"`
+	UtmTerm         string          `json:"utm_term"`
+	Video           string          `json:"video"`
+	WebhookIds      json.RawMessage `json:"webhookIds"`
+	WorkspaceId     string          `json:"workspaceId"`
 }
 
 type LinkTagSchema struct {

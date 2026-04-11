@@ -19,6 +19,9 @@ func newLinksBulkDeleteCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Bulk delete links",
 		Example: "  dub-pp-cli links bulk-delete",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !cmd.Flags().Changed("link-ids") && !flags.dryRun {
+				return fmt.Errorf("required flag \"%s\" not set", "link-ids")
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -91,7 +94,6 @@ func newLinksBulkDeleteCmd(flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flagLinkIds, "link-ids", "", "Comma-separated list of link IDs to delete. Maximum of 100 IDs. Non-existing IDs will be ignored.")
-	_ = cmd.MarkFlagRequired("link-ids")
 
 	return cmd
 }

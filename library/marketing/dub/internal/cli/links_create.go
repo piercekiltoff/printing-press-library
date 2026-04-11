@@ -50,6 +50,7 @@ func newLinksCreateCmd(flags *rootFlags) *cobra.Command {
 	var bodyUtmSource string
 	var bodyUtmTerm string
 	var bodyVideo string
+	var bodyWebhookIds string
 	var stdinBody bool
 
 	cmd := &cobra.Command{
@@ -57,6 +58,11 @@ func newLinksCreateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Create a link",
 		Example: "  dub-pp-cli links create --url https://example.com/resource",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("url") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "url")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -187,6 +193,9 @@ func newLinksCreateCmd(flags *rootFlags) *cobra.Command {
 				if bodyVideo != "" {
 					body["video"] = bodyVideo
 				}
+				if bodyWebhookIds != "" {
+					body["webhookIds"] = bodyWebhookIds
+				}
 			}
 			data, statusCode, err := c.Post(path, body)
 			if err != nil {
@@ -284,13 +293,13 @@ func newLinksCreateCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&bodyTitle, "title", "", "The custom link preview title (og:title). Will be used for Custom Link Previews if `proxy` is true. Learn more:...")
 	cmd.Flags().BoolVar(&bodyTrackConversion, "track-conversion", false, "Whether to track conversions for the short link. Defaults to `false` if not provided.")
 	cmd.Flags().StringVar(&bodyUrl, "url", "", "The destination URL of the short link.")
-	_ = cmd.MarkFlagRequired("url")
 	cmd.Flags().StringVar(&bodyUtmCampaign, "utm-campaign", "", "The UTM campaign of the short link. If set, this will populate or override the UTM campaign in the destination URL.")
 	cmd.Flags().StringVar(&bodyUtmContent, "utm-content", "", "The UTM content of the short link. If set, this will populate or override the UTM content in the destination URL.")
 	cmd.Flags().StringVar(&bodyUtmMedium, "utm-medium", "", "The UTM medium of the short link. If set, this will populate or override the UTM medium in the destination URL.")
 	cmd.Flags().StringVar(&bodyUtmSource, "utm-source", "", "The UTM source of the short link. If set, this will populate or override the UTM source in the destination URL.")
 	cmd.Flags().StringVar(&bodyUtmTerm, "utm-term", "", "The UTM term of the short link. If set, this will populate or override the UTM term in the destination URL.")
 	cmd.Flags().StringVar(&bodyVideo, "video", "", "The custom link preview video (og:video). Will be used for Custom Link Previews if `proxy` is true. Learn more:...")
+	cmd.Flags().StringVar(&bodyWebhookIds, "webhook-ids", "", "An array of webhook IDs to trigger when the link is clicked. These webhooks will receive click event data.")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

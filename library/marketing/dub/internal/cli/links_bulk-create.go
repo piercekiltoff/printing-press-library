@@ -20,6 +20,8 @@ func newLinksBulkCreateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Bulk create links",
 		Example: "  dub-pp-cli links bulk-create",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

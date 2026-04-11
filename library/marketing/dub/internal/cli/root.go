@@ -32,6 +32,7 @@ type rootFlags struct {
 	configPath   string
 	timeout      time.Duration
 	rateLimit    float64
+	dataSource   string
 }
 
 // Execute runs the CLI in non-interactive mode: never prompts, all values via flags or stdin.
@@ -40,7 +41,7 @@ func Execute() error {
 
 	rootCmd := &cobra.Command{
 		Use:           "dub-pp-cli",
-		Short:         "Create short links, track analytics, manage domains, and run affiliate programs via the Dub API",
+		Short:         "Manage links, analytics, domains, and partner programs via the Dub API",
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       version,
@@ -62,6 +63,7 @@ func Execute() error {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().BoolVar(&humanFriendly, "human-friendly", false, "Enable colored output and rich formatting")
 	rootCmd.PersistentFlags().BoolVar(&flags.agent, "agent", false, "Set all agent-friendly defaults (--json --compact --no-input --no-color --yes)")
+	rootCmd.PersistentFlags().StringVar(&flags.dataSource, "data-source", "auto", "Data source for read commands: auto (live with local fallback), live (API only), local (synced data only)")
 	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 0, "Max requests per second (0 to disable)")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
@@ -82,20 +84,16 @@ func Execute() error {
 				noColor = true
 			}
 		}
+		switch flags.dataSource {
+		case "auto", "live", "local":
+			// valid
+		default:
+			return fmt.Errorf("invalid --data-source value %q: must be auto, live, or local", flags.dataSource)
+		}
 		return nil
 	}
 	rootCmd.AddCommand(newAnalyticsCmd(&flags))
 	rootCmd.AddCommand(newBountiesCmd(&flags))
-	rootCmd.AddCommand(newCommissionsCmd(&flags))
-	rootCmd.AddCommand(newCustomersCmd(&flags))
-	rootCmd.AddCommand(newDomainsCmd(&flags))
-	rootCmd.AddCommand(newEventsCmd(&flags))
-	rootCmd.AddCommand(newFoldersCmd(&flags))
-	rootCmd.AddCommand(newLinksCmd(&flags))
-	rootCmd.AddCommand(newPartnersCmd(&flags))
-	rootCmd.AddCommand(newPayoutsCmd(&flags))
-	rootCmd.AddCommand(newQrCmd(&flags))
-	rootCmd.AddCommand(newTagsCmd(&flags))
 	rootCmd.AddCommand(newTokensCmd(&flags))
 	rootCmd.AddCommand(newTrackCmd(&flags))
 	rootCmd.AddCommand(newDoctorCmd(&flags))
@@ -106,6 +104,19 @@ func Execute() error {
 	rootCmd.AddCommand(newSyncCmd(&flags))
 	rootCmd.AddCommand(newTailCmd(&flags))
 	rootCmd.AddCommand(newWorkflowCmd(&flags))
+	rootCmd.AddCommand(newAPICmd(&flags))
+	rootCmd.AddCommand(newCustomersPromotedCmd(&flags))
+	rootCmd.AddCommand(newDomainsPromotedCmd(&flags))
+	rootCmd.AddCommand(newEventsPromotedCmd(&flags))
+	rootCmd.AddCommand(newFoldersPromotedCmd(&flags))
+	rootCmd.AddCommand(newPartnersPromotedCmd(&flags))
+	rootCmd.AddCommand(newPayoutsPromotedCmd(&flags))
+	rootCmd.AddCommand(newCommissionsPromotedCmd(&flags))
+	rootCmd.AddCommand(newLinksPromotedCmd(&flags))
+	rootCmd.AddCommand(newQrPromotedCmd(&flags))
+	rootCmd.AddCommand(newTagsPromotedCmd(&flags))
+	rootCmd.AddCommand(newCampaignsCmd(&flags))
+	rootCmd.AddCommand(newFunnelCmd(&flags))
 	rootCmd.AddCommand(newVersionCliCmd())
 
 	err := rootCmd.Execute()

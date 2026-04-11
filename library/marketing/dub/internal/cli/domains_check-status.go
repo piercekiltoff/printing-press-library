@@ -19,6 +19,9 @@ func newDomainsCheckStatusCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Check the availability of one or more domains",
 		Example: "  dub-pp-cli domains check-status",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !cmd.Flags().Changed("domains") && !flags.dryRun {
+				return fmt.Errorf("required flag \"%s\" not set", "domains")
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -29,10 +32,32 @@ func newDomainsCheckStatusCmd(flags *rootFlags) *cobra.Command {
 			if flagDomains != "" {
 				params["domains"] = fmt.Sprintf("%v", flagDomains)
 			}
-			data, err := c.Get(path, params)
+			data, prov, err := resolveRead(c, flags, "domains", false, path, params)
 			if err != nil {
 				return classifyAPIError(err)
 			}
+			// Print provenance to stderr for human-facing output
+			{
+				var countItems []json.RawMessage
+				_ = json.Unmarshal(data, &countItems)
+				printProvenance(cmd, len(countItems), prov)
+			}
+			// For JSON output, wrap with provenance envelope before passing through flags
+			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
+				filtered := data
+				if flags.compact {
+					filtered = compactFields(filtered)
+				}
+				if flags.selectFields != "" {
+					filtered = filterFields(filtered, flags.selectFields)
+				}
+				wrapped, wrapErr := wrapWithProvenance(filtered, prov)
+				if wrapErr != nil {
+					return wrapErr
+				}
+				return printOutput(cmd.OutOrStdout(), wrapped, true)
+			}
+			// For all other output modes (table, csv, plain, quiet), use the standard pipeline
 			if wantsHumanTable(cmd.OutOrStdout(), flags) {
 				var items []map[string]any
 				if json.Unmarshal(data, &items) == nil && len(items) > 0 {
@@ -49,7 +74,6 @@ func newDomainsCheckStatusCmd(flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&flagDomains, "domains", "", "The domains to search. We only support .link domains for now.")
-	_ = cmd.MarkFlagRequired("domains")
 
 	return cmd
 }

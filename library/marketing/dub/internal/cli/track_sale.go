@@ -31,6 +31,14 @@ func newTrackSaleCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Track a sale",
 		Example: "  dub-pp-cli track sale --customerExternalId example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("amount") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "amount")
+				}
+				if !cmd.Flags().Changed("customer-external-id") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "customer-external-id")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -150,13 +158,11 @@ func newTrackSaleCmd(flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().IntVar(&bodyAmount, "amount", 0, "The amount of the sale in cents (for all two-decimal currencies). If the sale is in a zero-decimal currency, pass...")
-	_ = cmd.MarkFlagRequired("amount")
 	cmd.Flags().StringVar(&bodyClickId, "click-id", "", "[For direct sale tracking]: The unique ID of the click that the sale conversion event is attributed to. You can read...")
 	cmd.Flags().StringVar(&bodyCurrency, "currency", "usd", "The currency of the sale. Accepts ISO 4217 currency codes. Sales will be automatically converted and stored as USD...")
 	cmd.Flags().StringVar(&bodyCustomerAvatar, "customer-avatar", "", "[For direct sale tracking]: The avatar URL of the customer.")
 	cmd.Flags().StringVar(&bodyCustomerEmail, "customer-email", "", "[For direct sale tracking]: The email address of the customer.")
 	cmd.Flags().StringVar(&bodyCustomerExternalId, "customer-external-id", "", "The unique ID of the customer in your system. Will be used to identify and attribute all future events to this customer.")
-	_ = cmd.MarkFlagRequired("customer-external-id")
 	cmd.Flags().StringVar(&bodyCustomerName, "customer-name", "", "[For direct sale tracking]: The name of the customer. If not passed, a random name will be generated (e.g. “Big...")
 	cmd.Flags().StringVar(&bodyEventName, "event-name", "Purchase", "The name of the sale event. Recommended format: `Invoice paid` or `Subscription created`.")
 	cmd.Flags().StringVar(&bodyInvoiceId, "invoice-id", "", "The invoice ID of the sale. Can be used as a idempotency key – only one sale event can be recorded for a given...")

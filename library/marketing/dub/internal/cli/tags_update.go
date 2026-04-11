@@ -26,6 +26,8 @@ func newTagsUpdateCmd(flags *rootFlags) *cobra.Command {
 			if len(args) == 0 {
 				return cmd.Help()
 			}
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

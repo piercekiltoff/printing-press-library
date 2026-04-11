@@ -23,6 +23,8 @@ func newTokensCreateReferralsEmbedCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Create a referrals embed token",
 		Example: "  dub-pp-cli tokens create-referrals-embed",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

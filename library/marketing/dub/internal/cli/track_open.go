@@ -22,6 +22,8 @@ func newTrackOpenCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Track a deep link open event",
 		Example: "  dub-pp-cli track open",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

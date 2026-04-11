@@ -29,6 +29,17 @@ func newTrackLeadCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Track a lead",
 		Example: "  dub-pp-cli track lead --clickId example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("click-id") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "click-id")
+				}
+				if !cmd.Flags().Changed("customer-external-id") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "customer-external-id")
+				}
+				if !cmd.Flags().Changed("event-name") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "event-name")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -139,14 +150,11 @@ func newTrackLeadCmd(flags *rootFlags) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVar(&bodyClickId, "click-id", "", "The unique ID of the click that the lead conversion event is attributed to. You can read this value from `dub_id`...")
-	_ = cmd.MarkFlagRequired("click-id")
 	cmd.Flags().StringVar(&bodyCustomerAvatar, "customer-avatar", "", "The avatar URL of the customer.")
 	cmd.Flags().StringVar(&bodyCustomerEmail, "customer-email", "", "The email address of the customer.")
 	cmd.Flags().StringVar(&bodyCustomerExternalId, "customer-external-id", "", "The unique ID of the customer in your system. Will be used to identify and attribute all future events to this customer.")
-	_ = cmd.MarkFlagRequired("customer-external-id")
 	cmd.Flags().StringVar(&bodyCustomerName, "customer-name", "", "The name of the customer. If not passed, a random name will be generated (e.g. “Big Red Caribou”).")
 	cmd.Flags().StringVar(&bodyEventName, "event-name", "", "The name of the lead event to track. Can also be used as a unique identifier to associate a given lead event for a...")
-	_ = cmd.MarkFlagRequired("event-name")
 	cmd.Flags().Float64Var(&bodyEventQuantity, "event-quantity", 0.0, "The numerical value associated with this lead event (e.g., number of provisioned seats in a free trial). If defined...")
 	cmd.Flags().StringVar(&bodyMode, "mode", "async", "The mode to use for tracking the lead event. `async` will not block the request; `wait` will block the request until...")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")

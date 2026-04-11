@@ -13,6 +13,7 @@ import (
 )
 
 func newCommissionsBulkUpdateCmd(flags *rootFlags) *cobra.Command {
+	var bodyCommissionIds string
 	var bodyStatus string
 	var stdinBody bool
 
@@ -21,6 +22,14 @@ func newCommissionsBulkUpdateCmd(flags *rootFlags) *cobra.Command {
 		Short:   "Bulk update commissions",
 		Example: "  dub-pp-cli commissions bulk-update --status example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if !stdinBody {
+				if !cmd.Flags().Changed("commission-ids") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "commission-ids")
+				}
+				if !cmd.Flags().Changed("status") && !flags.dryRun {
+					return fmt.Errorf("required flag \"%s\" not set", "status")
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -40,6 +49,9 @@ func newCommissionsBulkUpdateCmd(flags *rootFlags) *cobra.Command {
 				body = jsonBody
 			} else {
 				body = map[string]any{}
+				if bodyCommissionIds != "" {
+					body["commissionIds"] = bodyCommissionIds
+				}
 				if bodyStatus != "" {
 					body["status"] = bodyStatus
 				}
@@ -109,8 +121,8 @@ func newCommissionsBulkUpdateCmd(flags *rootFlags) *cobra.Command {
 			return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
 		},
 	}
+	cmd.Flags().StringVar(&bodyCommissionIds, "commission-ids", "", "Commission ids")
 	cmd.Flags().StringVar(&bodyStatus, "status", "", "The status to apply to every commission in the batch.")
-	_ = cmd.MarkFlagRequired("status")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 
 	return cmd

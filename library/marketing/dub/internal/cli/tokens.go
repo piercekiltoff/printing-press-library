@@ -9,8 +9,9 @@ import (
 
 func newTokensCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "tokens",
-		Short: "Manage tokens",
+		Use:    "tokens",
+		Short:  "Manage tokens",
+		Hidden: true,
 	}
 
 	cmd.AddCommand(newTokensCreateReferralsEmbedCmd(flags))
