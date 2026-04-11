@@ -110,30 +110,80 @@ In local mode: searches locally synced data only.`,
 				return cmd.Help()
 			}
 			query := args[0]
-			// This API has a search endpoint: GET /search/filters_by_sport
+
+			// Live search: paginate through events and filter by keyword
 			if flags.dataSource != "local" {
 				c, err := flags.newClient()
 				if err != nil {
 					return err
 				}
-				data, getErr := c.Get("/search/filters_by_sport", map[string]string{
-					"q": query,
-				})
-				if getErr == nil {
-					// Live search succeeded
-					results := extractSearchResults(data)
+
+				var matched []json.RawMessage
+				lowerQuery := strings.ToLower(query)
+				cursor := ""
+				maxPages := 10 // cap at ~2000 events to avoid excessive API calls
+
+				for page := 0; page < maxPages; page++ {
+					params := map[string]string{"limit": "200"}
+					if cursor != "" {
+						params["cursor"] = cursor
+					}
+					data, getErr := c.Get("/events", params)
+					if getErr != nil {
+						if flags.dataSource == "live" {
+							return classifyAPIError(getErr)
+						}
+						// auto mode: fall through to local
+						fmt.Fprintf(cmd.ErrOrStderr(), "API unreachable, falling back to local search.\n")
+						break
+					}
+
+					// Extract events from response
+					var envelope map[string]json.RawMessage
+					if json.Unmarshal(data, &envelope) != nil {
+						break
+					}
+					var events []json.RawMessage
+					if raw, ok := envelope["events"]; ok {
+						json.Unmarshal(raw, &events)
+					}
+
+					// Filter by keyword match
+					for _, evt := range events {
+						if strings.Contains(strings.ToLower(string(evt)), lowerQuery) {
+							matched = append(matched, evt)
+						}
+					}
+
+					// Check for next page
+					var nextCursor string
+					if raw, ok := envelope["cursor"]; ok {
+						json.Unmarshal(raw, &nextCursor)
+					}
+					if nextCursor == "" || len(events) < 200 {
+						break
+					}
+					cursor = nextCursor
+
+					// Stop early if we have enough results
+					if len(matched) >= limit {
+						break
+					}
+				}
+
+				if len(matched) > 0 {
 					prov := DataProvenance{Source: "live"}
-					return outputSearchResults(cmd, flags, results, limit, prov)
+					return outputSearchResults(cmd, flags, matched, limit, prov)
 				}
-				// Check if it's a network error for auto-mode fallback
-				if flags.dataSource == "live" || !isNetworkError(getErr) {
-					return classifyAPIError(getErr)
+
+				if flags.dataSource == "live" {
+					fmt.Fprintf(cmd.ErrOrStderr(), "No results (source: live)\n")
+					return nil
 				}
-				// auto mode + network error: fall through to local FTS
-				fmt.Fprintf(cmd.ErrOrStderr(), "API unreachable, falling back to local search.\n")
+				// auto mode with no live results: fall through to local
 			}
 
-			// Local FTS search
+			// Local FTS search (fallback)
 			if dbPath == "" {
 				dbPath = defaultDBPath("kalshi-pp-cli")
 			}
@@ -145,24 +195,12 @@ In local mode: searches locally synced data only.`,
 			defer db.Close()
 
 			var results []json.RawMessage
-			switch resourceType {
-			case "":
-				// Search all FTS-enabled tables individually to avoid duplicates.
-				seen := make(map[string]bool)
-				_ = seen // prevent unused error when no FTS tables exist
-			default:
-				// Unrecognized type — fall back to generic search
-				results, err = db.Search(query, limit)
-			}
+			results, err = db.Search(query, limit)
 			if err != nil {
 				return fmt.Errorf("search failed: %w", err)
 			}
 
-			reason := "user_requested"
-			if flags.dataSource == "auto" {
-				reason = "api_unreachable"
-			}
-			prov := localProvenance(db, "search", reason)
+			prov := localProvenance(db, "search", "user_requested")
 
 			return outputSearchResults(cmd, flags, results, limit, prov)
 		},
