@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-11T22:04:55.967993Z",
+  "printing_press_version": "1.3.3-0.20260411195201-68bc76f3ade6+dirty",
+  "api_name": "hackernews",
+  "cli_name": "hackernews-pp-cli",
+  "mcp_binary": "hackernews-pp-mcp",
+  "mcp_tool_count": 10,
+  "mcp_public_tool_count": 10,
+  "mcp_ready": "full",
+  "auth_type": "none"
+}
