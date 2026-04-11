@@ -83,6 +83,25 @@
       }
     },
     {
+      "name": "flightgoat",
+      "category": "other",
+      "api": "flightgoat",
+      "description": "Free Google Flights search, Kayak nonstop route explorer, and optional FlightAware live tracking in one CLI. No API key required for search.",
+      "path": "library/other/flightgoat",
+      "mcp": {
+        "binary": "flightgoat-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 58,
+        "public_tool_count": 0,
+        "auth_type": "api_key",
+        "env_vars": [
+          "FLIGHTGOAT_API_KEY_AUTH"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "hubspot-pp-cli",
       "category": "sales-and-crm",
       "api": "HubSpot",
