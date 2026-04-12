@@ -306,6 +306,22 @@
         ],
         "mcp_ready": "full"
       }
+    },
+    {
+      "name": "weather-goat",
+      "category": "other",
+      "api": "Open-Meteo + NWS",
+      "description": "Weather forecasts, severe weather alerts, air quality, and GO/CAUTION/STOP activity verdicts for walk, bike, hike, commute, and drive",
+      "path": "library/other/weather-goat",
+      "mcp": {
+        "binary": "weather-goat-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 5,
+        "public_tool_count": 5,
+        "auth_type": "none",
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
     }
   ]
 }
