@@ -119,9 +119,16 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				}
 				s := fmt.Sprintf("%v", v)
 				indicator := green("OK")
-				if strings.Contains(s, "error") || strings.Contains(s, "not configured") || strings.Contains(s, "unreachable") || strings.Contains(s, "invalid") {
+				switch {
+				case strings.HasPrefix(s, "optional"):
+					// Optional-auth CLI with no key set — informational, not a failure.
+					indicator = yellow("INFO")
+				case strings.Contains(s, "error") || strings.Contains(s, "not configured") || strings.Contains(s, "unreachable") || strings.Contains(s, "invalid"):
 					indicator = red("FAIL")
-				} else if strings.Contains(s, "not ") || strings.Contains(s, "skipped") || strings.Contains(s, "inferred") {
+				case s == "not required":
+					// Public APIs: no auth needed is a healthy state, not a warning.
+					indicator = green("OK")
+				case strings.Contains(s, "not ") || strings.Contains(s, "skipped") || strings.Contains(s, "inferred"):
 					indicator = yellow("WARN")
 				}
 				fmt.Fprintf(w, "  %s %s: %s\n", indicator, ck.label, s)

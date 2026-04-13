@@ -15,7 +15,7 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/other/weather-goat/internal/config"
 )
 
-var version = "1.0.0"
+var version = "1.0.1"
 
 type rootFlags struct {
 	asJSON       bool
