@@ -1,0 +1,54 @@
+name: Verify SKILL.md
+
+on:
+  pull_request:
+    paths:
+      - 'library/**/SKILL.md'
+      - 'library/**/internal/cli/**'
+      - '.github/workflows/verify-skills.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'library/**/SKILL.md'
+      - 'library/**/internal/cli/**'
+
+jobs:
+  verify:
+    name: Validate SKILL.md against shipped CLI source
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout library
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run verifier against every CLI with a SKILL.md
+        id: verify
+        run: |
+          set +e
+          VERIFIER=".github/scripts/verify-skill/verify_skill.py"
+          if [ ! -f "$VERIFIER" ]; then
+            echo "::error::Verifier not found at $VERIFIER"
+            exit 2
+          fi
+          FAIL=0
+          CLI_COUNT=0
+          for dir in library/*/*/; do
+            if [ ! -f "$dir/SKILL.md" ]; then continue; fi
+            if [ ! -d "$dir/internal/cli" ]; then continue; fi
+            CLI_COUNT=$((CLI_COUNT + 1))
+            echo "::group::$dir"
+            python3 "$VERIFIER" --dir "$dir"
+            RC=$?
+            if [ "$RC" -ne 0 ]; then
+              FAIL=$((FAIL + 1))
+              echo "::error title=SKILL verification failed::$dir"
+            fi
+            echo "::endgroup::"
+          done
+          echo "CLIs checked: $CLI_COUNT"
+          echo "Failed: $FAIL"
+          exit $FAIL
