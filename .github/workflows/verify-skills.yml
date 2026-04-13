@@ -25,20 +25,13 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Fetch verifier from cli-printing-press
-        run: |
-          curl -fsSL \
-            https://raw.githubusercontent.com/mvanhorn/cli-printing-press/main/scripts/verify-skill/verify_skill.py \
-            -o /tmp/verify_skill.py
-          chmod +x /tmp/verify_skill.py
-
       - name: Run verifier against every CLI with a SKILL.md
         id: verify
         run: |
           set +e
-          VERIFIER="/tmp/verify_skill.py"
+          VERIFIER=".github/scripts/verify-skill/verify_skill.py"
           if [ ! -f "$VERIFIER" ]; then
-            echo "::error::Verifier not downloaded at $VERIFIER"
+            echo "::error::Verifier not found at $VERIFIER"
             exit 2
           fi
           FAIL=0
