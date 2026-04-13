@@ -127,7 +127,7 @@ These capabilities aren't available in any other tool for this API.
   _Parents get results actually edible by their kids, not marketing's idea of 'kid-friendly'._
 
   ```bash
-  recipe-goat-pp-cli search "chicken dinner" --kid-friendly --max-time 30m
+  recipe-goat-pp-cli search "chicken dinner" --kid-friendly --limit 10
   ```
 - **`meal-plan shopping-list`** — Aggregate ingredients across planned meals, reconcile units (2 cup + 1 cup milk → 3 cup), group by grocery aisle.
 

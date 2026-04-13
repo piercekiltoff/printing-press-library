@@ -144,7 +144,7 @@
       "command": "search --kid-friendly",
       "description": "Filter recipes against an editable ingredient-exclusion list (capers, anchovies, excess heat, raw fish, etc.). Personalizable per-child.",
       "rationale": "No recipe site has a useful kid-friendly filter; existing ones just show white-bread pasta.",
-      "example": "recipe-goat-pp-cli search \"chicken dinner\" --kid-friendly --max-time 30m",
+      "example": "recipe-goat-pp-cli search \"chicken dinner\" --kid-friendly --limit 10",
       "why_it_matters": "Parents get results actually edible by their kids, not marketing's idea of 'kid-friendly'.",
       "group": "Local state that compounds"
     },
@@ -236,7 +236,7 @@
       "command": "search --kid-friendly",
       "description": "Filter recipes against an editable ingredient-exclusion list (capers, anchovies, excess heat, raw fish, etc.). Personalizable per-child.",
       "rationale": "No recipe site has a useful kid-friendly filter; existing ones just show white-bread pasta.",
-      "example": "recipe-goat-pp-cli search \"chicken dinner\" --kid-friendly --max-time 30m",
+      "example": "recipe-goat-pp-cli search \"chicken dinner\" --kid-friendly --limit 10",
       "why_it_matters": "Parents get results actually edible by their kids, not marketing's idea of 'kid-friendly'.",
       "group": "Local state that compounds"
     },
