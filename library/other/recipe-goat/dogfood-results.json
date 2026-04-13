@@ -1,0 +1,65 @@
+{
+  "dir": "/Users/tmchow/printing-press/.runstate/cli-printing-press-8bdedb85/runs/20260413-091951/working/recipe-goat",
+  "spec_path": "/Users/tmchow/printing-press/.runstate/cli-printing-press-8bdedb85/runs/20260413-091951/research/recipe-goat-spec.yaml",
+  "verdict": "FAIL",
+  "path_check": {
+    "tested": 4,
+    "valid": 2,
+    "invalid": [
+      "/"
+    ],
+    "valid_pct": 50
+  },
+  "auth_check": {
+    "spec_scheme": "",
+    "generated_format": "unknown",
+    "match": true,
+    "detail": "spec not provided or no bot/bearer scheme detected"
+  },
+  "dead_flags": {
+    "total": 15,
+    "dead": 0
+  },
+  "dead_functions": {
+    "total": 46,
+    "dead": 0
+  },
+  "pipeline_check": {
+    "sync_calls_domain": true,
+    "search_calls_domain": false,
+    "domain_tables": 2,
+    "detail": "sync uses domain-specific Upsert methods; search methods not found; 2 domain tables found"
+  },
+  "example_check": {
+    "tested": 10,
+    "with_examples": 8,
+    "valid_examples": 8,
+    "missing": [
+      "channel workflow",
+      "meal plan cmd"
+    ],
+    "detail": "8/10 commands have examples"
+  },
+  "wiring_check": {
+    "command_tree": {
+      "defined": 45,
+      "registered": 45
+    },
+    "config_consistency": {
+      "consistent": true
+    },
+    "workflow_completeness": {
+      "skipped": true,
+      "total_steps": 0,
+      "mapped_steps": 0,
+      "detail": "no workflow_verify.yaml found"
+    }
+  },
+  "novel_features_check": {
+    "planned": 10,
+    "found": 10
+  },
+  "issues": [
+    "50% path validity against spec"
+  ]
+}

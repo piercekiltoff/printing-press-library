@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-13T19:39:30.553063Z",
+  "printing_press_version": "1.3.3-0.20260413033331-4ebfa08801e4+dirty",
+  "api_name": "recipe-goat",
+  "cli_name": "recipe-goat-pp-cli",
+  "mcp_binary": "recipe-goat-pp-mcp",
+  "mcp_tool_count": 3,
+  "mcp_ready": "full",
+  "auth_type": "api_key",
+  "auth_env_vars": [
+    "USDA_FDC_API_KEY"
+  ]
+}
