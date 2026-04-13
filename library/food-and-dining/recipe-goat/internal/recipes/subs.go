@@ -1,6 +1,9 @@
 package recipes
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // Sub is one suggested substitution for an ingredient.
 type Sub struct {
@@ -73,8 +76,13 @@ var subTable = []Sub{
 
 // LookupSubs returns substitutions for `ingredient` whose Context matches
 // `contextFilter` (case-insensitive) or is "any". Pass "" or "any" to return
-// all contexts. Matching on ingredient is case-insensitive substring so
-// "buttermilk" matches and so would "2 cups buttermilk".
+// all contexts.
+//
+// Matching is word-boundary aware: table ingredients are matched as whole
+// tokens against the user's query, so "butter" will not match "buttermilk"
+// (a previous bug). The needle itself is still allowed to be a phrase like
+// "2 cups buttermilk" — we tokenize it and look for the table ingredient as a
+// contiguous token sequence.
 func LookupSubs(ingredient string, contextFilter string) []Sub {
 	needle := strings.ToLower(strings.TrimSpace(ingredient))
 	if needle == "" {
@@ -83,7 +91,7 @@ func LookupSubs(ingredient string, contextFilter string) []Sub {
 	cf := strings.ToLower(strings.TrimSpace(contextFilter))
 	out := []Sub{}
 	for _, s := range subTable {
-		if !strings.Contains(needle, strings.ToLower(s.Ingredient)) && !strings.Contains(strings.ToLower(s.Ingredient), needle) {
+		if !ingredientMatches(needle, strings.ToLower(s.Ingredient)) {
 			continue
 		}
 		if cf != "" && cf != "any" && s.Context != "any" && s.Context != cf {
@@ -92,6 +100,34 @@ func LookupSubs(ingredient string, contextFilter string) []Sub {
 		out = append(out, s)
 	}
 	return out
+}
+
+// ingredientTokenRe splits on non-alphanumerics so "buttermilk" stays one
+// token and "brown sugar" becomes two.
+var ingredientTokenRe = regexp.MustCompile(`[a-z0-9]+`)
+
+// ingredientMatches returns true when the table ingredient `target` appears
+// as a contiguous sequence of whole tokens inside the user's query `needle`.
+// Both inputs are expected already lowercased.
+func ingredientMatches(needle, target string) bool {
+	needleToks := ingredientTokenRe.FindAllString(needle, -1)
+	targetToks := ingredientTokenRe.FindAllString(target, -1)
+	if len(targetToks) == 0 || len(needleToks) < len(targetToks) {
+		return false
+	}
+	for i := 0; i <= len(needleToks)-len(targetToks); i++ {
+		match := true
+		for j, t := range targetToks {
+			if needleToks[i+j] != t {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
 }
 
 // AllSubs returns the built-in sub table (used by 'sub --list' or similar).

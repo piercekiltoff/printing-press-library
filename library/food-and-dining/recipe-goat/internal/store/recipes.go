@@ -502,9 +502,35 @@ func (s *Store) KidExcludedRemove(ing string) error {
 	return err
 }
 
+// pantryStaples are ingredients the matcher treats as "everyone has" so that
+// recipes aren't reported as missing water, salt, or garnish. Keep this short
+// and obvious — these are the items a cook should not need to list in --have.
+var pantryStaples = []string{
+	"water", "ice", "ice cube", "ice cubes",
+	"salt", "kosher salt", "sea salt", "table salt", "coarse salt",
+	"pepper", "black pepper", "ground pepper",
+	"for garnish", "to taste", "to serve", "for serving", "for dusting",
+}
+
+// isPantryStaple returns true when an ingredient line is satisfied by
+// something every kitchen has on hand. Checked case-insensitively on the full
+// line so "Coarse sea salt, for garnish" matches on both "sea salt" and
+// "for garnish".
+func isPantryStaple(line string) bool {
+	lower := strings.ToLower(line)
+	for _, s := range pantryStaples {
+		if strings.Contains(lower, s) {
+			return true
+		}
+	}
+	return false
+}
+
 // MatchByIngredients returns recipes whose ingredient list can be assembled
 // from `have` with at most `missingMax` missing items. Matching is
-// case-insensitive substring per ingredient line.
+// case-insensitive substring per ingredient line. Pantry staples (water,
+// salt, pepper, ice, "for garnish" tags) are treated as always-available and
+// never counted as missing.
 func (s *Store) MatchByIngredients(have []string, missingMax int) ([]RecipeMatch, error) {
 	if missingMax < 0 {
 		missingMax = 0
@@ -527,6 +553,9 @@ func (s *Store) MatchByIngredients(have []string, missingMax int) ([]RecipeMatch
 		}
 		missing := []string{}
 		for _, line := range r.Ingredients {
+			if isPantryStaple(line) {
+				continue
+			}
 			lower := strings.ToLower(line)
 			matched := false
 			for _, h := range haveLower {

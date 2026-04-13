@@ -36,6 +36,8 @@ func newTrendingCmd(flags *rootFlags) *cobra.Command {
 
 			var mu sync.Mutex
 			all := []trendingEntry{}
+			siteErrors := map[string]string{} // hostname -> short reason
+			emptySites := []string{}          // reached but returned no recipes
 			var wg sync.WaitGroup
 			sem := make(chan struct{}, 4)
 			for _, s := range sites {
@@ -47,17 +49,33 @@ func newTrendingCmd(flags *rootFlags) *cobra.Command {
 					defer func() { <-sem }()
 					body, err := recipes.FetchHTML(ctx, client, "https://www."+s.Hostname+"/")
 					if err != nil {
+						mu.Lock()
+						siteErrors[s.Hostname] = shortErr(err)
+						mu.Unlock()
 						return
 					}
 					// Candidates are permissive (up to limit*4). Validate each
 					// by fetching its JSON-LD; keep only real Recipe pages.
 					res := validateTrendingCandidates(ctx, client, body, s, limit)
 					mu.Lock()
+					if len(res) == 0 {
+						emptySites = append(emptySites, s.Hostname)
+					}
 					all = append(all, res...)
 					mu.Unlock()
 				}()
 			}
 			wg.Wait()
+
+			// Surface per-site failures on stderr so partial runs are obvious.
+			// JSON output keeps stderr silent-free? No — warnings go to stderr
+			// either way so scripts can still capture JSON on stdout cleanly.
+			for host, why := range siteErrors {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warn: %s unreachable: %s\n", host, why)
+			}
+			for _, host := range emptySites {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warn: %s reachable but no recipes found on homepage\n", host)
+			}
 
 			if flags.asJSON {
 				return flags.printJSON(cmd, all)
@@ -77,6 +95,23 @@ func newTrendingCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&siteFilter, "site", "all", "Sites to query (CSV or 'all')")
 	cmd.Flags().IntVar(&limit, "limit", 5, "Max per site")
 	return cmd
+}
+
+// shortErr condenses an error to a single-line reason tag for stderr warnings.
+// Full error chains are too noisy when we're already listing 15 sites.
+func shortErr(err error) string {
+	if err == nil {
+		return ""
+	}
+	s := err.Error()
+	if i := strings.Index(s, "\n"); i >= 0 {
+		s = s[:i]
+	}
+	const max = 80
+	if len(s) > max {
+		s = s[:max] + "…"
+	}
+	return s
 }
 
 // validateTrendingCandidates pulls candidate links from homepage HTML (using

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -165,17 +166,17 @@ func recipeFromNode(n map[string]any, sourceURL string) *Recipe {
 func asString(v any) string {
 	switch x := v.(type) {
 	case string:
-		return strings.TrimSpace(x)
+		return html.UnescapeString(strings.TrimSpace(x))
 	case []any:
 		if len(x) > 0 {
 			return asString(x[0])
 		}
 	case map[string]any:
 		if s, ok := x["@value"].(string); ok {
-			return s
+			return html.UnescapeString(s)
 		}
 		if s, ok := x["name"].(string); ok {
-			return s
+			return html.UnescapeString(s)
 		}
 	case float64:
 		return strconv.FormatFloat(x, 'f', -1, 64)
@@ -188,7 +189,7 @@ func asString(v any) string {
 func extractAuthor(v any) string {
 	switch x := v.(type) {
 	case string:
-		return strings.TrimSpace(x)
+		return html.UnescapeString(strings.TrimSpace(x))
 	case map[string]any:
 		return asString(x["name"])
 	case []any:
@@ -249,19 +250,19 @@ func extractStringList(v any) []string {
 			out := make([]string, 0, len(lines))
 			for _, l := range lines {
 				if t := strings.TrimSpace(l); t != "" {
-					out = append(out, t)
+					out = append(out, html.UnescapeString(t))
 				}
 			}
 			return out
 		}
-		return []string{s}
+		return []string{html.UnescapeString(s)}
 	case []any:
 		out := make([]string, 0, len(x))
 		for _, it := range x {
 			switch v2 := it.(type) {
 			case string:
 				if s := strings.TrimSpace(v2); s != "" {
-					out = append(out, s)
+					out = append(out, html.UnescapeString(s))
 				}
 			case map[string]any:
 				if s := asString(v2["name"]); s != "" {
@@ -354,7 +355,7 @@ func CleanInstructions(raw any) []string {
 		out := make([]string, 0, len(lines))
 		for _, l := range lines {
 			if t := strings.TrimSpace(l); t != "" {
-				out = append(out, t)
+				out = append(out, html.UnescapeString(t))
 			}
 		}
 		return out
@@ -364,7 +365,7 @@ func CleanInstructions(raw any) []string {
 			switch x := item.(type) {
 			case string:
 				if s := strings.TrimSpace(x); s != "" {
-					out = append(out, s)
+					out = append(out, html.UnescapeString(s))
 				}
 			case map[string]any:
 				t, _ := x["@type"].(string)
