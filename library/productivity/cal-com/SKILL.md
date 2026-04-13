@@ -113,11 +113,23 @@ Stats shows which event types get booked most; no-show flags problematic attende
 ### Find a gap and book
 
 ```bash
-cal-com-pp-cli slots --event-type-id 123 --date 2026-05-15 --agent
-cal-com-pp-cli bookings create --event-type-id 123 --start 2026-05-15T14:00:00Z --attendee-email alice@example.com --agent
+# List available slots between two ISO-8601 UTC datetimes for an event type:
+cal-com-pp-cli slots \
+  --event-type-slug "intro-call" --username alice \
+  --start 2026-05-15T00:00:00Z --end 2026-05-15T23:59:59Z --agent
+
+# Create a booking by piping a JSON body on stdin (bookings create is
+# stdin-only — every field goes into the JSON payload):
+cat <<'EOF' | cal-com-pp-cli bookings create --stdin --agent
+{
+  "start": "2026-05-15T14:00:00Z",
+  "eventTypeId": 123,
+  "attendee": {"name": "Alice", "email": "alice@example.com", "timeZone": "America/Los_Angeles"}
+}
+EOF
 ```
 
-Ask for open slots on a given date, then create the booking programmatically.
+Ask for open slots by event-type slug + user + date window, then POST a booking body via stdin.
 
 ## Auth Setup
 

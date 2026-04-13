@@ -127,32 +127,35 @@ One atomic request, transactional rollback if any link fails validation. Much fa
 ### Weekly campaign analytics
 
 ```bash
-dub-pp-cli analytics --interval 7d --group-by country --agent
-dub-pp-cli analytics --interval 7d --group-by device --agent
-dub-pp-cli tags analytics --tag "q4-launch" --agent
+# Analytics retrieve with a time window and group-by dimension:
+dub-pp-cli analytics retrieve --interval 7d --group-by country --agent
+dub-pp-cli analytics retrieve --interval 7d --group-by device --agent
+
+# Tag-level rollup aggregates EVERY tag — filter client-side for "q4-launch":
+dub-pp-cli tags analytics --agent | jq '.[] | select(.tag_name=="q4-launch")'
 ```
 
-Three slices of the same week's data: geographic, device, and campaign-tagged. Compose into a weekly report.
+`analytics retrieve` is the API-backed analytics call with `--interval` (time window) and `--group-by` (country, device, referrer, etc.). `tags analytics` is a local-DB rollup over all tags — jq filters to the campaign tag. The top-level `dub-pp-cli analytics` command is a different thing: it summarizes locally-synced data and uses `--type`, not `--interval`.
 
 ### Partner program month-end
 
 ```bash
-dub-pp-cli commissions --interval 30d --agent          # what's owed to whom
-dub-pp-cli payouts --interval 30d --dry-run --agent    # preview
-dub-pp-cli payouts --interval 30d --yes --agent        # execute
-dub-pp-cli partners leaderboard --interval 30d --agent # ranking
+dub-pp-cli commissions --interval 30d --agent          # what's owed (last 30 days)
+dub-pp-cli payouts --status pending --agent            # list pending payouts
+dub-pp-cli payouts create --partner-id <id> --agent    # create a payout (per partner)
+dub-pp-cli partners leaderboard --sort earnings --limit 25 --agent
 ```
 
-Always preview with `--dry-run` before running payouts. The leaderboard call at the end gives context for the next month's partner outreach.
+`commissions` supports `--interval` for time-windowing. `payouts` is scoped by status or partner; the leaderboard is aggregated from synced data and ranks by earnings/clicks/sales/commissions/name. For bulk previews, use `--dry-run` (universal) on mutation commands.
 
 ### Find stale links eating domain budget
 
 ```bash
 dub-pp-cli links stale --days 90 --agent
-dub-pp-cli links bulk-delete --ids "$(dub-pp-cli links stale --days 90 --agent | jq -r '.[].id' | paste -sd, -)" --dry-run
+dub-pp-cli links bulk-delete --link-ids "$(dub-pp-cli links stale --days 90 --agent | jq -r '.[].id' | paste -sd, -)" --dry-run
 ```
 
-Identify links nobody's clicked in 90 days, then preview a bulk delete. Domain-hygiene task that's hard to do in the web UI.
+Identify links nobody's clicked in 90 days, then preview a bulk delete (`--link-ids` is a comma-separated list, max 100 per call). Domain-hygiene task that's hard to do in the web UI.
 
 ## Auth Setup
 
