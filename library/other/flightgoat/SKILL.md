@@ -3,7 +3,7 @@ name: pp-flightgoat
 description: "Use this skill whenever the user asks about flight prices, cheap-dates discovery, nonstop routes from an airport, long-haul flights, flight tracking, airport info, or wants to search Google Flights / Kayak / FlightAware from the terminal. Three-source flight CLI: free Google Flights + Kayak nonstop (no API key) plus optional FlightAware tracking. Triggers on phrasings like 'cheapest dates to Tokyo in June', 'nonstop flights from Seattle', 'track flight UA123', 'longest nonstop from SFO', 'where can I fly direct from Denver', 'compare flights SEA to LHR next Tuesday'."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
-metadata: '{"openclaw":{"requires":{"bins":["flightgoat-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/travel/flightgoat/cmd/flightgoat-pp-cli@latest","bins":["flightgoat-pp-cli"],"label":"Install via go install"}]}}'
+metadata: '{"openclaw":{"requires":{"bins":["flightgoat-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/other/flightgoat/cmd/flightgoat-pp-cli@latest","bins":["flightgoat-pp-cli"],"label":"Install via go install"}]}}'
 ---
 
 # Flightgoat — Printing Press CLI
@@ -168,16 +168,16 @@ Add `--agent` to any command. Expands to `--json --compact --no-input --no-color
 ### CLI
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/library/travel/flightgoat/cmd/flightgoat-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/other/flightgoat/cmd/flightgoat-pp-cli@latest
 flightgoat-pp-cli doctor
 ```
 
-(Module path currently `library/other/flightgoat` — will move to `library/travel/` when republished.)
+(CLI is categorized as `travel` in the catalog but currently lives at `library/other/flightgoat` in this repo; a republish will move it to `library/travel/flightgoat` and both paths above will update.)
 
 ### MCP Server
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/library/travel/flightgoat/cmd/flightgoat-pp-mcp@latest
+go install github.com/mvanhorn/printing-press-library/library/other/flightgoat/cmd/flightgoat-pp-mcp@latest
 claude mcp add flightgoat-pp-mcp -- flightgoat-pp-mcp
 ```
 
