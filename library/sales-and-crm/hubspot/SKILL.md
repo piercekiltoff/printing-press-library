@@ -99,18 +99,15 @@ hubspot-pp-cli deals coverage --pipeline <PIPELINE_ID> --limit 50 --agent
 
 ```bash
 hubspot-pp-cli contacts search --query "alice@acme.com" --agent
-CONTACT_ID=$(hubspot-pp-cli contacts search --query "alice@acme.com" --agent | jq -r '.results[0].id')
 hubspot-pp-cli calls create \
   --hs-call-title "Pricing discussion" \
   --hs-call-body "Discussed pricing, sending proposal by Thursday" \
   --hs-call-duration 1200000 --hs-call-direction OUTBOUND \
   --hs-timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --agent
-# Then associate the call to the contact:
-hubspot-pp-cli associations calls "$CALL_ID" contacts "$CONTACT_ID" --agent
 ```
 
-Note: duration is milliseconds; associations are explicit via the `associations` command (there is no direct contact-id flag on `calls create`).
+Note: duration is milliseconds. The CLI's `associations <fromType> <id> <toType>` command LISTS associations — it doesn't create them. To associate the new call with the contact in one request, pipe a full JSON body via `calls create --stdin` that includes an `associations` array; see HubSpot's API docs for the body shape.
 
 ### What does Acme look like in our CRM?
 
