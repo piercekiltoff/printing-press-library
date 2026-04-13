@@ -99,10 +99,10 @@
     },
     {
       "name": "flightgoat",
-      "category": "other",
+      "category": "travel",
       "api": "flightgoat",
       "description": "Free Google Flights search, Kayak nonstop route explorer, and optional FlightAware live tracking in one CLI. No API key required for search.",
-      "path": "library/other/flightgoat",
+      "path": "library/travel/flightgoat",
       "mcp": {
         "binary": "flightgoat-pp-mcp",
         "transport": "stdio",
@@ -120,7 +120,7 @@
       "name": "hackernews",
       "category": "media-and-entertainment",
       "api": "Hacker News",
-      "description": "Browse, search, and analyze Hacker News — front page, Show HN, Ask HN, Who is Hiring, topic pulse, and pipe-friendly output",
+      "description": "Browse, search, and analyze Hacker News \u2014 front page, Show HN, Ask HN, Who is Hiring, topic pulse, and pipe-friendly output",
       "path": "library/media-and-entertainment/hackernews",
       "mcp": {
         "binary": "hackernews-pp-mcp",
@@ -216,10 +216,10 @@
     },
     {
       "name": "pagliacci-pizza",
-      "category": "other",
+      "category": "food-and-dining",
       "api": "Pagliacci Pizza",
       "description": "Order pizza, browse menus, manage rewards, and track deliveries from Pagliacci Pizza",
-      "path": "library/other/pagliacci-pizza",
+      "path": "library/food-and-dining/pagliacci-pizza",
       "mcp": {
         "binary": "pagliacci-pizza-pp-mcp",
         "transport": "stdio",
@@ -230,7 +230,7 @@
         "mcp_ready": "partial",
         "manifest_checksum": "sha256:a091019421be7ba98f81894faec69400b2f2caf2c5d42d1beb1f26c8750867f1",
         "spec_format": "openapi3",
-        "manifest_url": "library/other/pagliacci-pizza/tools-manifest.json"
+        "manifest_url": "library/food-and-dining/pagliacci-pizza/tools-manifest.json"
       }
     },
     {
@@ -254,10 +254,10 @@
     },
     {
       "name": "recipe-goat",
-      "category": "other",
+      "category": "food-and-dining",
       "api": "Cross-site recipe aggregator (15 trusted sites) + USDA FoodData Central",
-      "description": "Find the best version of any recipe across 15 trusted sites — rank by trust × rating × reviews, build a local SQLite cookbook with pantry match, meal plans, cook log, substitutions, and USDA-backed nutrition backfill",
-      "path": "library/other/recipe-goat",
+      "description": "Find the best version of any recipe across 15 trusted sites \u2014 rank by trust \u00d7 rating \u00d7 reviews, build a local SQLite cookbook with pantry match, meal plans, cook log, substitutions, and USDA-backed nutrition backfill",
+      "path": "library/food-and-dining/recipe-goat",
       "mcp": {
         "binary": "recipe-goat-pp-mcp",
         "transport": "stdio",
@@ -344,7 +344,7 @@
       "name": "yahoo-finance",
       "category": "commerce",
       "api": "Yahoo Finance",
-      "description": "Quotes, charts, fundamentals, options chains, and a local portfolio/watchlist tracker against Yahoo Finance — no API key, with Chrome-session fallback for rate-limited IPs",
+      "description": "Quotes, charts, fundamentals, options chains, and a local portfolio/watchlist tracker against Yahoo Finance \u2014 no API key, with Chrome-session fallback for rate-limited IPs",
       "path": "library/commerce/yahoo-finance",
       "mcp": {
         "binary": "yahoo-finance-pp-mcp",

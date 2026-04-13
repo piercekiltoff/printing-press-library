@@ -43,7 +43,7 @@ The skill reads the registry, matches your query to the right CLI, handles insta
 |-----|-----|-----|-------|-------------|
 | **[archive-is-pp-cli](library/media-and-entertainment/archive-is/)** | archive-is-pp-mcp | Archive.today | 6 | Bypass paywalls and look up web archives via archive.today. Lookup-before-submit, Wayback fallback, agent-hints on stderr. |
 | **[espn-pp-cli](library/media-and-entertainment/espn/)** | espn-pp-mcp | ESPN | 3 | Sports data — scores, stats, standings, schedules, news, odds across 17 sports and 139 leagues. |
-| **[flightgoat-pp-cli](library/other/flightgoat/)** | flightgoat-pp-mcp | flightgoat | 58 | Free Google Flights search, Kayak nonstop route explorer, and optional FlightAware live tracking (API key optional for tracking). |
+| **[flightgoat-pp-cli](library/travel/flightgoat/)** | flightgoat-pp-mcp | flightgoat | 58 | Free Google Flights search, Kayak nonstop route explorer, and optional FlightAware live tracking (API key optional for tracking). |
 | **[postman-explore-pp-cli](library/developer-tools/postman-explore/)** | postman-explore-pp-mcp | Postman Explore | 9 | Search and browse the Postman API Network. |
 
 ### API key required
@@ -70,7 +70,7 @@ The skill reads the registry, matches your query to the right CLI, handles insta
 
 | CLI | MCP | API | Tools | What it does |
 |-----|-----|-----|-------|-------------|
-| **[pagliacci-pizza-pp-cli](library/other/pagliacci-pizza/)** | pagliacci-pizza-pp-mcp | Pagliacci Pizza | 41 (10 public) | Order pizza, browse menus, manage rewards. 10 tools (stores, menus, pricing, scheduling) work without login. |
+| **[pagliacci-pizza-pp-cli](library/food-and-dining/pagliacci-pizza/)** | pagliacci-pizza-pp-mcp | Pagliacci Pizza | 41 (10 public) | Order pizza, browse menus, manage rewards. 10 tools (stores, menus, pricing, scheduling) work without login. |
 
 ### CLI only (no MCP server)
 
@@ -117,13 +117,13 @@ go install github.com/mvanhorn/printing-press-library/library/developer-tools/tr
 go install github.com/mvanhorn/printing-press-library/library/commerce/dominos-pp-cli/cmd/dominos-pp-cli@latest
 
 # Pagliacci Pizza — pizza ordering (browser login for full access)
-go install github.com/mvanhorn/printing-press-library/library/other/pagliacci-pizza/cmd/pagliacci-pizza-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/cmd/pagliacci-pizza-pp-cli@latest
 
 # Archive.today — paywall bypass and archive lookup (no auth)
 go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/archive-is/cmd/archive-is-pp-cli@latest
 
 # flightgoat — flights search and tracking (FLIGHTGOAT_API_KEY_AUTH optional for FlightAware tracking)
-go install github.com/mvanhorn/printing-press-library/library/other/flightgoat/cmd/flightgoat-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/travel/flightgoat/cmd/flightgoat-pp-cli@latest
 
 # Instacart — grocery ordering via web GraphQL (browser cookie session)
 go install github.com/mvanhorn/printing-press-library/library/commerce/instacart/cmd/instacart-pp-cli@latest
