@@ -10,9 +10,9 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/config"
+	"github.com/spf13/cobra"
 )
 
 var version = "1.0.0"
@@ -41,12 +41,12 @@ func Execute() error {
 
 	rootCmd := &cobra.Command{
 		Use:   "recipe-goat-pp-cli",
-		Short: `Recipe Goat CLI — Find the best version of any recipe across 15 trusted sites — then plan, shop, and cook with a local kitchen companion.`,
-		Long: `Recipe Goat CLI — Find the best version of any recipe across 15 trusted sites — then plan, shop, and cook with a local kitchen companion.
+		Short: `Recipe Goat CLI — Find the best version of any recipe across curated sites — then plan, shop, and cook with a local kitchen companion.`,
+		Long: `Recipe Goat CLI — Find the best version of any recipe across curated sites — then plan, shop, and cook with a local kitchen companion.
 
 Highlights (not in the official API docs):
-  • goat   Query any dish across 15 trusted recipe sites and rank results by normalized ra…
-  • sub   Aggregate ingredient substitutions from King Arthur, Serious Eats, AllRecipes r…
+  • goat   Query any dish across curated recipe sites and rank results by normalized ra…
+  • sub   Aggregate ingredient substitutions from King Arthur, Serious Eats, and Budge…
   • cookbook match   Find recipes in the local cookbook that you can make right now with listed ingr…
   • tonight   Pick dinner in 2 seconds: filter cookbook by time budget, recency from cook log…
   • recipe reviews   Surface the top modifications cooks actually made to a recipe ("added an egg: 2…

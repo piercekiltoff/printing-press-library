@@ -282,7 +282,7 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
 		"api":         "recipe-goat",
-		"description": "Recipe GOAT — find the best version of any recipe across 15 trusted sites, with offline cookbook, pantry match,...",
+		"description": "Recipe GOAT — find the best version of any recipe across curated sites, with offline cookbook, pantry match,...",
 		"archetype":   "generic",
 		"tool_count":  3,
 		"auth": map[string]any{

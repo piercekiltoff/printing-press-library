@@ -1,8 +1,8 @@
 # Recipe Goat CLI
 
-**Find the best version of any recipe across 15 trusted sites — then plan, shop, and cook with a local kitchen companion.**
+**Find the best version of any recipe across curated cuisine-authority sites — then plan, shop, and cook with a local kitchen companion.**
 
-Recipe GOAT aggregates 15 of the web's most trusted recipe sites (King Arthur, Serious Eats, Budget Bytes, Smitten Kitchen, Food52, BBC Good Food, and more), ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution aggregation), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
+Recipe GOAT aggregates a curated set of independent, cuisine-authoritative recipe sites — Nagi (RecipeTin Eats), Swasthi (Indian Healthy Recipes), Elaine (China Sichuan Food), The Woks of Life, Just One Cookbook, Sally's Baking Addiction, King Arthur Baking, Budget Bytes, BBC Food, and more — ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. When users paste URLs from bot-detection-gated sites (allrecipes, food52, etc.), archive.org's Wayback Machine is used to recover the content. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution aggregation), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
 
 ## Install
 
@@ -43,7 +43,7 @@ Verify with `recipe-goat-pp-cli doctor` — Auth should show `INFO Auth: optiona
 recipe-goat-pp-cli doctor
 
 
-# Rank the best version across 15 sites
+# Rank the best version across the curated corpus
 recipe-goat-pp-cli goat "chicken tikka masala" --limit 5
 
 
@@ -77,7 +77,7 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   recipe-goat-pp-cli goat "chicken tikka masala" --limit 5 --json
   ```
-- **`sub`** — Aggregate ingredient substitutions from King Arthur, Serious Eats, AllRecipes reviews, and Budget Bytes. Ranked by source trust with ratios and context.
+- **`sub`** — Aggregate ingredient substitutions from King Arthur Baking and other trusted baking-science sources. Ranked by source trust with ratios and context.
 
   _When a recipe needs a sub, agents can pick the best one given the cooking context (baking vs marinade) instead of suggesting the first hit on Google._
 
@@ -253,7 +253,8 @@ Environment variables:
 
 ### API-specific
 
-- **HTTP 402 or 403 on AllRecipes / Simply Recipes / EatingWell / Serious Eats fetches** — These are Dotdash Meredith sites with TLS-fingerprint bot detection. Run `recipe-goat-pp-cli doctor` to see per-site reachability. The CLI falls back to other sources automatically; your `goat` ranking will show results from reachable sites.
+- **HTTP 402 or 403 on AllRecipes / Simply Recipes / EatingWell / Food52 / FoodNetwork fetches** — These sites serve Cloudflare/Akamai bot-detection challenges to non-browser clients and are not in the default `goat` fan-out. When you paste a URL from one of them into `recipe get`, the CLI automatically falls back to archive.org's Wayback Machine and prints `warn: archive fallback: <url>` on stderr so you know the content came from an archived snapshot rather than live.
+- **HTTP 403 on Serious Eats fetches** — Still in the default corpus but intermittently Akamai-gated. Run `recipe-goat-pp-cli doctor` to see current reachability; your `goat` ranking still ranks across reachable sites.
 - **Nutrition missing or marked `[source: site]` with obviously wrong numbers** — Pass `--nutrition` to force USDA backfill. Requires USDA_FDC_API_KEY. Mark suspect recipes with `cookbook tag <id> nutrition-suspect`.
 - **`goat` query returns nothing** — Check `--site` filter if set. Try broader terms. Use `search --debug` to see per-site fetch attempts and which sites fell back to cache or failed.
 - **Shopping list has duplicate entries with different units** — Run `cookbook ingredients canonicalize` to re-run the parser. If an ingredient consistently fails, add to `~/.config/recipe-goat-pp-cli/ingredient-aliases.toml`.

@@ -16,7 +16,7 @@ import (
 func newRecipeCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "recipe",
-		Short:   "Fetch, open, and inspect recipes from 15 trusted sites",
+		Short:   "Fetch, open, and inspect recipes from curated sites",
 		Long:    "Subcommands to fetch a recipe by URL, open a saved recipe in the browser, or inspect reviews/cost.",
 		Example: "  recipe-goat-pp-cli recipe get https://www.seriouseats.com/the-best-chili-recipe",
 	}
