@@ -5,9 +5,8 @@ package cli
 
 import (
 	"fmt"
-	"net/http"
+	"os"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/commerce/yahoo-finance/internal/config"
@@ -30,72 +29,36 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				report["base_url"] = cfg.BaseURL
 			}
 
-			// Check auth
+			// Yahoo does not require API credentials.
 			report["auth"] = "not required"
+			report["session_path"] = yahooSessionPath()
+			if _, err := os.Stat(yahooSessionPath()); err == nil {
+				report["session"] = "cached"
+			} else {
+				report["session"] = "not cached"
+			}
 
-			// Check auth environment variables
-
-			// Check API connectivity and validate credentials
-			if cfg != nil && cfg.BaseURL != "" {
-				httpClient := &http.Client{Timeout: 5 * time.Second}
-				baseURL := strings.TrimRight(cfg.BaseURL, "/")
-
-				// Step 1: Basic reachability (unauthenticated HEAD)
-				headReq, _ := http.NewRequest("HEAD", baseURL, nil)
-				headResp, headErr := httpClient.Do(headReq)
-				apiReachable := false
-				if headErr == nil {
-					headResp.Body.Close()
-					apiReachable = true
-				}
-
-				// If HEAD failed, try GET on common health endpoints
-				if !apiReachable {
-					for _, p := range []string{"/health", "/healthz", "/status", "/ping", ""} {
-						healthResp, healthErr := httpClient.Get(baseURL + p)
-						if healthErr != nil {
-							continue
-						}
-						healthResp.Body.Close()
-						apiReachable = true
-						break
+			// Verify the real Yahoo handshake with a tiny live quote request.
+			c, err := flags.newClient()
+			if err != nil {
+				report["api"] = fmt.Sprintf("error: %s", err)
+			} else {
+				c.NoCache = true
+				if _, err := c.Get("/v7/finance/quote", map[string]string{"symbols": "AAPL"}); err != nil {
+					msg := err.Error()
+					switch {
+					case strings.Contains(msg, "HTTP 429"), strings.Contains(msg, "rate-limited"):
+						report["api"] = "rate limited"
+						report["session_hint"] = "Run `yahoo-finance-pp-cli auth login-chrome --cookies ... --crumb ...` if this IP is blocked."
+					default:
+						report["api"] = fmt.Sprintf("error: %s", msg)
 					}
-				}
-
-				if !apiReachable {
-					report["api"] = fmt.Sprintf("unreachable: %s", headErr)
 				} else {
 					report["api"] = "reachable"
-				}
-
-				// Step 2: Validate credentials with an authenticated request
-				authHeader := cfg.AuthHeader()
-				if authHeader == "" {
-					// No auth configured — skip credential validation
-				} else if !apiReachable {
-					report["credentials"] = "skipped (API unreachable)"
-				} else {
-					authReq, _ := http.NewRequest("GET", baseURL, nil)
-					authReq.Header.Set("Authorization", authHeader)
-					authReq.Header.Set("User-Agent", "yahoo-finance-pp-cli")
-					authResp, authErr := httpClient.Do(authReq)
-					if authErr != nil {
-						report["credentials"] = "error: could not reach API"
-					} else {
-						authResp.Body.Close()
-						switch {
-						case authResp.StatusCode >= 200 && authResp.StatusCode < 300:
-							report["credentials"] = "valid"
-						case authResp.StatusCode == 401 || authResp.StatusCode == 403:
-							report["credentials"] = fmt.Sprintf("invalid (HTTP %d) — check your credentials", authResp.StatusCode)
-						default:
-							// Non-auth HTTP error (404, 500, etc.) — don't blame credentials
-							report["credentials"] = fmt.Sprintf("ok (HTTP %d from base URL, but auth was accepted)", authResp.StatusCode)
-						}
+					if c.Crumb() != "" {
+						report["session"] = "ready"
 					}
 				}
-			} else if cfg != nil && cfg.BaseURL == "" {
-				report["api"] = "not configured (set base_url in config file)"
 			}
 
 			report["version"] = version
@@ -109,8 +72,8 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			checkKeys := []struct{ key, label string }{
 				{"config", "Config"},
 				{"auth", "Auth"},
+				{"session", "Session"},
 				{"api", "API"},
-				{"credentials", "Credentials"},
 			}
 			for _, ck := range checkKeys {
 				v, ok := report[ck.key]
@@ -127,12 +90,14 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				fmt.Fprintf(w, "  %s %s: %s\n", indicator, ck.label, s)
 			}
 			// Print info keys without status indicator
-			for _, key := range []string{"config_path", "base_url", "auth_source", "version"} {
+			for _, key := range []string{"config_path", "base_url", "session_path", "version"} {
 				if v, ok := report[key]; ok {
 					fmt.Fprintf(w, "  %s: %v\n", key, v)
 				}
 			}
-			// Print auth setup hints (indented under Auth line)
+			if hint, ok := report["session_hint"]; ok {
+				fmt.Fprintf(w, "  hint: %v\n", hint)
+			}
 			return nil
 		},
 	}

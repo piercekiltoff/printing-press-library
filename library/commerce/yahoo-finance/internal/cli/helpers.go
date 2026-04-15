@@ -107,12 +107,13 @@ func classifyAPIError(err error) error {
 		fmt.Fprintln(os.Stderr, "already exists (no-op)")
 		return nil
 	case strings.Contains(msg, "HTTP 401"):
-		return authErr(fmt.Errorf("%w\nhint: check your API credentials."+
-			"\n      Run 'yahoo-finance-pp-cli doctor' to check auth status.", err))
+		return authErr(fmt.Errorf("%w\nhint: Yahoo rejected the current session."+
+			"\n      Run 'yahoo-finance-pp-cli doctor' to verify the crumb handshake."+
+			"\n      If you are being rate-limited, use 'yahoo-finance-pp-cli auth login-chrome ...'.", err))
 	case strings.Contains(msg, "HTTP 403"):
-		return authErr(fmt.Errorf("%w\nhint: permission denied. Your credentials are valid but lack access to this resource."+
-			"\n      Check that your API key has the required permissions."+
-			"\n      Run 'yahoo-finance-pp-cli doctor' to check auth status.", err))
+		return authErr(fmt.Errorf("%w\nhint: Yahoo rejected the current session or blocked this IP."+
+			"\n      Run 'yahoo-finance-pp-cli doctor' to verify the handshake."+
+			"\n      If needed, import a browser session with 'yahoo-finance-pp-cli auth login-chrome ...'.", err))
 	case strings.Contains(msg, "HTTP 404"):
 		return notFoundErr(fmt.Errorf("%w\nhint: resource not found. Run the 'list' command to see available items", err))
 	case strings.Contains(msg, "HTTP 429"):

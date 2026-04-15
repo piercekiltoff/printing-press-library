@@ -248,7 +248,7 @@ func (c *Client) saveCookiesToDisk() {
 }
 
 // SetChromeCookies imports cookies captured from a live Chrome profile. Used by
-// `auth login --chrome` when the crumb handshake is blocked from the user's IP.
+// `auth login-chrome` when the crumb handshake is blocked from the user's IP.
 func (c *Client) SetChromeCookies(cookies []*http.Cookie, crumb string) error {
 	if c.HTTPClient.Jar == nil {
 		return fmt.Errorf("client has no cookie jar")
@@ -305,11 +305,11 @@ func (c *Client) ensureCrumb() (string, error) {
 	resp2.Body.Close()
 
 	if resp2.StatusCode >= 400 {
-		return "", fmt.Errorf("crumb fetch returned HTTP %d: %s — try `yahoo-finance-pp-cli auth login --chrome` to import browser cookies", resp2.StatusCode, truncateBody(body))
+		return "", fmt.Errorf("crumb fetch returned HTTP %d: %s — try `yahoo-finance-pp-cli auth login-chrome` to import browser cookies", resp2.StatusCode, truncateBody(body))
 	}
 	crumb := strings.TrimSpace(string(body))
 	if crumb == "" || strings.Contains(crumb, "Too Many Requests") {
-		return "", fmt.Errorf("crumb endpoint rate-limited or empty (got %q) — try `yahoo-finance-pp-cli auth login --chrome`", crumb)
+		return "", fmt.Errorf("crumb endpoint rate-limited or empty (got %q) — try `yahoo-finance-pp-cli auth login-chrome`", crumb)
 	}
 
 	c.crumbMu.Lock()

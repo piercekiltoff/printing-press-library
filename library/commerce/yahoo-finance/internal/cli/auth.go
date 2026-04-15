@@ -4,7 +4,10 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/commerce/yahoo-finance/internal/config"
@@ -13,11 +16,10 @@ import (
 func newAuthCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
-		Short: "Manage authentication tokens",
+		Short: "Inspect or clear the cached Yahoo session",
 	}
 
 	cmd.AddCommand(newAuthStatusCmd(flags))
-	cmd.AddCommand(newAuthSetTokenCmd(flags))
 	cmd.AddCommand(newAuthLogoutCmd(flags))
 
 	return cmd
@@ -26,50 +28,41 @@ func newAuthCmd(flags *rootFlags) *cobra.Command {
 func newAuthStatusCmd(flags *rootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "status",
-		Short:   "Show authentication status",
+		Short:   "Show cached Yahoo session status",
 		Example: "  yahoo-finance-pp-cli auth status",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load(flags.configPath)
+			c, err := flags.newClient()
 			if err != nil {
-				return configErr(err)
+				return err
+			}
+
+			sessionPath := yahooSessionPath()
+			sessionState := "not cached"
+			if _, err := os.Stat(sessionPath); err == nil {
+				sessionState = "cached"
+			}
+			crumbState := "not loaded"
+			if c.Crumb() != "" {
+				crumbState = "loaded"
 			}
 
 			w := cmd.OutOrStdout()
-			header := cfg.AuthHeader()
-			if header == "" {
-				fmt.Fprintln(w, red("Not authenticated"))
-				fmt.Fprintln(w, "")
-				fmt.Fprintln(w, "Set your token:")
-				fmt.Fprintf(w, "  yahoo-finance-pp-cli auth set-token <token>\n")
-				return authErr(fmt.Errorf("no credentials configured"))
+			if flags.asJSON {
+				return flags.printJSON(cmd, map[string]any{
+					"auth_required": false,
+					"session":       sessionState,
+					"crumb":         crumbState,
+					"session_path":  sessionPath,
+				})
 			}
 
-			fmt.Fprintln(w, green("Authenticated"))
-			fmt.Fprintf(w, "  Source: %s\n", cfg.AuthSource)
-			fmt.Fprintf(w, "  Config: %s\n", cfg.Path)
-			return nil
-		},
-	}
-}
-
-func newAuthSetTokenCmd(flags *rootFlags) *cobra.Command {
-	return &cobra.Command{
-		Use:     "set-token <token>",
-		Short:   "Save an API token to the config file",
-		Example: "  yahoo-finance-pp-cli auth set-token sk_live_abc123",
-		Args:    cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load(flags.configPath)
-			if err != nil {
-				return configErr(err)
-			}
-
-			// Save the token directly via the config's save mechanism
-			if err := cfg.SaveTokens("", "", args[0], "", cfg.TokenExpiry); err != nil {
-				return configErr(fmt.Errorf("saving token: %w", err))
-			}
-
-			fmt.Fprintf(cmd.OutOrStdout(), "Token saved to %s\n", cfg.Path)
+			fmt.Fprintln(w, "Yahoo session auth is automatic; no API key is required.")
+			fmt.Fprintf(w, "Cached session: %s\n", sessionState)
+			fmt.Fprintf(w, "Crumb: %s\n", crumbState)
+			fmt.Fprintf(w, "Session file: %s\n", sessionPath)
+			fmt.Fprintln(w, "")
+			fmt.Fprintln(w, "Use `yahoo-finance-pp-cli doctor` to verify the live Yahoo handshake.")
+			fmt.Fprintln(w, "Use `yahoo-finance-pp-cli auth login-chrome --cookies ... --crumb ...` only if Yahoo is returning HTTP 429 from this IP.")
 			return nil
 		},
 	}
@@ -78,21 +71,34 @@ func newAuthSetTokenCmd(flags *rootFlags) *cobra.Command {
 func newAuthLogoutCmd(flags *rootFlags) *cobra.Command {
 	return &cobra.Command{
 		Use:     "logout",
-		Short:   "Clear stored credentials",
+		Short:   "Clear the cached Yahoo session",
 		Example: "  yahoo-finance-pp-cli auth logout",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load(flags.configPath)
-			if err != nil {
-				return configErr(err)
+			cfg, cfgErr := config.Load(flags.configPath)
+			if cfgErr == nil {
+				if err := cfg.ClearTokens(); err != nil {
+					return configErr(fmt.Errorf("clearing config state: %w", err))
+				}
 			}
 
-			if err := cfg.ClearTokens(); err != nil {
-				return configErr(fmt.Errorf("clearing tokens: %w", err))
+			sessionPath := yahooSessionPath()
+			switch err := os.Remove(sessionPath); {
+			case err == nil:
+				fmt.Fprintf(cmd.OutOrStdout(), "Cached Yahoo session cleared: %s\n", sessionPath)
+			case errors.Is(err, os.ErrNotExist):
+				fmt.Fprintln(cmd.OutOrStdout(), "No cached Yahoo session was present.")
+			default:
+				return fmt.Errorf("clearing session file: %w", err)
 			}
-
-			// Warn if env vars still set
-			fmt.Fprintln(cmd.OutOrStdout(), "Logged out. Credentials cleared.")
 			return nil
 		},
 	}
+}
+
+func yahooSessionPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "~/.config/yahoo-finance-pp-cli/session.json"
+	}
+	return filepath.Join(home, ".config", "yahoo-finance-pp-cli", "session.json")
 }

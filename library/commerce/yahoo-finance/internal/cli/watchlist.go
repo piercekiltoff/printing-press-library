@@ -81,7 +81,7 @@ func newWatchlistCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "watchlist",
 		Short: "Create, manage, and query local watchlists of ticker symbols",
-		Long:  "Watchlists live in your local SQLite database. They power multi-symbol commands like `quotes`, `digest`, and `earnings-calendar --watchlist`.",
+		Long:  "Watchlists live in your local SQLite database. They power multi-symbol commands like `digest`, `compare`, and `watchlist show`.",
 		Example: `  # Create a watchlist and add symbols
   yahoo-finance-pp-cli watchlist create tech
   yahoo-finance-pp-cli watchlist add tech AAPL MSFT NVDA GOOG
@@ -1327,7 +1327,8 @@ func classifyMoneyness(optType string, strike, spot float64) string {
 }
 
 // ---------------------------------------------------------------------------
-// auth login --chrome (stub with helpful guidance)
+// auth login-chrome imports a browser session when Yahoo blocks the automatic
+// crumb bootstrap from the current IP.
 // ---------------------------------------------------------------------------
 
 // chromeLoginEnabled signals whether the Chrome cookie import path is compiled
