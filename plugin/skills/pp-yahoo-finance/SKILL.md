@@ -1,6 +1,6 @@
 ---
 name: pp-yahoo-finance
-description: "Use this skill whenever the user asks about stock quotes, share prices, market data, options chains, analyst recommendations, earnings, fundamentals, dividends, portfolio tracking, or market movers — or whenever they mention a specific ticker (AAPL, MSFT, NVDA, SPY, TSLA, etc.) in a context that suggests looking it up. Yahoo Finance CLI with portfolio tracking, watchlist-driven digests, options moneyness filters, and a Chrome-session fallback for when Yahoo rate-limits the current IP. No API key. Works offline once synced. Triggers on natural phrasings like 'how's AAPL doing', 'track my portfolio', 'what are the most active stocks today', 'show me SPY options expiring soon', 'what's my unrealized P&L'."
+description: "Use Yahoo Finance CLI for stock and ETF quotes, charts, fundamentals, options chains, symbol search, trending tickers, local watchlists, portfolio lots, and market digests. Use when the user asks about a ticker, portfolio performance, option filtering, market movers, or wants Yahoo Finance data in a terminal or agent-friendly format."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
 metadata: '{"openclaw":{"requires":{"bins":["yahoo-finance-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/commerce/yahoo-finance/cmd/yahoo-finance-pp-cli@latest","bins":["yahoo-finance-pp-cli"],"label":"Install via go install"}]}}'
@@ -8,78 +8,157 @@ metadata: '{"openclaw":{"requires":{"bins":["yahoo-finance-pp-cli"]},"install":[
 
 # Yahoo Finance — Printing Press CLI
 
-Every Yahoo Finance feature, plus the things every existing tool is missing: portfolio tracking, watchlist-driven digests, options moneyness filters, and a Chrome-session fallback for when Yahoo blocks your IP. Powered by the reverse-engineered `query1.finance.yahoo.com` and `query2.finance.yahoo.com` endpoints that `yfinance`, `yahoo-finance2`, and `yahooquery` have proven over a decade. No API key required.
+Yahoo Finance CLI wraps Yahoo market data in a terminal-first interface and adds a local SQLite layer for watchlists, portfolio lots, SQL queries, and derived workflows like `digest`, `compare`, `sparkline`, `fx`, and filtered `options-chain`.
+
+It uses Yahoo's crumb/cookie session model automatically. No API key is required.
 
 ## When to Use This CLI
 
-Reach for this when a user wants market data, price history, fundamentals, options chains, analyst recommendations, or wants to track a portfolio or watchlist locally. It's the only Yahoo Finance tool that can recover when Yahoo rate-limits the current IP, via the `auth login-chrome` flow that imports a live browser session.
+Use this CLI when the user asks about:
 
-Don't reach for this when the user needs a real-time streaming feed (Yahoo's endpoints are snapshot-only, ~15-minute delayed) or has a paid feed like Polygon or Alpaca that supplies cleaner data.
+- stock, ETF, or fund quotes
+- chart history or price ranges
+- fundamentals or quote summary modules
+- options chains or simple moneyness filtering
+- trending symbols or predefined market screeners
+- ticker search and autocomplete
+- local watchlists
+- portfolio cost basis and unrealized P&L
+
+Do not use it when the user specifically needs:
+
+- real-time streaming tick data
+- exchange-grade paid data feeds
+- broker/account actions like order entry
+
+## Best Command Mapping
+
+- "How is AAPL doing?" → `yahoo-finance-pp-cli quote --symbols AAPL --agent`
+- "Give me a deeper view on Microsoft" → `yahoo-finance-pp-cli quote summary MSFT --agent`
+- "Show me NVDA for the last year" → `yahoo-finance-pp-cli chart NVDA --range 1y --interval 1wk --agent`
+- "What are the top gainers today?" → `yahoo-finance-pp-cli screener --scr-ids day_gainers --agent`
+- "What is trending in the US?" → `yahoo-finance-pp-cli trending US --agent`
+- "Track my portfolio" → `yahoo-finance-pp-cli portfolio perf --agent`
+- "Compare AAPL, MSFT, and NVDA" → `yahoo-finance-pp-cli compare AAPL MSFT NVDA --agent`
+- "Show me SPY options expiring soon" → `yahoo-finance-pp-cli options-chain SPY --max-dte 45 --agent`
 
 ## Unique Capabilities
 
-These aren't available in any other Yahoo Finance CLI, library, or MCP server.
+### `watchlist`
 
-### Local state that compounds
+Save named ticker groups locally for reuse across commands.
 
-- **`portfolio add <symbol> <shares> <cost-per-share> [--purchased YYYY-MM-DD]`** — Record a purchase lot. Multiple lots per symbol supported.
+```bash
+yahoo-finance-pp-cli watchlist create tech
+yahoo-finance-pp-cli watchlist add tech AAPL MSFT NVDA GOOG
+```
 
-  _Transforms a quote-lookup tool into a position-tracking tool. No other Yahoo Finance wrapper has lot-level state._
+### `portfolio`
 
-- **`portfolio perf`** — Current market value, cost basis, unrealized P&L per position, and portfolio total. Joins live quotes with local lots.
+Track local lots with purchase date and cost basis, then join them with live quotes.
 
-- **`portfolio gains`** — Per-lot unrealized gain/loss sorted by magnitude. Used for tax-lot selection when selling.
+```bash
+yahoo-finance-pp-cli portfolio add AAPL 50 185.50 --purchased 2024-06-15
+yahoo-finance-pp-cli portfolio perf --agent
+yahoo-finance-pp-cli portfolio gains --agent
+```
 
-- **`watchlist create|add|show|list|remove|delete`** — Named collections of tickers backed by SQLite. Feed them into multi-symbol commands like `digest` and `compare`.
+### `digest`
 
-- **`sql "<query>"`** — Raw SQLite against the local database. Cross-entity queries work: `SELECT symbol, SUM(shares*cost_basis) FROM portfolio_lots GROUP BY symbol`.
+Summarize a watchlist into biggest gainers and losers.
 
-### Commands that only make sense with local state
+```bash
+yahoo-finance-pp-cli digest --watchlist tech --agent
+```
 
-- **`digest --watchlist <name>`** — Biggest gainers, losers, and headline quotes across a watchlist. Morning briefing in a single line.
+### `compare`
 
-  _Compresses the "check my holdings" ritual into one agent call._
+Show a normalized multi-symbol comparison.
 
-- **`compare <symbol> <symbol> [symbol...]`** — Side-by-side quote + 52w range + market cap across 2+ symbols, parallel-fetched.
+```bash
+yahoo-finance-pp-cli compare AAPL MSFT GOOG NVDA --agent
+```
 
-- **`sparkline <symbol>`** — Unicode sparkline (`▁▂▃▄▅▆▇█`) of recent price action. Zero-config terminal chart.
+### `sparkline`
 
-- **`options-chain <symbol> [--moneyness otm|itm|atm] [--max-dte N] [--type calls|puts]`** — Options chain filtered to out-of-the-money calls expiring within 45 days, for example. Yahoo's raw endpoint returns everything; this filters to what traders actually want.
+Render a compact terminal sparkline from recent chart data.
 
-- **`fx <from> <to> [--amount N]`** — Currency conversion using Yahoo Finance's FX pairs. `fx USD EUR --amount 100` in one line.
+```bash
+yahoo-finance-pp-cli sparkline AAPL --range 3mo
+```
 
-### Reachability mitigation
+### `sql`
 
-- **`auth login-chrome`** — When Yahoo returns HTTP 429 for your IP (common on cloud providers and some residential ISPs), import a live Chrome session and the CLI uses its crumb + cookies instead.
+Run SQL directly against the local Yahoo/watchlist/portfolio database.
 
-  _This is the differentiator. IPs get blocked; without Chrome import, the CLI is dead. With it, one manual cookie export restores full functionality._
+```bash
+yahoo-finance-pp-cli sql "SELECT watchlist, COUNT(*) FROM watchlist_members GROUP BY watchlist" --agent
+```
 
-- **Adaptive rate limiter** — Starts conservative, ramps up on success, halves on 429, persists the ceiling per-session.
+### `fx`
 
-- **Automatic crumb bootstrap** — The `fc.yahoo.com` → `getcrumb` handshake that every working wrapper does, built-in and cached to disk for 24 hours.
+Convert currencies without manually building Yahoo FX pair symbols.
+
+```bash
+yahoo-finance-pp-cli fx USD EUR --amount 100 --agent
+```
+
+### `options-chain`
+
+Filter Yahoo's raw chain into a usable options view by moneyness and DTE.
+
+```bash
+yahoo-finance-pp-cli options-chain AAPL --moneyness otm --max-dte 45 --type calls --agent
+```
+
+### `auth login-chrome`
+
+Import a browser session when Yahoo blocks the automatic crumb bootstrap from the current IP.
+
+```bash
+yahoo-finance-pp-cli auth login-chrome --cookies ~/yahoo-cookies.json --crumb abc123
+```
 
 ## Command Reference
 
-Base commands (spec-derived):
+Market data:
 
-- `yahoo-finance-pp-cli quote --symbols AAPL,MSFT,NVDA` — Current quotes (batched, comma-separated)
-- `yahoo-finance-pp-cli chart <symbol>` — Historical OHLCV price data
-- `yahoo-finance-pp-cli fundamentals <symbol>` — EPS, revenue, margins, cash flow time series
-- `yahoo-finance-pp-cli insights <symbol>` — Technical events, valuation, research reports
-- `yahoo-finance-pp-cli options <symbol>` — Raw options chain (calls and puts)
-- `yahoo-finance-pp-cli recommendations <symbol>` — Symbols that share analyst recommendations
-- `yahoo-finance-pp-cli screener <id>` — Predefined screener (`day_gainers`, `most_actives`, etc.)
-- `yahoo-finance-pp-cli trending <region>` — Top trending symbols in a region (e.g., `US`)
-- `yahoo-finance-pp-cli search <query>` — Full-text search across synced data or live API
-- `yahoo-finance-pp-cli autocomplete <prefix>` — Legacy symbol autocomplete (faster than search)
-- `yahoo-finance-pp-cli sync` / `export` / `import` — Local-store management
-- `yahoo-finance-pp-cli doctor` — Verify setup and credentials
+- `yahoo-finance-pp-cli quote --symbols AAPL,MSFT`
+- `yahoo-finance-pp-cli quote summary AAPL`
+- `yahoo-finance-pp-cli chart AAPL --range 1mo --interval 1d`
+- `yahoo-finance-pp-cli fundamentals AAPL --type annualTotalRevenue`
+- `yahoo-finance-pp-cli insights --symbol AAPL`
+- `yahoo-finance-pp-cli options AAPL`
+- `yahoo-finance-pp-cli recommendations AAPL`
+- `yahoo-finance-pp-cli screener --scr-ids day_gainers`
+- `yahoo-finance-pp-cli trending US`
+- `yahoo-finance-pp-cli search "apple"`
+- `yahoo-finance-pp-cli autocomplete --query appl`
 
-Unique commands (see Unique Capabilities above): `portfolio`, `watchlist`, `digest`, `compare`, `sparkline`, `sql`, `fx`, `options-chain`, `auth login-chrome`.
+Local-state and derived workflows:
 
-## Recipes
+- `yahoo-finance-pp-cli watchlist create|add|remove|list|show|delete`
+- `yahoo-finance-pp-cli portfolio add|list|remove|perf|gains`
+- `yahoo-finance-pp-cli digest`
+- `yahoo-finance-pp-cli compare`
+- `yahoo-finance-pp-cli sparkline`
+- `yahoo-finance-pp-cli sql`
+- `yahoo-finance-pp-cli fx`
+- `yahoo-finance-pp-cli options-chain`
 
-Multi-step flows that combine commands.
+Utilities:
+
+- `yahoo-finance-pp-cli sync`
+- `yahoo-finance-pp-cli workflow archive`
+- `yahoo-finance-pp-cli workflow status`
+- `yahoo-finance-pp-cli export`
+- `yahoo-finance-pp-cli import`
+- `yahoo-finance-pp-cli doctor`
+- `yahoo-finance-pp-cli auth status`
+- `yahoo-finance-pp-cli auth logout`
+- `yahoo-finance-pp-cli auth login-chrome`
+
+## Practical Recipes
 
 ### Morning briefing over a watchlist
 
@@ -88,8 +167,6 @@ yahoo-finance-pp-cli watchlist create tech
 yahoo-finance-pp-cli watchlist add tech AAPL MSFT NVDA GOOG META
 yahoo-finance-pp-cli digest --watchlist tech --agent
 ```
-
-Builds a named watchlist once, then `digest` surfaces the biggest overnight movers and quote snapshots across every ticker. Run daily from cron or a morning kickoff. Add/remove symbols any time without rebuilding.
 
 ### Track a real portfolio with cost basis
 
@@ -100,66 +177,135 @@ yahoo-finance-pp-cli portfolio perf --agent
 yahoo-finance-pp-cli portfolio gains --agent
 ```
 
-Record every purchase as a lot (symbol, shares, cost-per-share, purchase date). `perf` returns unrealized P&L per position and portfolio total, joining live quotes with local lots. `gains` breaks down per-lot gain/loss for tax-lot selection.
+### Compare several large-cap names
+
+```bash
+yahoo-finance-pp-cli compare AAPL MSFT NVDA GOOG --agent
+```
 
 ### Fallback when Yahoo blocks your IP
 
 ```bash
-# 1. Open finance.yahoo.com in Chrome. Accept cookies. Stay signed out.
-# 2. Export cookies for *.yahoo.com as JSON (use a cookie-export browser extension).
-# 3. Get a crumb from DevTools console on finance.yahoo.com:
-#    fetch('/v1/test/getcrumb').then(r => r.text()).then(console.log)
 yahoo-finance-pp-cli auth login-chrome --cookies ~/yahoo-cookies.json --crumb abc123
-yahoo-finance-pp-cli doctor  # verify the imported session works
+yahoo-finance-pp-cli doctor
 ```
 
-One-time setup when running from a cloud IP or otherwise-blocked address. The imported session persists to `~/.config/yahoo-finance-pp-cli/session.json`. Automatic crumb bootstrap takes over once the session works.
+## Session Model
 
-## Auth Setup
+Yahoo Finance uses a crumb/cookie session model, not an API key model.
 
-Yahoo Finance has no official API and no API key. The CLI bootstraps a session automatically by visiting `fc.yahoo.com`, extracting A1/B1 cookies, and fetching a crumb from `/v1/test/getcrumb` — the same pattern every working wrapper uses.
-
-If your IP is rate-limited (common on cloud providers; Yahoo returns HTTP 429 on every request), use the Chrome-import recipe above. The CLI then uses the imported crumb and cookies on every request, bypassing the automatic handshake.
-
-Run `yahoo-finance-pp-cli doctor` to verify setup.
+- first live request: the CLI tries to bootstrap the session automatically
+- if Yahoo blocks that bootstrap with HTTP 429: use `auth login-chrome`
+- inspect cached state: `auth status`
+- clear a bad cached session: `auth logout`
 
 ## Agent Mode
 
-Add `--agent` to any command. It expands to `--json --compact --no-input --no-color --yes` — structured output, no prompts, machine-parseable. Every command also accepts `--select <fields>` for cherry-picked fields, `--dry-run` to preview the request, and `--no-cache` to bypass the 5-minute GET cache.
+Add `--agent` when you want machine-oriented output.
+
+It expands to:
+
+- `--json`
+- `--compact`
+- `--no-input`
+- `--no-color`
+- `--yes`
+
+Useful companion flags:
+
+- `--select <fields>`
+- `--dry-run`
+- `--no-cache`
+- `--data-source auto|live|local`
+- `--rate-limit <n>`
 
 ## Exit Codes
 
 | Code | Meaning |
-|------|---------|
+| --- | --- |
 | 0 | Success |
 | 2 | Usage error |
 | 3 | Resource not found |
-| 4 | Authentication required |
-| 5 | API error (upstream Yahoo issue) |
-| 7 | Rate limited (wait and retry, or switch to `auth login-chrome`) |
+| 4 | Session/auth-style error |
+| 5 | API error |
+| 7 | Rate limited |
 | 10 | Config error |
-
-## Installation
-
-### CLI
-
-1. Check Go: `go version` (requires Go 1.23+)
-2. Install: `go install github.com/mvanhorn/printing-press-library/library/commerce/yahoo-finance/cmd/yahoo-finance-pp-cli@latest`
-3. Verify: `yahoo-finance-pp-cli --version`
-4. Ensure `$GOPATH/bin` is on `$PATH`.
-
-### MCP Server
-
-```bash
-go install github.com/mvanhorn/printing-press-library/library/commerce/yahoo-finance/cmd/yahoo-finance-pp-mcp@latest
-claude mcp add yahoo-finance-pp-mcp -- yahoo-finance-pp-mcp
-claude mcp list  # verify
-```
 
 ## Argument Parsing
 
 Given `$ARGUMENTS`:
 
-1. **Empty, `help`, or `--help`** → run `yahoo-finance-pp-cli --help`
-2. **`install`** → CLI installation; **`install mcp`** → MCP installation
-3. **Anything else** → check `which yahoo-finance-pp-cli` (offer to install if missing), match the user's intent to a command from Unique Capabilities or Command Reference above, then run it with `--agent` for structured output. Drill into subcommand help if the mapping is ambiguous.
+1. Empty, `help`, or `--help` → run `yahoo-finance-pp-cli --help`
+2. `install` → install CLI
+3. `install mcp` → install MCP server
+4. Anything else → map the user request to the best command above and run it with `--agent`
+
+## CLI Installation
+
+```bash
+go install github.com/mvanhorn/printing-press-library/library/commerce/yahoo-finance/cmd/yahoo-finance-pp-cli@latest
+yahoo-finance-pp-cli --version
+```
+
+## MCP Server Installation
+
+```bash
+go install github.com/mvanhorn/printing-press-library/library/commerce/yahoo-finance/cmd/yahoo-finance-pp-mcp@latest
+claude mcp add yahoo-finance yahoo-finance-pp-mcp
+```
+
+## Direct Use
+
+1. Check whether `yahoo-finance-pp-cli` is installed.
+2. If not installed, offer CLI installation.
+3. Choose the command that matches the user's intent most directly.
+4. Run with `--agent` unless the user explicitly wants human-formatted output.
+5. If Yahoo is rate-limiting this machine, guide the user to `auth login-chrome`.
+
+<!-- pr-218-features -->
+## Agent Workflow Features
+
+This CLI exposes three shared agent-workflow capabilities patched in from cli-printing-press PR #218.
+
+### Named profiles
+
+Persist a set of flags under a name and reuse them across invocations.
+
+```bash
+# Save the current non-default flags as a named profile
+yahoo-finance-pp-cli profile save <name>
+
+# Use a profile — overlays its values onto any flag you don't set explicitly
+yahoo-finance-pp-cli --profile <name> <command>
+
+# List / inspect / remove
+yahoo-finance-pp-cli profile list
+yahoo-finance-pp-cli profile show <name>
+yahoo-finance-pp-cli profile delete <name> --yes
+```
+
+Flag precedence: explicit flag > env var > profile > default.
+
+### --deliver
+
+Route command output to a sink other than stdout. Useful when an agent needs to hand a result to a file, a webhook, or another process without plumbing.
+
+```bash
+yahoo-finance-pp-cli <command> --deliver file:/path/to/out.json
+yahoo-finance-pp-cli <command> --deliver webhook:https://hooks.example/in
+```
+
+File sinks write atomically (tmp + rename). Webhook sinks POST `application/json` (or `application/x-ndjson` when `--compact` is set). Unknown schemes produce a structured refusal listing the supported set.
+
+### feedback
+
+Record in-band feedback about this CLI from the agent side of the loop. Local-only by default; safe to call without configuration.
+
+```bash
+yahoo-finance-pp-cli feedback "what surprised you or tripped you up"
+yahoo-finance-pp-cli feedback list         # show local entries
+yahoo-finance-pp-cli feedback clear --yes  # wipe
+```
+
+Entries append to `~/.yahoo-finance-pp-cli/feedback.jsonl` as JSON lines. When `YAHOO_FINANCE_FEEDBACK_ENDPOINT` is set and either `--send` is passed or `YAHOO_FINANCE_FEEDBACK_AUTO_SEND=true`, the entry is also POSTed upstream (non-blocking — local write always succeeds).
+

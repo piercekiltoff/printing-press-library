@@ -1,6 +1,6 @@
 ---
 name: pp-recipe-goat
-description: "Find the best version of any recipe across 15 trusted sites — then plan, shop, and cook with a local kitchen companion. Trigger phrases: `find me the best recipe for`, `what can I make with`, `substitute for`, `plan meals for the week`, `shopping list from my meal plan`, `use recipe-goat`, `run recipe-goat`."
+description: "Find the best version of any recipe across curated cuisine-authority sites — then plan, shop, and cook with a local kitchen companion. Trigger phrases: `find me the best recipe for`, `what can I make with`, `substitute for`, `plan meals for the week`, `shopping list from my meal plan`, `use recipe-goat`, `run recipe-goat`."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
 metadata: '{"openclaw":{"requires":{"bins":["recipe-goat-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat-pp-cli/cmd/recipe-goat-pp-cli@latest","bins":["recipe-goat-pp-cli"],"label":"Install via go install"}]}}'
@@ -8,7 +8,7 @@ metadata: '{"openclaw":{"requires":{"bins":["recipe-goat-pp-cli"]},"install":[{"
 
 # Recipe Goat — Printing Press CLI
 
-Recipe GOAT aggregates 15 of the web's most trusted recipe sites (King Arthur, Serious Eats, Budget Bytes, Smitten Kitchen, Food52, BBC Good Food, and more), ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution aggregation), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
+Recipe GOAT aggregates a curated set of independent, cuisine-authoritative recipe sites — Nagi (RecipeTin Eats), Swasthi (Indian Healthy Recipes), Elaine (China Sichuan Food), The Woks of Life, Just One Cookbook, Sally's Baking Addiction, King Arthur Baking, Budget Bytes, BBC Food, and more — ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. When users paste URLs from bot-detection-gated sites (allrecipes, food52, etc.), archive.org's Wayback Machine is used to recover the content. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution aggregation), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
 
 ## When to Use This CLI
 
@@ -20,14 +20,14 @@ These capabilities aren't available in any other tool for this API.
 
 ### Cross-site intelligence
 
-- **`goat`** — Query any dish across 15 trusted recipe sites and rank results by normalized rating × review count × author trust × site trust × recency.
+- **`goat`** — Query any dish across curated recipe sites and rank results by normalized rating × review count × site trust × recency.
 
   _Use this when you need the single best version of a dish — the agent gets structured results with provenance and trust signals instead of guessing from a web search._
 
   ```bash
   recipe-goat-pp-cli goat "chicken tikka masala" --limit 5 --json
   ```
-- **`sub`** — Aggregate ingredient substitutions from King Arthur, Serious Eats, AllRecipes reviews, and Budget Bytes. Ranked by source trust with ratios and context.
+- **`sub`** — Aggregate ingredient substitutions from King Arthur Baking and other trusted baking-science sources. Ranked by source trust with ratios and context.
 
   _When a recipe needs a sub, agents can pick the best one given the cooking context (baking vs marinade) instead of suggesting the first hit on Google._
 
@@ -112,7 +112,7 @@ These capabilities aren't available in any other tool for this API.
 recipe-goat-pp-cli goat "carbonara" --limit 5
 ```
 
-Query 15 sites, return the top 5 ranked by trust + rating + reviews with source attribution.
+Query the curated corpus, return the top 5 ranked by trust + rating + reviews with source attribution.
 
 ### Save and tag for weeknight
 
@@ -222,3 +222,51 @@ Parse `$ARGUMENTS`:
    recipe-goat-pp-cli <command> [subcommand] [args] --agent
    ```
 4. If ambiguous, drill into subcommand help: `recipe-goat-pp-cli <command> --help`.
+
+<!-- pr-218-features -->
+## Agent Workflow Features
+
+This CLI exposes three shared agent-workflow capabilities patched in from cli-printing-press PR #218.
+
+### Named profiles
+
+Persist a set of flags under a name and reuse them across invocations.
+
+```bash
+# Save the current non-default flags as a named profile
+recipe-goat-pp-cli profile save <name>
+
+# Use a profile — overlays its values onto any flag you don't set explicitly
+recipe-goat-pp-cli --profile <name> <command>
+
+# List / inspect / remove
+recipe-goat-pp-cli profile list
+recipe-goat-pp-cli profile show <name>
+recipe-goat-pp-cli profile delete <name> --yes
+```
+
+Flag precedence: explicit flag > env var > profile > default.
+
+### --deliver
+
+Route command output to a sink other than stdout. Useful when an agent needs to hand a result to a file, a webhook, or another process without plumbing.
+
+```bash
+recipe-goat-pp-cli <command> --deliver file:/path/to/out.json
+recipe-goat-pp-cli <command> --deliver webhook:https://hooks.example/in
+```
+
+File sinks write atomically (tmp + rename). Webhook sinks POST `application/json` (or `application/x-ndjson` when `--compact` is set). Unknown schemes produce a structured refusal listing the supported set.
+
+### feedback
+
+Record in-band feedback about this CLI from the agent side of the loop. Local-only by default; safe to call without configuration.
+
+```bash
+recipe-goat-pp-cli feedback "what surprised you or tripped you up"
+recipe-goat-pp-cli feedback list         # show local entries
+recipe-goat-pp-cli feedback clear --yes  # wipe
+```
+
+Entries append to `~/.recipe-goat-pp-cli/feedback.jsonl` as JSON lines. When `RECIPE_GOAT_FEEDBACK_ENDPOINT` is set and either `--send` is passed or `RECIPE_GOAT_FEEDBACK_AUTO_SEND=true`, the entry is also POSTed upstream (non-blocking — local write always succeeds).
+
