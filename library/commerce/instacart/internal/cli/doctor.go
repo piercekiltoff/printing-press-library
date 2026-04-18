@@ -63,7 +63,37 @@ Exit codes:
 				}
 			}
 
-			// 4. Auth session
+			// 4. History sync state
+			orderCount, _ := app.Store.CountOrders()
+			itemCount, _, _ := app.Store.CountPurchasedItems()
+			historyEnabled := true
+			for _, opName := range instacart.HistoryOpNames() {
+				if h, _ := app.Store.LookupOp(opName); h == "" {
+					historyEnabled = false
+					break
+				}
+			}
+			if !historyEnabled {
+				results = append(results, checkResult{
+					Name:   "history",
+					Status: "warn",
+					Detail: "hashes not yet captured -- see docs/history-ops-capture.md",
+				})
+			} else if orderCount == 0 && itemCount == 0 {
+				results = append(results, checkResult{
+					Name:   "history",
+					Status: "warn",
+					Detail: "not synced yet -- run `instacart history sync`",
+				})
+			} else {
+				results = append(results, checkResult{
+					Name:   "history",
+					Status: "ok",
+					Detail: fmt.Sprintf("%d orders, %d purchased items", orderCount, itemCount),
+				})
+			}
+
+			// 5. Auth session
 			sess, err := auth.LoadSession()
 			if err != nil {
 				results = append(results, checkResult{Name: "session", Status: "fail", Detail: err.Error()})
@@ -72,7 +102,7 @@ Exit codes:
 			results = append(results, checkResult{Name: "session", Status: "ok", Detail: fmt.Sprintf("%d cookies from %s", len(sess.Cookies), sess.Source)})
 			app.Session = sess
 
-			// 5. Live ping - CurrentUserFields
+			// 6. Live ping - CurrentUserFields
 			pingCtx, cancel := context.WithTimeout(app.Ctx, 10*time.Second)
 			defer cancel()
 			ok, detail := liveUserPing(pingCtx, app.Session, app.Cfg, app.Store)
