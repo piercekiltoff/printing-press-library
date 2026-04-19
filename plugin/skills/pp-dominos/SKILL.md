@@ -1,6 +1,6 @@
 ---
 name: pp-dominos
-description: "Printing Press CLI for Dominos Pizza. Order pizza, browse menus, track deliveries, and manage rewards from the terminal Trigger phrases: 'install dominos', 'use dominos', 'run dominos', 'Dominos Pizza commands', 'setup dominos'."
+description: "Printing Press CLI for Dominos Pizza. Order pizza, browse menus, track deliveries, and manage rewards from the terminal Capabilities include: address, analytics, cart, checkout, compare-prices, deals, feedback, graphql, menu, nutrition, orders, profile, quickstart, rewards, stores, tail, template, track, tracking. Trigger phrases: 'install dominos', 'use dominos', 'run dominos', 'Dominos Pizza commands', 'setup dominos'."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
 metadata: '{"openclaw":{"requires":{"bins":["dominos-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/commerce/dominos-pp-cli/cmd/dominos-pp-cli@latest","bins":["dominos-pp-cli"],"label":"Install via go install"}]}}'
@@ -51,6 +51,26 @@ Parse `$ARGUMENTS`:
 1. Check if installed: `which dominos-pp-cli`
    If not found, offer to install (see CLI Installation above).
 2. Discover commands: `dominos-pp-cli --help`
+   Key commands:
+   - `address` — Manage saved addresses
+   - `analytics` — Run analytics queries on locally synced data
+   - `cart` — Manage locally stored shopping carts
+   - `checkout` — Check out the active cart — validate, price, and place your order
+   - `compare-prices` — Compare item pricing across nearby stores
+   - `deals` — List and analyze store deals
+   - `feedback` — Record feedback about this CLI (local by default; upstream opt-in)
+   - `graphql` — GraphQL BFF operations (discovered via sniff)
+   - `menu` — Browse store menus and search for items
+   - `nutrition` — Calculate nutrition totals from cached menu data
+   - `orders` — Create, validate, price, and place orders
+   - `profile` — Named sets of flags saved for reuse
+   - `quickstart` — Get started with Domino's CLI — guided setup and first order
+   - `rewards` — Show loyalty points, rewards, and member deals
+   - `stores` — Find and get information about Domino's stores
+   - `tail` — Stream live changes by polling the API at regular intervals
+   - `template` — Manage saved order templates
+   - `track` — Track an order and optionally watch for status updates
+   - `tracking` — Track active orders
 3. Match the user query to the best command. Drill into subcommand help if needed: `dominos-pp-cli <command> --help`
 4. Execute with the `--agent` flag:
    ```bash

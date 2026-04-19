@@ -129,6 +129,7 @@ No browser automation. No Playwright. No Composio subscription. Just a binary.`,
 		newCartsCmd(),
 		newCaptureCmd(),
 		newOpsCmd(),
+		newHistoryCmd(),
 	)
 
 	return root

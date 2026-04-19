@@ -10,7 +10,14 @@ import (
 
 	"github.com/mvanhorn/printing-press-library/library/commerce/instacart/internal/gql"
 	"github.com/mvanhorn/printing-press-library/library/commerce/instacart/internal/instacart"
+	"github.com/mvanhorn/printing-press-library/library/commerce/instacart/internal/store"
 )
+
+// historyMaxAgeDays caps how old a history match can be before the
+// resolver falls through to live search. 365 days is generous enough that
+// seasonal items (pumpkin pie mix in November) still resolve, while
+// protecting against really stale signals.
+const historyMaxAgeDays = 365
 
 // newAddCmd is THE killer feature. `instacart add costco "2% milk"` resolves
 // the product via direct GraphQL and fires UpdateCartItemsMutation against
@@ -20,6 +27,7 @@ func newAddCmd() *cobra.Command {
 	var yes bool
 	var cartID string
 	var itemID string
+	var noHistory bool
 	cmd := &cobra.Command{
 		Use:   "add <retailer> <query...>",
 		Short: "Add a product to a retailer cart by natural language",
@@ -69,6 +77,7 @@ Instacart app or web UI.`,
 			}
 
 			var pick SearchResult
+			resolvedVia := "live"
 			if itemID != "" {
 				pick = SearchResult{
 					Name:      "(item id supplied: " + itemID + ")",
@@ -76,15 +85,28 @@ Instacart app or web UI.`,
 					ProductID: itemID[strings.LastIndex(itemID, "-")+1:],
 					Retailer:  retailer,
 				}
+				resolvedVia = "item-id"
 			} else {
-				results, err := gql.ResolveProducts(app.Ctx, app.Session, app.Cfg, app.Store, retailer, query, 5)
-				if err != nil {
-					return coded(ExitNotFound, "could not resolve %q at %s: %v", query, retailer, err)
+				// History-first resolver: when the user has bought something
+				// that FTS-matches the query at this retailer recently enough,
+				// skip the three-call live search entirely. Falls through on
+				// low confidence, stale last_purchased_at, or --no-history.
+				if !noHistory {
+					if hit := resolveFromHistory(app, retailer, query); hit != nil {
+						pick = *hit
+						resolvedVia = "history"
+					}
 				}
-				if len(results) == 0 {
-					return coded(ExitNotFound, "no results for %q at %s", query, retailer)
+				if pick.ItemID == "" {
+					results, err := gql.ResolveProducts(app.Ctx, app.Session, app.Cfg, app.Store, retailer, query, 5)
+					if err != nil {
+						return coded(ExitNotFound, "could not resolve %q at %s: %v", query, retailer, err)
+					}
+					if len(results) == 0 {
+						return coded(ExitNotFound, "no results for %q at %s", query, retailer)
+					}
+					pick = results[0]
 				}
-				pick = results[0]
 			}
 			if pick.ItemID == "" {
 				return coded(ExitNotFound, "no item id resolved; pass --item-id explicitly")
@@ -92,8 +114,9 @@ Instacart app or web UI.`,
 
 			if app.DryRun {
 				preview := map[string]any{
-					"query":    query,
-					"retailer": retailer,
+					"query":        query,
+					"retailer":     retailer,
+					"resolved_via": resolvedVia,
 					"picked": map[string]any{
 						"name":       pick.Name,
 						"item_id":    pick.ItemID,
@@ -106,8 +129,8 @@ Instacart app or web UI.`,
 				if app.JSON {
 					return json.NewEncoder(cmd.OutOrStdout()).Encode(preview)
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "[dry-run] would add %g x %s\n  item_id=%s\n  retailer=%s\n",
-					qty, pick.Name, pick.ItemID, retailer)
+				fmt.Fprintf(cmd.OutOrStdout(), "[dry-run] would add %g x %s (via %s)\n  item_id=%s\n  retailer=%s\n",
+					qty, pick.Name, resolvedVia, pick.ItemID, retailer)
 				return nil
 			}
 
@@ -151,14 +174,24 @@ Instacart app or web UI.`,
 				return coded(ExitConflict, "Instacart rejected the add: %s", parsed.Data.UpdateCartItems.ErrorType)
 			}
 
+			// Write-back to purchased_items so the history-first resolver gets
+			// stronger every time the user actually buys something. Increments
+			// purchase_count; refreshes last_purchased_at and last_price_cents.
+			if err := writeBackPurchasedItem(app, retailer, pick); err != nil {
+				// Non-fatal -- the user's add succeeded, history write-back is
+				// best-effort.
+				fmt.Fprintf(cmd.OutOrStderr(), "warning: history write-back failed: %v\n", err)
+			}
+
 			if app.JSON {
 				return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{
-					"added":   pick,
-					"cart_id": cartID,
-					"result":  parsed.Data.UpdateCartItems,
+					"added":        pick,
+					"cart_id":      cartID,
+					"resolved_via": resolvedVia,
+					"result":       parsed.Data.UpdateCartItems,
 				})
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "added to %s cart:\n  %s\n  item_id=%s\n", retailer, pick.Name, pick.ItemID)
+			fmt.Fprintf(cmd.OutOrStdout(), "added to %s cart:\n  %s (via %s)\n  item_id=%s\n", retailer, pick.Name, resolvedVia, pick.ItemID)
 			if parsed.Data.UpdateCartItems.Cart != nil {
 				fmt.Fprintf(cmd.OutOrStdout(), "  cart now has %d item(s)\n", parsed.Data.UpdateCartItems.Cart.ItemCount)
 			}
@@ -169,7 +202,76 @@ Instacart app or web UI.`,
 	cmd.Flags().BoolVar(&yes, "yes", false, "Skip confirmation prompt")
 	cmd.Flags().StringVar(&cartID, "cart-id", "", "Explicit cart ID (otherwise resolved from active carts)")
 	cmd.Flags().StringVar(&itemID, "item-id", "", "Exact Instacart item id (format: items_<locationId>-<productId>). Bypasses natural-language search.")
+	cmd.Flags().BoolVar(&noHistory, "no-history", false, "Skip the history-first resolver and go straight to live GraphQL search")
 	return cmd
+}
+
+// resolveFromHistory runs an FTS5 lookup against the user's local purchase
+// history and returns a SearchResult when confidence is high enough to
+// skip the live search entirely.
+//
+// Confidence rules:
+//   - At least one FTS match at this retailer, OR
+//   - Top match's last_purchased_at is within historyMaxAgeDays
+//
+// FTS5 already ranks by bm25; we rely on that ranking. The first (top)
+// match is used. More sophisticated scoring can be layered on once we
+// have real usage data to tune against.
+//
+// Returns nil when no acceptable match is found, causing the caller to
+// fall through to the live GraphQL chain.
+func resolveFromHistory(app *AppContext, retailer, query string) *SearchResult {
+	if app.Store == nil || retailer == "" || query == "" {
+		return nil
+	}
+	matches, err := app.Store.SearchPurchasedItems(query, retailer, 3)
+	if err != nil || len(matches) == 0 {
+		return nil
+	}
+	top := matches[0]
+	if top.ItemID == "" {
+		return nil
+	}
+	// Stale signal check: if this item was last purchased more than a year
+	// ago, the user's taste may have shifted or the product may be gone.
+	if !top.LastPurchasedAt.IsZero() {
+		age := time.Since(top.LastPurchasedAt)
+		if age > time.Duration(historyMaxAgeDays)*24*time.Hour {
+			return nil
+		}
+	}
+	// Out-of-stock signal: if last_in_stock is false, fall through to live
+	// search so the user gets a current, in-stock alternative.
+	if !top.LastInStock {
+		return nil
+	}
+	return &SearchResult{
+		Name:      top.Name,
+		ItemID:    top.ItemID,
+		ProductID: top.ProductID,
+		Retailer:  retailer,
+	}
+}
+
+// writeBackPurchasedItem records a successful add back into the
+// purchased_items table so the history-first resolver gets smarter over
+// time without requiring a full `history sync` re-run. incrementCount=true
+// bumps purchase_count by one.
+func writeBackPurchasedItem(app *AppContext, retailer string, pick SearchResult) error {
+	if app.Store == nil {
+		return nil
+	}
+	now := time.Now()
+	return app.Store.UpsertPurchasedItem(store.PurchasedItem{
+		ItemID:           pick.ItemID,
+		RetailerSlug:     retailer,
+		ProductID:        pick.ProductID,
+		Name:             pick.Name,
+		LastPurchasedAt:  now,
+		FirstPurchasedAt: now,
+		PurchaseCount:    1,
+		LastInStock:      true,
+	}, true)
 }
 
 // detectArgShape supports both "add <retailer> <query...>" (new, preferred)

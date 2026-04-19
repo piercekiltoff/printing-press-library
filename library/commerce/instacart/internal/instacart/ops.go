@@ -73,6 +73,28 @@ var DefaultOps = map[string]OpSeed{
 		Hash:  "05e3d7448576ff7d464c9244fb6687fabd1bdeee85fdf817e85487003cdb6d44",
 		Query: `query CartData($id: ID!) { userCart: cart(id: $id) { id itemCount cartType retailerId updatedAt cartItemCollection { cartItems { id quantity quantityType basketProduct { id __typename } __typename } __typename } __typename } }`,
 	},
+
+	// BuyItAgainPage: aggregated purchase history + frequently-bought items
+	// for the authenticated user. Backs the `history sync` command which
+	// populates purchased_items, orders, and order_items tables.
+	//
+	// Hash is empty until captured from a live session - see
+	// docs/history-ops-capture.md for the two-minute DevTools walkthrough.
+	// Running `history sync` before the hash is filled surfaces a clear
+	// error that points users at the capture doc.
+	"BuyItAgainPage": {
+		Hash:  "",
+		Query: `query BuyItAgainPage($first: Int, $after: String, $retailerSlug: String) { buyItAgain(first: $first, after: $after, retailerSlug: $retailerSlug) { edges { node { itemId productId name brand size lastPurchasedAt purchaseCount lastPriceCents retailerSlug inStock __typename } __typename } pageInfo { hasNextPage endCursor __typename } __typename } }`,
+	},
+
+	// CustomerOrderHistory: paginated orders list for the authenticated user.
+	// Used alongside BuyItAgainPage to populate the orders + order_items
+	// tables so `history list --orders` can show order-level detail.
+	// Hash empty until captured - see docs/history-ops-capture.md.
+	"CustomerOrderHistory": {
+		Hash:  "",
+		Query: `query CustomerOrderHistory($first: Int, $after: String) { orders(first: $first, after: $after) { edges { node { id placedAt status retailerSlug totalCents itemCount items { itemId productId name quantity quantityType priceCents __typename } __typename } __typename } pageInfo { hasNextPage endCursor __typename } __typename } }`,
+	},
 }
 
 type OpSeed struct {
@@ -97,5 +119,14 @@ func OpNames() []string {
 		"GetAddressById",
 		"UpdateCartItemsMutation",
 		"CartData",
+		"BuyItAgainPage",
+		"CustomerOrderHistory",
 	}
+}
+
+// HistoryOpNames returns the subset of operations backing the history
+// feature. Used by commands like `history sync` to check whether all
+// required hashes are populated before firing a request.
+func HistoryOpNames() []string {
+	return []string{"BuyItAgainPage", "CustomerOrderHistory"}
 }

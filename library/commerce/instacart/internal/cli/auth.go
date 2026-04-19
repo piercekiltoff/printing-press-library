@@ -86,6 +86,8 @@ If the command fails with "database is locked", quit Chrome completely
 				fmt.Fprintf(cmd.OutOrStdout(), "  %s = %s\n", c.Name, masked)
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "\nrun `instacart doctor` to verify")
+			fmt.Fprintln(cmd.OutOrStdout(), "tip: `instacart history sync` will pull your past orders into the local store")
+			fmt.Fprintln(cmd.OutOrStdout(), "     so future `add` commands can resolve items you have bought before.")
 			return nil
 		},
 	}
