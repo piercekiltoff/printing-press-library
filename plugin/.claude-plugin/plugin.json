@@ -8,6 +8,5 @@
   "repository": "https://github.com/mvanhorn/printing-press-library",
   "license": "MIT",
   "keywords": ["cli", "mcp", "api", "printing-press"],
-  "skills": "./skills/",
-  "commands": "./commands/"
+  "skills": "./skills/"
 }
