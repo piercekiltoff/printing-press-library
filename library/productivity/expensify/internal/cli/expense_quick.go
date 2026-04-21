@@ -4,6 +4,7 @@
 package cli
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -23,6 +24,41 @@ type quickParsed struct {
 	Merchant string
 	Date     string // YYYY-MM-DD
 	Comment  string
+	// CategoryNounHit is true when the parser refused to use the leading word
+	// as a merchant because it matched categoryNounBlocklist (e.g. "Tacos $5").
+	// The matched word is in CategoryNounWord so callers can surface a helpful
+	// hint.
+	CategoryNounHit  bool
+	CategoryNounWord string
+}
+
+// categoryNounBlocklist lists words that look like category/meal nouns, not
+// vendors. When the prompt's leading word matches and there is no "at X"
+// phrase, the parser declines to set Merchant and surfaces a hint via the
+// CategoryNounHit flag. Keep this list small and strictly limited to words a
+// real user would never type as a vendor name (no brand names).
+var categoryNounBlocklist = map[string]bool{
+	"tacos":     true,
+	"taco":      true,
+	"lunch":     true,
+	"dinner":    true,
+	"breakfast": true,
+	"brunch":    true,
+	"coffee":    true,
+	"snack":     true,
+	"snacks":    true,
+	"drink":     true,
+	"drinks":    true,
+	"meal":      true,
+	"meals":     true,
+	"ride":      true,
+	"gas":       true,
+	"fuel":      true,
+	"tip":       true,
+	"tips":      true,
+	"parking":   true,
+	"toll":      true,
+	"tolls":     true,
 }
 
 func newExpenseQuickCmd(flags *rootFlags) *cobra.Command {
@@ -59,7 +95,30 @@ same merchant, and calls RequestMoney.`,
 				return usageErr(fmt.Errorf("could not parse amount from %q — pass --amount cents", prompt))
 			}
 			if parsed.Merchant == "" {
-				return usageErr(fmt.Errorf("could not parse merchant from %q — pass --merchant", prompt))
+				// Category-noun hit gets a more specific error/prompt path
+				// than the generic "couldn't parse merchant" message, since
+				// it's a semantic refusal, not a parse failure.
+				if parsed.CategoryNounHit {
+					if flags.noInput || !isTerminal(os.Stdin) {
+						return usageErr(fmt.Errorf(
+							"could not infer merchant from %q — the leading word %q looks like a category. Pass --merchant <vendor> or include \"at <place>\" in the prompt",
+							prompt, parsed.CategoryNounWord))
+					}
+					w := cmd.OutOrStdout()
+					fmt.Fprintf(w, "No merchant detected from %q (%q looks like a category, not a vendor).\n", prompt, parsed.CategoryNounWord)
+					fmt.Fprint(w, "Enter merchant (or re-run with --merchant): ")
+					reader := bufio.NewReader(os.Stdin)
+					line, err := reader.ReadString('\n')
+					if err != nil {
+						return usageErr(fmt.Errorf("reading merchant from stdin: %w", err))
+					}
+					parsed.Merchant = strings.TrimSpace(line)
+					if parsed.Merchant == "" {
+						return usageErr(fmt.Errorf("no merchant provided for %q — pass --merchant", prompt))
+					}
+				} else {
+					return usageErr(fmt.Errorf("could not parse merchant from %q — pass --merchant", prompt))
+				}
 			}
 
 			// Category resolution order:
@@ -179,8 +238,29 @@ func parseQuickPrompt(s string) quickParsed {
 			if isCommonTimeWord(lower) {
 				continue
 			}
+			// Refuse category-shaped leading nouns. "Tacos $5" must not set
+			// merchant=Tacos; instead, surface a hint so the caller can
+			// prompt the user or error with a clear message.
+			if categoryNounBlocklist[lower] {
+				p.CategoryNounHit = true
+				p.CategoryNounWord = candidate
+				continue
+			}
 			p.Merchant = candidate
 			break
+		}
+	}
+	// Fallback: if no merchant was found via capitalized clusters AND no "at X"
+	// phrase, check the leading word of the prompt (in any case) against the
+	// blocklist so lowercase prompts like "tacos $5" also surface the hint.
+	if p.Merchant == "" && !p.CategoryNounHit {
+		if fields := strings.Fields(s); len(fields) > 0 {
+			first := strings.Trim(fields[0], ".,;:!?\"'`")
+			lower := strings.ToLower(first)
+			if categoryNounBlocklist[lower] {
+				p.CategoryNounHit = true
+				p.CategoryNounWord = first
+			}
 		}
 	}
 
