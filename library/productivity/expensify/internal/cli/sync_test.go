@@ -44,13 +44,13 @@ func TestIngestReconnectApp_PersonalDetails(t *testing.T) {
 			map[string]any{
 				"key": "personalDetailsList",
 				"value": map[string]any{
-					"20647491": map[string]any{
-						"displayName": "Myk Melez",
-						"login":       "myk@example.com",
+					"12345": map[string]any{
+						"displayName": "Test User",
+						"login":       "user1@example.com",
 					},
-					"20631946": map[string]any{
+					"67890": map[string]any{
 						"displayName": "mvh",
-						"login":       "mvh@example.com",
+						"login":       "user2@example.com",
 					},
 				},
 			},
@@ -66,16 +66,16 @@ func TestIngestReconnectApp_PersonalDetails(t *testing.T) {
 		t.Fatalf("nPeople = %d, want 2", nPeople)
 	}
 
-	p, err := st.GetPersonByAccountID(20647491)
+	p, err := st.GetPersonByAccountID(12345)
 	if err != nil {
-		t.Fatalf("GetPersonByAccountID(20647491): %v", err)
+		t.Fatalf("GetPersonByAccountID(12345): %v", err)
 	}
-	if p == nil || p.DisplayName != "Myk Melez" || p.Login != "myk@example.com" {
-		t.Fatalf("got %+v, want Myk Melez / myk@example.com", p)
+	if p == nil || p.DisplayName != "Test User" || p.Login != "user1@example.com" {
+		t.Fatalf("got %+v, want Test User / user1@example.com", p)
 	}
-	p2, err := st.GetPersonByAccountID(20631946)
+	p2, err := st.GetPersonByAccountID(67890)
 	if err != nil {
-		t.Fatalf("GetPersonByAccountID(20631946): %v", err)
+		t.Fatalf("GetPersonByAccountID(67890): %v", err)
 	}
 	if p2 == nil || p2.DisplayName != "mvh" {
 		t.Fatalf("got %+v, want mvh", p2)
@@ -93,7 +93,7 @@ func TestIngestReconnectApp_SessionAccountID(t *testing.T) {
 			map[string]any{
 				"key": "session",
 				"value": map[string]any{
-					"accountID": float64(20631946),
+					"accountID": float64(67890),
 					"authToken": "abc",
 				},
 			},
@@ -105,8 +105,8 @@ func TestIngestReconnectApp_SessionAccountID(t *testing.T) {
 	}
 
 	ingestReconnectApp(st, raw, "", "", cfg)
-	if cfg.ExpensifyAccountID != 20631946 {
-		t.Fatalf("cfg.ExpensifyAccountID = %d, want 20631946", cfg.ExpensifyAccountID)
+	if cfg.ExpensifyAccountID != 67890 {
+		t.Fatalf("cfg.ExpensifyAccountID = %d, want 67890", cfg.ExpensifyAccountID)
 	}
 }
 
@@ -122,7 +122,7 @@ func TestIngestReconnectApp_SessionAccountID_AlreadySet(t *testing.T) {
 			map[string]any{
 				"key": "session",
 				"value": map[string]any{
-					"accountID": float64(20631946),
+					"accountID": float64(67890),
 				},
 			},
 		},
@@ -146,7 +146,7 @@ func TestIngestReconnectApp_SessionStringAccountID(t *testing.T) {
 			map[string]any{
 				"key": "session",
 				"value": map[string]any{
-					"accountID": "20631946",
+					"accountID": "67890",
 				},
 			},
 		},
@@ -154,8 +154,8 @@ func TestIngestReconnectApp_SessionStringAccountID(t *testing.T) {
 	raw, _ := json.Marshal(payload)
 
 	ingestReconnectApp(st, raw, "", "", cfg)
-	if cfg.ExpensifyAccountID != 20631946 {
-		t.Fatalf("cfg.ExpensifyAccountID = %d, want 20631946 (parsed from string)", cfg.ExpensifyAccountID)
+	if cfg.ExpensifyAccountID != 67890 {
+		t.Fatalf("cfg.ExpensifyAccountID = %d, want 67890 (parsed from string)", cfg.ExpensifyAccountID)
 	}
 }
 

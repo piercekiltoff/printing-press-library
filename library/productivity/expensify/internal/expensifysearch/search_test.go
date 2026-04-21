@@ -45,7 +45,7 @@ func TestQueryMarshal(t *testing.T) {
 // TestAndFilter — And(Eq,Eq) marshals to the full nested
 // {operator:and, left:{operator:eq,…}, right:{operator:eq,…}} tree.
 func TestAndFilter(t *testing.T) {
-	f := And(Eq("action", "submit"), Eq("from", "20631946"))
+	f := And(Eq("action", "submit"), Eq("from", "67890"))
 	b, err := json.Marshal(f)
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
@@ -68,8 +68,8 @@ func TestAndFilter(t *testing.T) {
 	if !ok {
 		t.Fatalf("right not a filter object: %T", got["right"])
 	}
-	if right["operator"] != "eq" || right["left"] != "from" || right["right"] != "20631946" {
-		t.Errorf("right branch = %v, want eq/from/20631946", right)
+	if right["operator"] != "eq" || right["left"] != "from" || right["right"] != "67890" {
+		t.Errorf("right branch = %v, want eq/from/67890", right)
 	}
 }
 
@@ -142,7 +142,7 @@ func TestResponseParse(t *testing.T) {
 			{
 				"key": "snapshot_abc",
 				"onyxMethod": "merge",
-				"value": {"data": {"report_1": {"reportID": "1", "ownerAccountID": 20631946}}}
+				"value": {"data": {"report_1": {"reportID": "1", "ownerAccountID": 67890}}}
 			}
 		]
 	}`)
@@ -188,7 +188,7 @@ func TestQueryRoundTrip(t *testing.T) {
 		SortBy:                "date",
 		SortOrder:             "desc",
 		View:                  "default",
-		Filters:               And(Eq("action", "submit"), Eq("from", "20631946")),
+		Filters:               And(Eq("action", "submit"), Eq("from", "67890")),
 		InputQuery:            "type:expense-report action:submit",
 		IsViewExplicitlySet:   true,
 		Hash:                  12345,

@@ -26,15 +26,15 @@ func openTestStore(t *testing.T) *Store {
 func TestUpsertPerson_Insert(t *testing.T) {
 	s := openTestStore(t)
 	p := Person{
-		AccountID:   20647491,
-		DisplayName: "Myk Melez",
-		Login:       "myk@example.com",
+		AccountID:   12345,
+		DisplayName: "Test User",
+		Login:       "user1@example.com",
 		Avatar:      "https://example.com/a.png",
 	}
 	if err := s.UpsertPerson(p); err != nil {
 		t.Fatalf("UpsertPerson: %v", err)
 	}
-	got, err := s.GetPersonByAccountID(20647491)
+	got, err := s.GetPersonByAccountID(12345)
 	if err != nil {
 		t.Fatalf("GetPersonByAccountID: %v", err)
 	}
@@ -83,10 +83,10 @@ func TestGetPersonByAccountID_NotFound(t *testing.T) {
 // TestGetPersonByLogin verifies case-insensitive login lookup.
 func TestGetPersonByLogin(t *testing.T) {
 	s := openTestStore(t)
-	if err := s.UpsertPerson(Person{AccountID: 7, DisplayName: "Myk", Login: "Myk@Example.COM"}); err != nil {
+	if err := s.UpsertPerson(Person{AccountID: 7, DisplayName: "Myk", Login: "User1@Example.COM"}); err != nil {
 		t.Fatalf("UpsertPerson: %v", err)
 	}
-	got, err := s.GetPersonByLogin("myk@example.com")
+	got, err := s.GetPersonByLogin("user1@example.com")
 	if err != nil {
 		t.Fatalf("GetPersonByLogin: %v", err)
 	}

@@ -40,15 +40,15 @@ type Query struct {
 // Filter is a recursive node in the jsonQuery filter tree. Left and Right may
 // be strings (field name / value) or nested *Filter nodes.
 //
-// Example tree for `action:submit AND from:20631946`:
+// Example tree for `action:submit AND from:<accountID>`:
 //
-//	And(Eq("action","submit"), Eq("from","20631946"))
+//	And(Eq("action","submit"), Eq("from","<accountID>"))
 //
 // Marshals to:
 //
 //	{"operator":"and",
 //	 "left":  {"operator":"eq","left":"action","right":"submit"},
-//	 "right": {"operator":"eq","left":"from","right":"20631946"}}
+//	 "right": {"operator":"eq","left":"from","right":"<accountID>"}}
 type Filter struct {
 	Operator string `json:"operator"`
 	Left     any    `json:"left"`

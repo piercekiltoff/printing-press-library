@@ -98,8 +98,8 @@ func TestBuildFilterForExpenseList_OwnerDefault(t *testing.T) {
 func TestBuildFilterForExpenseList_OwnerByEmail(t *testing.T) {
 	st := openTestStore(t)
 	if err := st.UpsertPerson(store.Person{
-		AccountID:   20647491,
-		DisplayName: "Myk Melez",
+		AccountID:   12345,
+		DisplayName: "Test User",
 		Login:       "myk@example.com",
 	}); err != nil {
 		t.Fatalf("UpsertPerson: %v", err)
@@ -110,8 +110,8 @@ func TestBuildFilterForExpenseList_OwnerByEmail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("builder: %v", err)
 	}
-	if !filterHasEq(f, "from", "20647491") {
-		t.Fatalf("expected eq(from, 20647491), got %+v", f)
+	if !filterHasEq(f, "from", "12345") {
+		t.Fatalf("expected eq(from, 12345), got %+v", f)
 	}
 	// cfg.ExpensifyAccountID must NOT leak in as a second from-filter
 	if filterHasEq(f, "from", "42") {

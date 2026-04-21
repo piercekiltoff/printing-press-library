@@ -18,7 +18,7 @@ import (
 // ("expense-report") must appear in the filter tree as an eq leaf.
 func TestBuildFilterForReportList_TypeFilter(t *testing.T) {
 	st := openTestStore(t)
-	cfg := &config.Config{ExpensifyAccountID: 20631946}
+	cfg := &config.Config{ExpensifyAccountID: 67890}
 
 	f, err := buildSearchFilterFromFlags(st, cfg, "", false, "expense-report", "", "")
 	if err != nil {
@@ -35,7 +35,7 @@ func TestBuildFilterForReportList_TypeFilter(t *testing.T) {
 // marshal is correct.
 func TestReportList_LiveOwnerFilterApplied(t *testing.T) {
 	st := openTestStore(t)
-	cfg := &config.Config{ExpensifyAccountID: 20631946}
+	cfg := &config.Config{ExpensifyAccountID: 67890}
 
 	f, err := buildSearchFilterFromFlags(st, cfg, "", false, "expense-report", "", "")
 	if err != nil {
@@ -45,8 +45,8 @@ func TestReportList_LiveOwnerFilterApplied(t *testing.T) {
 	if q.Type != "expense-report" {
 		t.Fatalf("q.Type = %q, want expense-report", q.Type)
 	}
-	if !filterHasEq(q.Filters, "from", "20631946") {
-		t.Fatalf("expected from=20631946 in query, got %+v", q.Filters)
+	if !filterHasEq(q.Filters, "from", "67890") {
+		t.Fatalf("expected from=67890 in query, got %+v", q.Filters)
 	}
 
 	// Confirm the query marshals to the expected wire shape.
@@ -56,7 +56,7 @@ func TestReportList_LiveOwnerFilterApplied(t *testing.T) {
 	}
 	s := string(b)
 	// The filter tree should contain both eq leaves.
-	for _, want := range []string{`"type":"expense-report"`, `"operator":"eq"`, `"20631946"`} {
+	for _, want := range []string{`"type":"expense-report"`, `"operator":"eq"`, `"67890"`} {
 		if !containsSubstring(s, want) {
 			t.Fatalf("marshaled query missing %q: %s", want, s)
 		}
