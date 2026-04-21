@@ -7,6 +7,7 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,8 +15,10 @@ import (
 	"time"
 
 	"github.com/mvanhorn/printing-press-library/library/productivity/expensify/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/productivity/expensify/internal/credentials"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 func newAuthCmd(flags *rootFlags) *cobra.Command {
@@ -28,6 +31,7 @@ func newAuthCmd(flags *rootFlags) *cobra.Command {
 	cmd.AddCommand(newAuthLoginCmd(flags))
 	cmd.AddCommand(newAuthSetTokenCmd(flags))
 	cmd.AddCommand(newAuthSetKeysCmd(flags))
+	cmd.AddCommand(newAuthStoreCredentialsCmd(flags))
 	cmd.AddCommand(newAuthLogoutCmd(flags))
 
 	return cmd
@@ -44,8 +48,22 @@ func newAuthStatusCmd(flags *rootFlags) *cobra.Command {
 				return configErr(err)
 			}
 			w := cmd.OutOrStdout()
+
+			// Compose the email + headless-credentials lines once so both the
+			// authenticated and not-authenticated branches show them.
+			emailLine := "  Email: not configured"
+			if cfg.ExpensifyEmail != "" {
+				emailLine = fmt.Sprintf("  Email: %s", cfg.ExpensifyEmail)
+			}
+			credsLine := "  Headless credentials: not configured"
+			if cfg.ExpensifyEmail != "" && credentials.Has(cfg.ExpensifyEmail) {
+				credsLine = "  Headless credentials: configured"
+			}
+
 			if !cfg.HasSessionAuth() && !cfg.HasPartnerAuth() {
 				fmt.Fprintln(w, red("Not authenticated"))
+				fmt.Fprintln(w, emailLine)
+				fmt.Fprintln(w, credsLine)
 				fmt.Fprintln(w, "")
 				fmt.Fprintln(w, "Log in with a headed browser:")
 				fmt.Fprintln(w, "  expensify-pp-cli auth login")
@@ -53,6 +71,8 @@ func newAuthStatusCmd(flags *rootFlags) *cobra.Command {
 				fmt.Fprintln(w, "  export EXPENSIFY_AUTH_TOKEN=<token>")
 				fmt.Fprintln(w, "  export EXPENSIFY_PARTNER_USER_ID=<id>")
 				fmt.Fprintln(w, "  export EXPENSIFY_PARTNER_USER_SECRET=<secret>")
+				fmt.Fprintln(w, "Or store headless credentials for automatic token minting:")
+				fmt.Fprintln(w, "  expensify-pp-cli auth store-credentials --email <you> --password <pw>")
 				return authErr(fmt.Errorf("no credentials configured"))
 			}
 			fmt.Fprintln(w, green("Authenticated"))
@@ -62,6 +82,8 @@ func newAuthStatusCmd(flags *rootFlags) *cobra.Command {
 			if cfg.HasPartnerAuth() {
 				fmt.Fprintln(w, "  Partner credentials: set")
 			}
+			fmt.Fprintln(w, emailLine)
+			fmt.Fprintln(w, credsLine)
 			if cfg.AuthSource != "" {
 				fmt.Fprintf(w, "  Source: %s\n", cfg.AuthSource)
 			}
@@ -267,6 +289,90 @@ func newAuthSetKeysCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().BoolVar(&fromEnv, "env", false, "Read EXPENSIFY_PARTNER_USER_ID and EXPENSIFY_PARTNER_USER_SECRET from the environment")
 	cmd.Flags().StringVar(&partnerID, "id", "", "partnerUserID")
 	cmd.Flags().StringVar(&partnerSecret, "secret", "", "partnerUserSecret")
+	return cmd
+}
+
+func newAuthStoreCredentialsCmd(flags *rootFlags) *cobra.Command {
+	var email, password string
+	var fromEnv bool
+	cmd := &cobra.Command{
+		Use:   "store-credentials",
+		Short: "Store Expensify email+password in the OS keychain for headless token minting",
+		Long: `Writes the password to the OS-native keychain (macOS Keychain, Windows
+Credential Manager, Linux Secret Service) under service "expensify-pp-cli" and
+mirrors the email to the TOML config. The password never touches disk.
+
+Later, 'auth login --headless' uses these to mint a session authToken via the
+Expensify /Authenticate endpoint without a browser.`,
+		Example: `  expensify-pp-cli auth store-credentials --email you@example.com
+  expensify-pp-cli auth store-credentials --from-env
+  expensify-pp-cli auth store-credentials --email you@example.com --password 'secret'`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Load(flags.configPath)
+			if err != nil {
+				return configErr(err)
+			}
+			w := cmd.OutOrStdout()
+
+			if fromEnv {
+				if email == "" {
+					email = os.Getenv("EXPENSIFY_EMAIL")
+				}
+				if password == "" {
+					password = os.Getenv("EXPENSIFY_PASSWORD")
+				}
+			}
+
+			// Interactive prompts: email first, then password (silent).
+			if email == "" {
+				if flags.noInput {
+					return usageErr(fmt.Errorf("--email required with --no-input (or pass --from-env)"))
+				}
+				fmt.Fprint(w, "Expensify email: ")
+				reader := bufio.NewReader(os.Stdin)
+				s, err := reader.ReadString('\n')
+				if err != nil {
+					return usageErr(fmt.Errorf("reading email: %w", err))
+				}
+				email = strings.TrimSpace(s)
+			}
+			if email == "" {
+				return usageErr(fmt.Errorf("email is required"))
+			}
+			if password == "" {
+				if flags.noInput {
+					return usageErr(fmt.Errorf("--password or --from-env required with --no-input"))
+				}
+				fmt.Fprint(w, "Expensify password (input hidden): ")
+				pw, err := term.ReadPassword(int(os.Stdin.Fd()))
+				fmt.Fprintln(w) // newline after hidden prompt
+				if err != nil {
+					return usageErr(fmt.Errorf("reading password: %w", err))
+				}
+				password = strings.TrimSpace(string(pw))
+			}
+			if password == "" {
+				return usageErr(fmt.Errorf("password is required"))
+			}
+
+			if err := credentials.Set(email, password); err != nil {
+				if errors.Is(err, credentials.ErrEmptyEmail) || errors.Is(err, credentials.ErrEmptyPassword) {
+					return usageErr(err)
+				}
+				return configErr(fmt.Errorf("keychain access failed — requires a graphical session or unlock (error: %w)", err))
+			}
+			if err := cfg.SaveEmail(email); err != nil {
+				return configErr(err)
+			}
+
+			fmt.Fprintf(w, "Credentials stored for %s.\n", email)
+			fmt.Fprintln(w, "Run `expensify-pp-cli auth login --headless` to mint a session token.")
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&email, "email", "", "Expensify account email")
+	cmd.Flags().StringVar(&password, "password", "", "Expensify account password (prompted if omitted and interactive)")
+	cmd.Flags().BoolVar(&fromEnv, "from-env", false, "Read email/password from EXPENSIFY_EMAIL and EXPENSIFY_PASSWORD")
 	return cmd
 }
 

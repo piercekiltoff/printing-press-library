@@ -27,6 +27,7 @@ type Config struct {
 	ExpensifyPartnerUserId     string    `toml:"partner_user_id"`
 	ExpensifyPartnerUserSecret string    `toml:"partner_user_secret"`
 	ExpensifyAccountID         int64     `toml:"expensify_account_id"`
+	ExpensifyEmail             string    `toml:"expensify_email"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -71,6 +72,9 @@ func Load(configPath string) (*Config, error) {
 			cfg.ExpensifyAccountID = id
 		}
 	}
+	if v := os.Getenv("EXPENSIFY_EMAIL"); v != "" {
+		cfg.ExpensifyEmail = v
+	}
 
 	// Base URL override (used by printing-press verify to point at mock/test servers)
 	if v := os.Getenv("EXPENSIFY_BASE_URL"); v != "" {
@@ -114,6 +118,16 @@ func (c *Config) SaveSessionToken(token, email string) error {
 // file. Used by sync to remember who "I" am for owner-filter defaults.
 func (c *Config) SaveAccountID(id int64) error {
 	c.ExpensifyAccountID = id
+	return c.save()
+}
+
+// SaveEmail persists the user's Expensify account email to the config file.
+// The email is non-secret — it's written to TOML so `auth status` and other
+// commands can show which account the CLI is pointing at without unlocking
+// the keychain. The password companion lives in the OS keychain (see the
+// internal/credentials package).
+func (c *Config) SaveEmail(email string) error {
+	c.ExpensifyEmail = email
 	return c.save()
 }
 
