@@ -18,7 +18,7 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/marketing/producthunt/internal/config"
 )
 
-var version = "1.0.0"
+var version = "1.1.0"
 
 type rootFlags struct {
 	asJSON       bool

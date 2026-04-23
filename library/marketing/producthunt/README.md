@@ -1,10 +1,16 @@
 # Product Hunt CLI
 
-**A terminal view of Product Hunt that doesn't need an API key.**
+**A self-warming terminal view of Product Hunt.**
 
-[Product Hunt](https://www.producthunt.com) is the daily launch board for new products — makers post, hunters submit, and the community votes and comments. The official API is GraphQL and requires OAuth registration plus a 6,250-complexity-points-per-15-minute budget that makes bulk reads impractical.
+[Product Hunt](https://www.producthunt.com) is the daily launch board for new products — makers post, hunters submit, and the community votes and comments.
 
-This CLI skips all of that. It reads Product Hunt's public Atom feed (`/feed`, 50 newest featured launches), parses every entry, and persists the result to a local SQLite database. From that store it builds views the Product Hunt website itself doesn't expose — rank trajectory for a product over time, week-at-a-glance launch calendars, top-maker aggregates, and tagline-wide full-text search. Every command speaks JSON, filters fields with `--select`, and exits with typed codes for scripts and agents.
+This CLI ships three tiers of access, picking the lightest one automatically:
+
+1. **Atom auto-sync (always on, no auth).** Every read command checks whether the local SQLite store is stale (>24h since last sync) and silently fetches the public `/feed` before serving the query. Integrators just call `search`/`list`/etc. — the CLI keeps itself fresh.
+2. **`search --enrich` (opt-in, OAuth).** When local results are thin for a topic, fires one narrow GraphQL query for that topic over the last 30 days. Fail-soft: if OAuth isn't configured or the budget is close to the floor, silently skipped and the local result set is returned anyway.
+3. **`backfill` (explicit, OAuth).** Paginates the PH GraphQL `posts` field over a window (default 30 days) and seeds the store in one shot. Budget-aware, resumable via `backfill resume`. Used for cold-starts, gap recovery after offline periods, or deliberate historical windows.
+
+Every command speaks JSON, filters fields with `--select`, and exits with typed codes for scripts and agents.
 
 ## Install
 
@@ -20,15 +26,38 @@ Download from [Releases](https://github.com/mvanhorn/printing-press-library/rele
 
 ## Authentication
 
-No credentials required. The CLI reads the public Atom feed only — no OAuth, no tokens, no env vars.
+The Atom runtime is token-free by construction. All the daily-driver commands (`sync`, `today`, `recent`, `list`, `search`, `trend`, `calendar`, `makers`, `tagline-grep`, `watch`, `outbound-diff`) read the public `/feed` and need no credentials.
+
+OAuth is opt-in and unlocks two capabilities:
+
+- `search --enrich` — top up thin local search results from the GraphQL API
+- `backfill` — bulk-seed 30 days of history in one call
+
+To enable, register a Product Hunt app once and paste the credentials:
+
+```bash
+producthunt-pp-cli auth register
+# → follow the prompt, visit https://www.producthunt.com/v2/oauth/applications
+# → paste client_id and client_secret
+```
+
+The CLI exchanges the client credentials for an app-level access token (no user login) and saves it to `~/.config/producthunt-pp-cli/config.toml` with `0600` perms. Revoke with `auth logout`.
 
 Product Hunt's HTML pages (post detail, user profiles, topic pages, historical leaderboards, newsletter archive) are gated by Cloudflare against automated HTTP clients. Commands that would need those routes (`post`, `comments`, `leaderboard`, `topic`, `user`, `collection`, `newsletter`) ship as explicit stubs that emit a structured JSON explanation and exit with code 3. They are named in the command reference below so agents and scripts can discover the gap without hitting opaque timeouts.
 
 ## Quick Start
 
 ```bash
-# First run: pull the current /feed into your local store.
+# First run: no setup needed — auto-sync fires when the store is stale.
+producthunt-pp-cli search "ai agent"
+
+# Or kick off a manual sync explicitly.
 producthunt-pp-cli sync
+
+# Optional Tier 2/3: register OAuth, then bulk-seed 30 days in one call.
+producthunt-pp-cli auth register
+producthunt-pp-cli backfill --days 30 --dry-run  # estimate first
+producthunt-pp-cli backfill --days 30
 
 # Agent-friendly shortlist with only the fields you want.
 producthunt-pp-cli today --limit 10 --json --select 'slug,title,tagline,author'

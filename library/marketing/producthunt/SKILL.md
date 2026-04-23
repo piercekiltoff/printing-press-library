@@ -8,7 +8,18 @@ metadata: '{"openclaw":{"requires":{"bins":["producthunt-pp-cli"]},"install":[{"
 
 # Product Hunt — Printing Press CLI
 
-A read-only terminal view of Product Hunt that reads the public Atom feed (`/feed`, 50 newest featured launches) and persists snapshots to local SQLite. No OAuth. No API key. No write operations against Product Hunt.
+A self-warming read-only terminal view of Product Hunt. Three tiers, smallest first:
+
+1. **Atom auto-sync (always on, no auth).** Any read command (`search`, `list`, `today`, etc.) checks `ph_meta.last_sync_at` and silently syncs the public `/feed` when the local store is >24h stale. No flags needed — integrators just call `search` and the CLI keeps itself fresh.
+2. **`search --enrich` (opt-in, OAuth required).** When local FTS returns fewer than `--enrich-threshold` results, fires one narrow GraphQL query for the topic, upserts matches, and re-runs the search. Fail-soft.
+3. **`backfill` (explicit, OAuth required).** Paginates GraphQL over a window (default 30 days) and seeds the store in one shot. Budget-aware, resumable via `backfill resume`.
+
+Authentication:
+
+- The Atom runtime is token-free by construction — no setup needed.
+- OAuth (Tier 2 + 3) is opt-in: run `auth register` once, paste a client_id/client_secret from https://www.producthunt.com/v2/oauth/applications.
+
+No write operations against Product Hunt. This CLI reads data and persists it locally; it does not post, upvote, comment, or follow.
 
 ## Decide Fast: Use This CLI When…
 
@@ -42,7 +53,16 @@ These commands exist so stubs are discoverable, but every one emits a JSON expla
 
 ## Command Reference
 
-Every command supports `--json`, `--select`, `--csv`, `--agent`, `--quiet`, `--human-friendly`, and `--timeout`. Global flags documented in `producthunt-pp-cli --help`.
+Every command supports `--json`, `--select`, `--csv`, `--agent`, `--quiet`, `--human-friendly`, and `--timeout`.
+
+Self-warming flags (also global):
+
+| Flag | Purpose |
+|------|---------|
+| `--no-auto-sync` | Skip the stale-store Atom sync that read commands run by default |
+| `--caller <id>` | Identify the calling integrator (e.g. `last30days/3.0.1`) for logs |
+
+Full flag list in `producthunt-pp-cli --help`.
 
 ### /feed reads + local store
 
@@ -50,9 +70,12 @@ Every command supports `--json`, `--select`, `--csv`, `--agent`, `--quiet`, `--h
 |---------|---------|
 | `today [--limit N] [--live]` | Top N featured launches (store first, live `/feed` fallback) |
 | `recent [--limit N]` | Always live-fetch `/feed` |
-| `sync [--dry-run-feed] [--db PATH]` | Fetch `/feed` and persist a ranked snapshot |
+| `sync [--dry-run-feed] [--db PATH]` | Fetch `/feed` and persist a ranked snapshot (auto-sync runs this implicitly when the store is stale) |
+| `backfill [--days N \| --from DATE --to DATE] [--dry-run]` | Seed the store with a bulk 30-day history via GraphQL (requires `auth register` first) |
+| `backfill resume [--window-id ID]` | Continue an interrupted backfill from the saved cursor |
+| `auth register [--client-id ID --client-secret SECRET]` | Register a PH OAuth app and persist the client_credentials token |
 | `list [--author NAME] [--since DUR] [--until DUR] [--sort FIELD] [--asc] [--limit N]` | Query the local store |
-| `search <query> [--limit N]` | FTS5 match across slug, title, tagline, author |
+| `search <query> [--limit N] [--enrich] [--enrich-threshold N]` | FTS5 match across slug, title, tagline, author. `--enrich` tops up from GraphQL when local results are thin (OAuth required). |
 | `info <slug> [--live] [--external] [--url-only]` | Single post payload |
 | `open <slug> [--external] [--dry]` | Open in the default browser |
 | `feed raw [--validate]` | Raw Atom XML to stdout |
