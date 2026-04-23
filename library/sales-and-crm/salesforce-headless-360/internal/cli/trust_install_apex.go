@@ -14,7 +14,7 @@ func newTrustInstallApexCmd(flags *rootFlags) *cobra.Command {
 	var orgAlias string
 	cmd := &cobra.Command{
 		Use:   "install-apex --org <alias>",
-		Short: "Deploy the SF360 SafeRead Apex companion",
+		Short: "Deploy the SF360 SafeRead, SafeWrite, and SafeUpsert Apex companions",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if orgAlias == "" {
 				return fmt.Errorf("--org is required")
@@ -42,7 +42,7 @@ func newTrustInstallApexCmd(flags *rootFlags) *cobra.Command {
 			if err := markApexInstalled(orgAlias); err != nil {
 				return fmt.Errorf("mark Apex installed: %w", err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Apex companion installed for org=%s\n", orgAlias)
+			fmt.Fprintf(cmd.OutOrStdout(), "Apex companions installed for org=%s: SF360SafeRead, SF360SafeWrite, SF360SafeUpsert\n", orgAlias)
 			return nil
 		},
 	}
@@ -88,6 +88,10 @@ func markApexInstalled(orgAlias string) error {
 	profile.LastUsedAt = now
 	profile.Values["apex_safe_read_installed"] = "true"
 	profile.Values["apex_safe_read_installed_at"] = now.Format(time.RFC3339)
+	profile.Values["apex_safe_write_installed"] = "true"
+	profile.Values["apex_safe_write_installed_at"] = now.Format(time.RFC3339)
+	profile.Values["apex_safe_upsert_installed"] = "true"
+	profile.Values["apex_safe_upsert_installed_at"] = now.Format(time.RFC3339)
 	store.Profiles[orgAlias] = profile
 	return saveProfileStore(store)
 }

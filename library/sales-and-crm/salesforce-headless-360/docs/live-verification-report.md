@@ -36,12 +36,18 @@
 | 9 | agent verify --strict --deep PASS on valid bundle | _PASS / FAIL_ | | |
 | 10 | agent verify --strict --deep FAIL on tampered bundle | _PASS / FAIL_ | | |
 | 11 | SF360_Bundle_Audit__c row appears | _PASS / FAIL_ | | |
+| W1 | agent update writes one safe Account field | _PASS / FAIL_ | | |
+| W2 | agent upsert twice with same key shows no-op | _PASS / FAIL_ | | |
+| W3 | agent log-activity creates Task | _PASS / FAIL_ | | |
+| W4 | agent advance moves Opportunity stage | _PASS / FAIL_ | | |
+| W5 | stale write conflict rejected | _PASS / FAIL_ | | |
+| W6 | FLS write denial enforced | _PASS / FAIL_ | | |
 
 ## Optional checks
 
 | # | Check | Status | Observed / Skip reason |
 |---|-------|--------|------------------------|
-| O1 | Apex companion deploy | _PASS / FAIL / SKIP_ | |
+| O1 | Apex companion deploy, including SafeWrite and SafeUpsert | _PASS / FAIL / SKIP_ | |
 | O2 | Bulk fallback path | _PASS / FAIL / SKIP_ | |
 | O3 | Data Cloud profile | _PASS / FAIL / SKIP_ | |
 | O4 | Slack linkage | _PASS / FAIL / SKIP_ | |
@@ -51,7 +57,7 @@
 
 ## Outstanding issues found during the session
 
-_If any required check FAILed, list the bug + tracking issue + fix commit here. No FAILs are allowed at v1.0.0._
+_If any required check FAILed, list the bug + tracking issue + fix commit here. No FAILs are allowed at v1.1.0._
 
 | Check # | Issue | Tracking | Fix commit |
 |---------|-------|----------|-----------|
@@ -68,4 +74,4 @@ JWS over this report: _________________________
    (use: salesforce-headless-360-pp-cli agent verify --deep over a bundle wrapping this report file)
 ```
 
-Once every required row is PASS and this report is signed, tag the repo `v1.0.0` and proceed with Benioff outreach per the plan's "Delivery to Benioff" section.
+Once every required row is PASS and this report is signed, tag the repo `v1.1.0` and proceed with Benioff outreach per the plan's "Delivery to Benioff" section.

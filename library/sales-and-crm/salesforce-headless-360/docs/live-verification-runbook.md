@@ -1,6 +1,6 @@
 # Live-org verification runbook
 
-This runbook is the bridge between code-complete and Benioff outreach. Every required PASS row must be green before a v1.0.0 release tag goes out.
+This runbook is the bridge between code-complete and Benioff outreach. Every required PASS row must be green before a v1.1.0 release tag goes out.
 
 Pair on this for 30-60 minutes with someone who has admin access to a Salesforce Developer Edition (or Enterprise/Unlimited) org.
 
@@ -11,6 +11,8 @@ Tester needs:
 - `sf` CLI version >= 2.60.0 installed and authed: `sf org login web --alias sf360-test`
 - `salesforce-headless-360-pp-cli` installed: `go install github.com/mvanhorn/salesforce-headless-360-pp-cli/...@latest`
 - A second Salesforce User on the test org with a restricted profile (no read on `Account.AnnualRevenue` and no read on a custom `Salary__c` field on Contact). This proves FLS intersection works.
+- A writable test Account (`ACME_ID`) with a safe field such as `Description`, at least one related Opportunity for stage checks, and permission to create/delete Tasks.
+- A restricted write-profile user for W6 with no write access to a selected field such as `Account.AnnualRevenue`.
 - Optional: Slack workspace with a test channel containing 2-3 members whose emails match SF Users in the test org. Skip if not available.
 
 ## How to use this runbook
@@ -159,6 +161,136 @@ Expected:
 
 ---
 
+## Write path checks (block v1.1.0 release if any FAIL)
+
+### W1. agent update writes one safe Account field
+
+```bash
+salesforce-headless-360-pp-cli --org sf360-test agent update <ACME_ID> \
+  --field Description="sf360 live verification W1" \
+  --dry-run --json
+salesforce-headless-360-pp-cli --org sf360-test agent update <ACME_ID> \
+  --field Description="sf360 live verification W1" \
+  --json
+salesforce-headless-360-pp-cli agent write-audit list --sobject Account --status executed --limit 5
+```
+
+Expected:
+- Dry-run reports `dry_run: true` and does not create a write-audit row.
+- Real run returns an executed write envelope.
+- `write-audit list` shows an executed Account update with a non-empty `jti` and acting `kid`.
+
+### W2. agent upsert is retry-safe with the same key
+
+```bash
+KEY="sf360-live-upsert-$(date +%Y%m%d%H%M%S)"
+salesforce-headless-360-pp-cli --org sf360-test agent upsert \
+  --sobject Account \
+  --idempotency-key "$KEY" \
+  --field Name="SF360 Live Verify Upsert" \
+  --field Description="first upsert" \
+  --json
+salesforce-headless-360-pp-cli --org sf360-test agent upsert \
+  --sobject Account \
+  --idempotency-key "$KEY" \
+  --field Name="SF360 Live Verify Upsert" \
+  --field Description="first upsert" \
+  --json
+salesforce-headless-360-pp-cli agent write-audit list --sobject Account --limit 10
+```
+
+Expected:
+- First call creates or updates the record.
+- Second call returns `NoChange=true` or equivalent no-op/no-change provenance.
+- Write audit contains two attempts tied to the same idempotency key.
+
+### W3. agent log-activity creates a Task
+
+```bash
+KEY="sf360-live-task-$(date +%Y%m%d%H%M%S)"
+salesforce-headless-360-pp-cli --org sf360-test agent log-activity \
+  --type call \
+  --what <ACME_ID> \
+  --subject "SF360 live verification call" \
+  --idempotency-key "$KEY" \
+  --json
+sf data query --target-org sf360-test \
+  --query "SELECT Id, Subject, WhatId FROM Task WHERE WhatId = '<ACME_ID>' AND Subject = 'SF360 live verification call' ORDER BY CreatedDate DESC LIMIT 1"
+```
+
+Expected:
+- CLI returns executed.
+- Salesforce query returns one Task.
+- Cleanup deletes the Task after the run.
+
+### W4. agent advance moves an Opportunity stage
+
+```bash
+OPP_ID="<OPP_ID>"
+ORIGINAL_STAGE="$(sf data query --target-org sf360-test --json --query "SELECT StageName FROM Opportunity WHERE Id = '$OPP_ID'" | jq -r '.result.records[0].StageName')"
+salesforce-headless-360-pp-cli --org sf360-test agent advance \
+  --opp "$OPP_ID" \
+  --stage "Proposal/Price Quote" \
+  --json
+sf data query --target-org sf360-test \
+  --query "SELECT Id, StageName FROM Opportunity WHERE Id = '$OPP_ID'"
+```
+
+Expected:
+- CLI returns executed.
+- Opportunity `StageName` is the requested target stage.
+- Cleanup advances or updates the Opportunity back to `ORIGINAL_STAGE`.
+
+### W5. stale write conflict is rejected
+
+```bash
+LMD="$(sf data query --target-org sf360-test --json --query "SELECT LastModifiedDate FROM Account WHERE Id = '<ACME_ID>'" | jq -r '.result.records[0].LastModifiedDate')"
+sf data update record --target-org sf360-test --sobject Account --record-id <ACME_ID> --values "Description='sf360 live verification external mutation'"
+salesforce-headless-360-pp-cli --org sf360-test agent update <ACME_ID> \
+  --field Description="sf360 stale write should fail" \
+  --if-last-modified "$LMD" \
+  --json
+```
+
+Expected:
+- Final command exits non-zero.
+- Error envelope code is `CONFLICT_STALE_WRITE`.
+- Write audit marks the attempt as `conflict` or rejected with the conflict code.
+
+### W6. FLS write denial is enforced
+
+Switch to the restricted-profile user, or run JWT with `--run-as-user <restricted_user_id>`:
+
+```bash
+salesforce-headless-360-pp-cli --org sf360-test agent update <ACME_ID> \
+  --run-as-user <RESTRICTED_USER_ID> \
+  --field AnnualRevenue=123 \
+  --json
+```
+
+Expected:
+- Command exits non-zero with `FLS_WRITE_DENIED`, OR the field is silently dropped with a warning and no persisted field mutation.
+- Write audit shows a rejected attempt or a warning in provenance.
+
+## Write cleanup
+
+After W1-W6:
+
+1. Restore the Account `Description` to its original value if the test org needs a clean fixture.
+2. Delete Tasks created by W3:
+
+```bash
+sf data query --target-org sf360-test --json \
+  --query "SELECT Id FROM Task WHERE WhatId = '<ACME_ID>' AND Subject = 'SF360 live verification call'" \
+  | jq -r '.result.records[].Id' \
+  | xargs -I{} sf data delete record --target-org sf360-test --sobject Task --record-id {}
+```
+
+3. Restore the W4 Opportunity stage to `ORIGINAL_STAGE`.
+4. Delete or mark the W2 upsert fixture Account if your org does not keep test data.
+
+---
+
 ## Optional checks (skip allowed with recorded reason)
 
 ### O1. Apex companion deploy
@@ -166,9 +298,11 @@ Expected:
 ```bash
 salesforce-headless-360-pp-cli --org sf360-test trust install-apex
 sf apex run test --target-org sf360-test --class SF360SafeRead_Test --wait 10
+sf apex run test --target-org sf360-test --class SF360SafeWrite_Test --wait 10
+sf apex run test --target-org sf360-test --class SF360SafeUpsert_Test --wait 10
 ```
 
-Expected: deploy succeeds, all Apex tests pass.
+Expected: deploy succeeds, `SF360SafeRead`, `SF360SafeWrite`, and `SF360SafeUpsert` are installed, and all Apex tests pass.
 
 Skip reasons: org restricts deploy; non-admin profile; Apex tests blocked by org policy.
 
@@ -227,7 +361,7 @@ Skip reasons: no test Slack workspace; no SLACK_BOT_TOKEN.
 1. Fill out `docs/live-verification-report.md` with PASS/FAIL/SKIP and observed output for every row.
 2. Sign the report with Matt's key: `agent verify --deep` over the report file embedded in a small bundle.
 3. Commit the report to the repo.
-4. Tag v1.0.0.
+4. Tag v1.1.0.
 5. Send to Benioff.
 
-If any required PASS is FAIL: open an issue, fix, re-run the failing check (and any downstream checks). No FAILs at v1.0.0.
+If any required PASS is FAIL: open an issue, fix, re-run the failing check (and any downstream checks). No FAILs at v1.1.0.

@@ -34,7 +34,7 @@ func IsUUID(s string) bool {
 // shape — adding columns, dropping indexes, changing FTS5 tokenizers —
 // so an older binary refuses to open a newer database rather than silently
 // producing wrong results against a schema it cannot read.
-const StoreSchemaVersion = 4
+const StoreSchemaVersion = 5
 
 type Store struct {
 	db   *sql.DB
@@ -111,6 +111,13 @@ func (s *Store) migrate() error {
 	}
 	if current > StoreSchemaVersion {
 		return fmt.Errorf("database schema version %d is newer than supported version %d; upgrade the CLI binary or open an older database", current, StoreSchemaVersion)
+	}
+	// Fast path: already at target version. Skip all DDL to avoid SQLite
+	// lock contention when multiple goroutines open the same DB concurrently.
+	// CREATE TABLE IF NOT EXISTS is result-idempotent but still acquires a
+	// write lock that races with concurrent opens.
+	if current == StoreSchemaVersion {
+		return nil
 	}
 
 	migrations := []string{
@@ -212,6 +219,29 @@ func (s *Store) migrate() error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_bundle_audit_local_status ON bundle_audit_local(write_status)`,
 		`CREATE INDEX IF NOT EXISTS idx_bundle_audit_local_account ON bundle_audit_local(account_id)`,
+		`CREATE TABLE IF NOT EXISTS write_audit_local (
+			jti TEXT PRIMARY KEY,
+			acting_user TEXT,
+			acting_kid TEXT,
+			target_sobject TEXT,
+			target_record_id TEXT,
+			operation TEXT,
+			intent_jws TEXT,
+			idempotency_key TEXT,
+			field_diff TEXT,
+			execution_status TEXT,
+			execution_error TEXT,
+			client_host TEXT,
+			trace_id TEXT,
+			hipaa_mode INTEGER,
+			generated_at TEXT,
+			executed_at TEXT,
+			write_status TEXT,
+			remote_error TEXT
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_write_audit_local_status ON write_audit_local(execution_status)`,
+		`CREATE INDEX IF NOT EXISTS idx_write_audit_local_write_status ON write_audit_local(write_status)`,
+		`CREATE INDEX IF NOT EXISTS idx_write_audit_local_target ON write_audit_local(target_sobject, target_record_id)`,
 	}
 
 	for _, m := range migrations {
@@ -312,6 +342,239 @@ func (s *Store) RecordBundleAuditLocal(kid, bundleJTI, accountID string, generat
 		kid, bundleJTI, accountID, generatedAt.UTC(), writeStatus, remoteError,
 	)
 	return err
+}
+
+type WriteAuditRow struct {
+	JTI             string `json:"jti"`
+	ActingUser      string `json:"acting_user"`
+	ActingKID       string `json:"acting_kid"`
+	TargetSObject   string `json:"target_sobject"`
+	TargetRecordID  string `json:"target_record_id"`
+	Operation       string `json:"operation"`
+	IntentJWS       string `json:"intent_jws"`
+	IdempotencyKey  string `json:"idempotency_key,omitempty"`
+	FieldDiff       string `json:"field_diff"`
+	ExecutionStatus string `json:"execution_status"`
+	ExecutionError  string `json:"execution_error,omitempty"`
+	ClientHost      string `json:"client_host"`
+	TraceID         string `json:"trace_id"`
+	HIPAAMode       bool   `json:"hipaa_mode"`
+	GeneratedAt     string `json:"generated_at"`
+	ExecutedAt      string `json:"executed_at,omitempty"`
+	WriteStatus     string `json:"write_status"`
+	RemoteError     string `json:"remote_error,omitempty"`
+}
+
+type WriteAuditFilter struct {
+	ActingUser      string
+	TargetSObject   string
+	TargetRecordID  string
+	ExecutionStatus string
+	WriteStatus     string
+	Limit           int
+}
+
+func (s *Store) InsertWriteAudit(row WriteAuditRow) error {
+	if row.GeneratedAt == "" {
+		row.GeneratedAt = time.Now().UTC().Format(time.RFC3339)
+	}
+	_, err := s.db.Exec(
+		`INSERT INTO write_audit_local (
+			jti, acting_user, acting_kid, target_sobject, target_record_id, operation,
+			intent_jws, idempotency_key, field_diff, execution_status, execution_error,
+			client_host, trace_id, hipaa_mode, generated_at, executed_at, write_status, remote_error
+		) VALUES (
+			:jti, :acting_user, :acting_kid, :target_sobject, :target_record_id, :operation,
+			:intent_jws, :idempotency_key, :field_diff, :execution_status, :execution_error,
+			:client_host, :trace_id, :hipaa_mode, :generated_at, :executed_at, :write_status, :remote_error
+		)
+		ON CONFLICT(jti) DO UPDATE SET
+			acting_user = excluded.acting_user,
+			acting_kid = excluded.acting_kid,
+			target_sobject = excluded.target_sobject,
+			target_record_id = excluded.target_record_id,
+			operation = excluded.operation,
+			intent_jws = excluded.intent_jws,
+			idempotency_key = excluded.idempotency_key,
+			field_diff = excluded.field_diff,
+			execution_status = excluded.execution_status,
+			execution_error = excluded.execution_error,
+			client_host = excluded.client_host,
+			trace_id = excluded.trace_id,
+			hipaa_mode = excluded.hipaa_mode,
+			generated_at = excluded.generated_at,
+			executed_at = excluded.executed_at,
+			write_status = excluded.write_status,
+			remote_error = excluded.remote_error`,
+		writeAuditNamedArgs(row)...,
+	)
+	return err
+}
+
+func (s *Store) UpdateWriteAuditStatus(jti, status, remoteError string) error {
+	_, err := s.db.Exec(
+		`UPDATE write_audit_local
+		 SET write_status = :write_status, remote_error = :remote_error
+		 WHERE jti = :jti`,
+		sql.Named("jti", jti),
+		sql.Named("write_status", status),
+		sql.Named("remote_error", remoteError),
+	)
+	return err
+}
+
+func (s *Store) UpdateWriteAuditExecution(jti, executionStatus, executionError, executedAt string) error {
+	_, err := s.db.Exec(
+		`UPDATE write_audit_local
+		 SET execution_status = :execution_status,
+		     execution_error = :execution_error,
+		     executed_at = :executed_at
+		 WHERE jti = :jti`,
+		sql.Named("jti", jti),
+		sql.Named("execution_status", executionStatus),
+		sql.Named("execution_error", executionError),
+		sql.Named("executed_at", executedAt),
+	)
+	return err
+}
+
+func (s *Store) GetWriteAudit(jti string) (WriteAuditRow, error) {
+	rows, err := s.db.Query(
+		`SELECT jti, acting_user, acting_kid, target_sobject, target_record_id, operation,
+		        intent_jws, idempotency_key, field_diff, execution_status, execution_error,
+		        client_host, trace_id, hipaa_mode, generated_at, executed_at, write_status, remote_error
+		   FROM write_audit_local
+		  WHERE jti = :jti`,
+		sql.Named("jti", jti),
+	)
+	if err != nil {
+		return WriteAuditRow{}, err
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		return WriteAuditRow{}, sql.ErrNoRows
+	}
+	row, err := scanWriteAuditRow(rows)
+	if err != nil {
+		return WriteAuditRow{}, err
+	}
+	return row, rows.Err()
+}
+
+func (s *Store) ListWriteAudit(filter WriteAuditFilter) ([]WriteAuditRow, error) {
+	clauses := []string{"1 = 1"}
+	args := []any{
+		sql.Named("acting_user", filter.ActingUser),
+		sql.Named("target_sobject", filter.TargetSObject),
+		sql.Named("target_record_id", filter.TargetRecordID),
+		sql.Named("execution_status", filter.ExecutionStatus),
+		sql.Named("write_status", filter.WriteStatus),
+	}
+	if filter.ActingUser != "" {
+		clauses = append(clauses, "acting_user = :acting_user")
+	}
+	if filter.TargetSObject != "" {
+		clauses = append(clauses, "target_sobject = :target_sobject")
+	}
+	if filter.TargetRecordID != "" {
+		clauses = append(clauses, "target_record_id = :target_record_id")
+	}
+	if filter.ExecutionStatus != "" {
+		clauses = append(clauses, "execution_status = :execution_status")
+	}
+	if filter.WriteStatus != "" {
+		clauses = append(clauses, "write_status = :write_status")
+	}
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+	args = append(args, sql.Named("limit", limit))
+
+	rows, err := s.db.Query(
+		`SELECT jti, acting_user, acting_kid, target_sobject, target_record_id, operation,
+		        intent_jws, idempotency_key, field_diff, execution_status, execution_error,
+		        client_host, trace_id, hipaa_mode, generated_at, executed_at, write_status, remote_error
+		   FROM write_audit_local
+		  WHERE `+strings.Join(clauses, " AND ")+`
+		  ORDER BY generated_at DESC
+		  LIMIT :limit`,
+		args...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []WriteAuditRow
+	for rows.Next() {
+		row, err := scanWriteAuditRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, row)
+	}
+	return result, rows.Err()
+}
+
+type writeAuditScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanWriteAuditRow(scanner writeAuditScanner) (WriteAuditRow, error) {
+	var row WriteAuditRow
+	var hipaa int
+	if err := scanner.Scan(
+		&row.JTI,
+		&row.ActingUser,
+		&row.ActingKID,
+		&row.TargetSObject,
+		&row.TargetRecordID,
+		&row.Operation,
+		&row.IntentJWS,
+		&row.IdempotencyKey,
+		&row.FieldDiff,
+		&row.ExecutionStatus,
+		&row.ExecutionError,
+		&row.ClientHost,
+		&row.TraceID,
+		&hipaa,
+		&row.GeneratedAt,
+		&row.ExecutedAt,
+		&row.WriteStatus,
+		&row.RemoteError,
+	); err != nil {
+		return WriteAuditRow{}, err
+	}
+	row.HIPAAMode = hipaa != 0
+	return row, nil
+}
+
+func writeAuditNamedArgs(row WriteAuditRow) []any {
+	hipaaMode := 0
+	if row.HIPAAMode {
+		hipaaMode = 1
+	}
+	return []any{
+		sql.Named("jti", row.JTI),
+		sql.Named("acting_user", row.ActingUser),
+		sql.Named("acting_kid", row.ActingKID),
+		sql.Named("target_sobject", row.TargetSObject),
+		sql.Named("target_record_id", row.TargetRecordID),
+		sql.Named("operation", row.Operation),
+		sql.Named("intent_jws", row.IntentJWS),
+		sql.Named("idempotency_key", row.IdempotencyKey),
+		sql.Named("field_diff", row.FieldDiff),
+		sql.Named("execution_status", row.ExecutionStatus),
+		sql.Named("execution_error", row.ExecutionError),
+		sql.Named("client_host", row.ClientHost),
+		sql.Named("trace_id", row.TraceID),
+		sql.Named("hipaa_mode", hipaaMode),
+		sql.Named("generated_at", row.GeneratedAt),
+		sql.Named("executed_at", row.ExecutedAt),
+		sql.Named("write_status", row.WriteStatus),
+		sql.Named("remote_error", row.RemoteError),
+	}
 }
 
 func (s *Store) upsertGenericResourceTx(tx *sql.Tx, resourceType, id string, data json.RawMessage) error {

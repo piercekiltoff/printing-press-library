@@ -118,3 +118,52 @@ Locality is not the same as secrecy. Operators still need endpoint protection, d
 6. Treat CMDT fallback as an admin-trust boundary.
 7. Inspect Setup Audit Trail after live trust changes.
 8. Keep generated bundles out of unmanaged cloud logs.
+
+## Write Path Security
+
+v1.1 extends the read trust model to agent-authored Salesforce mutations. The important rule is the same as bundles: a valid Salesforce token is not treated as enough authority by itself. A write must pass the correct Salesforce-side access path, the local FLS and CRUD filter, signed intent generation, audit persistence, and replay/concurrency gates before it executes.
+
+### Two Paths, Two Gates
+
+Non-JWT auth modes use the Salesforce UI API write path by default. UI API record updates enforce object access, field-level security, record sharing, and layout-aware update semantics for the authenticated user, so it is the safest no-Apex path for ordinary human-scoped OAuth or `sf` CLI credentials.
+
+JWT mode uses the Apex companion path. JWT auth commonly authenticates as an integration user whose permissions may exceed the human or agent persona represented by the write. For that reason, JWT writes refuse to run unless `--run-as-user <UserId>` is provided and the Apex companions are installed. `SF360SafeWrite.cls` and `SF360SafeUpsert.cls` execute guarded DML with Salesforce user-mode access semantics, then return normalized D9 errors to the CLI.
+
+Direct REST SObject DML is not the default trust path for agent writes because it is too easy to confuse integration-user permissions with end-user FLS. Bulk paths are similarly guarded; v1.1 is single-record by design, and future bulk variants must pass through the same Apex/UI API gate.
+
+### Idempotency
+
+Agents retry after timeouts, network failures, and tool-call uncertainty. Without a durable idempotency key, retrying "create a Task" can create duplicate CRM activity. v1.1 requires a client-supplied `--idempotency-key` for `agent create`, `agent upsert`, and retryable convenience workflows.
+
+The key is written to `SF360_Idempotency_Key__c` and used as an External ID upsert target. Salesforce then treats a retry with the same key as the same logical operation instead of a second create. A safe key strategy is a hash of intent, such as operation + target + normalized field payload + bounded timestamp. Do not use business identifiers, customer names, emails, patient IDs, or case descriptions as idempotency keys; keys can appear in audit logs and should not leak PII or PHI.
+
+### Optimistic Concurrency
+
+`agent update` and workflow verbs that patch known records use optimistic concurrency. The CLI fetches the current `LastModifiedDate`, signs the intended diff against that before-state, and sends an If-Match-style guard through the selected write path. If Salesforce changed the record after the before-state was fetched, the write is rejected as `CONFLICT_STALE_WRITE`.
+
+`--force-stale` is an explicit opt-out for operators who have reviewed the race. When used, provenance records that stale-write protection was bypassed so later audit review can distinguish intentional override from normal conflict protection.
+
+### Plan Mode Threat Model
+
+Plan mode separates proposal from execution. `agent plan ...` builds a signed write plan with `aud=agent-mutation`, an expiration, intended operation, target, diff hash, and execution constraints. `agent sign-plan` appends countersignatures from other trusted keys. `agent execute-plan` verifies the plan signature, expiration, required countersignature count, intended audience, and write gates before mutating Salesforce.
+
+The `aud` value prevents cross-use with read-only bundles: a signature meant for `agent-context` cannot authorize mutation, and a write plan cannot be replayed as a Customer 360 bundle. The expiration bounds stale approvals, and each execution signs a separate write intent with its own `jti`, preventing a countersigned plan from becoming an unbounded reusable permission slip.
+
+### Bulk Gate Rationale
+
+v1.1 write verbs operate on one record at a time. Any path that computes more than one affected record is blocked unless `--confirm-bulk <N>` is present and `N` exactly matches the computed count. This is intentionally redundant: broad writes are the largest operational risk for agent tooling, and the command must prove that the caller saw the count it is about to mutate.
+
+v1.2 bulk variants should reuse the same gate, write-intent signing, idempotency, audit, and FLS path selection rather than adding a separate bulk-only trust model.
+
+### Write D9 Error Codes
+
+| Code | Meaning |
+| --- | --- |
+| `CONFLICT_STALE_WRITE` | The record changed after the before-state was fetched; rerun after reviewing the current Salesforce value. |
+| `IDEMPOTENCY_KEY_REQUIRED` | A create, upsert, or retryable workflow write omitted `--idempotency-key`. |
+| `FLS_WRITE_DENIED` | The acting user's object CRUD or field-level write access excluded the requested mutation. |
+| `VALIDATION_RULE_REJECTED` | Salesforce rejected the write through a validation rule or equivalent DML validation. |
+| `APEX_COMPANION_REQUIRED` | JWT mode attempted a write without the Apex write companion and `--run-as-user` safety path. |
+| `BULK_CONFIRMATION_MISMATCH` | `--confirm-bulk N` was missing or did not match the computed affected record count. |
+| `PLAN_SIGNATURE_INVALID` | `agent execute-plan` received an expired, tampered, wrong-audience, or insufficiently countersigned plan. |
+| `WRITE_INTENT_AUDIT_FAILED` | The write intent audit row could not be persisted in required sync mode; HIPAA deployments block execution. |

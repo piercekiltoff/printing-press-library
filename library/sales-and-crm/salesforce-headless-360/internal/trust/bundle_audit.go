@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/mvanhorn/printing-press-library/library/sales-and-crm/salesforce-headless-360/internal/store"
@@ -50,15 +49,14 @@ func RecordBundleAudit(ctx context.Context, req BundleAuditRequest, opts BundleA
 	}
 
 	if opts.Sync || req.HIPAAMode {
-		return postAndMirrorBundleAudit(ctx, req, opts)
+		return (&SyncWriter{Client: opts.Client}).Write(ctx, bundleAuditRow{req: req, dbPath: opts.DBPath})
 	}
 
-	go func() {
-		if err := postAndMirrorBundleAudit(context.Background(), req, opts); err != nil {
-			warnBundleAudit(opts, "bundle audit write failed: %v", err)
-		}
-	}()
-	return nil
+	return (&AsyncWriter{
+		Client:     opts.Client,
+		LogWarn:    opts.LogWarn,
+		WarnFormat: "bundle audit write failed: %v",
+	}).Write(ctx, bundleAuditRow{req: req, dbPath: opts.DBPath})
 }
 
 func normalizeBundleAuditRequest(req BundleAuditRequest) BundleAuditRequest {
@@ -88,54 +86,6 @@ func normalizeBundleAuditRequest(req BundleAuditRequest) BundleAuditRequest {
 	return req
 }
 
-func postAndMirrorBundleAudit(ctx context.Context, req BundleAuditRequest, opts BundleAuditOptions) error {
-	if opts.Client == nil {
-		err := fmt.Errorf("bundle audit client required")
-		_ = writeBundleAuditLocal(opts.DBPath, req, "failed", err.Error())
-		return fmt.Errorf("BUNDLE_AUDIT_WRITE_FAILED: %w", err)
-	}
-	body, err := bundleAuditSObject(req)
-	if err != nil {
-		_ = writeBundleAuditLocal(opts.DBPath, req, "failed", err.Error())
-		return fmt.Errorf("BUNDLE_AUDIT_WRITE_FAILED: %w", err)
-	}
-
-	done := make(chan auditPostResult, 1)
-	go func() {
-		raw, status, postErr := opts.Client.Post(BundleAuditPath, body)
-		done <- auditPostResult{raw: raw, status: status, err: postErr}
-	}()
-
-	var result auditPostResult
-	select {
-	case <-ctx.Done():
-		err := ctx.Err()
-		_ = writeBundleAuditLocal(opts.DBPath, req, "failed", err.Error())
-		return fmt.Errorf("BUNDLE_AUDIT_WRITE_FAILED: %w", err)
-	case result = <-done:
-	}
-
-	if result.err != nil {
-		_ = writeBundleAuditLocal(opts.DBPath, req, "failed", result.err.Error())
-		return fmt.Errorf("BUNDLE_AUDIT_WRITE_FAILED: %w", result.err)
-	}
-	if result.status < 200 || result.status > 299 {
-		err := fmt.Errorf("remote returned HTTP %d: %s", result.status, string(result.raw))
-		_ = writeBundleAuditLocal(opts.DBPath, req, "failed", err.Error())
-		return fmt.Errorf("BUNDLE_AUDIT_WRITE_FAILED: %w", err)
-	}
-	if err := writeBundleAuditLocal(opts.DBPath, req, "ok", ""); err != nil {
-		return fmt.Errorf("BUNDLE_AUDIT_LOCAL_WRITE_FAILED: %w", err)
-	}
-	return nil
-}
-
-type auditPostResult struct {
-	raw    json.RawMessage
-	status int
-	err    error
-}
-
 func bundleAuditSObject(req BundleAuditRequest) (map[string]any, error) {
 	sources, err := json.Marshal(req.SourcesUsed)
 	if err != nil {
@@ -158,6 +108,31 @@ func bundleAuditSObject(req BundleAuditRequest) (map[string]any, error) {
 	}, nil
 }
 
+type bundleAuditRow struct {
+	req    BundleAuditRequest
+	dbPath string
+}
+
+func (r bundleAuditRow) PostPath() string {
+	return BundleAuditPath
+}
+
+func (r bundleAuditRow) PostBody() (any, error) {
+	return bundleAuditSObject(r.req)
+}
+
+func (r bundleAuditRow) Mirror(status, remoteError string) error {
+	return writeBundleAuditLocal(r.dbPath, r.req, status, remoteError)
+}
+
+func (r bundleAuditRow) FailureCode() string {
+	return "BUNDLE_AUDIT_WRITE_FAILED"
+}
+
+func (r bundleAuditRow) LocalFailureCode() string {
+	return "BUNDLE_AUDIT_LOCAL_WRITE_FAILED"
+}
+
 func writeBundleAuditLocal(dbPath string, req BundleAuditRequest, status, remoteError string) error {
 	if dbPath == "" {
 		return nil
@@ -171,39 +146,5 @@ func writeBundleAuditLocal(dbPath string, req BundleAuditRequest, status, remote
 }
 
 func warnBundleAudit(opts BundleAuditOptions, format string, args ...any) {
-	if opts.LogWarn != nil {
-		opts.LogWarn(format, args...)
-		return
-	}
-	fmt.Fprintf(os.Stderr, "warning: "+format+"\n", args...)
-}
-
-// HIPAAModeFromManifest reads the install-time provenance flag. Accepted keys
-// are intentionally permissive so older scaffold manifests can opt in without
-// another schema migration.
-func HIPAAModeFromManifest(path string) bool {
-	if strings.EqualFold(os.Getenv("SF360_HIPAA_MODE"), "true") || os.Getenv("SF360_HIPAA_MODE") == "1" {
-		return true
-	}
-	if path == "" {
-		path = ".printing-press.json"
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	var manifest map[string]any
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		return false
-	}
-	return boolKey(manifest, "hipaa_mode") || boolKey(manifest, "hipaa") || boolKey(manifest, "sync_audit_writes")
-}
-
-func boolKey(m map[string]any, key string) bool {
-	v, ok := m[key]
-	if !ok {
-		return false
-	}
-	b, ok := v.(bool)
-	return ok && b
+	warnAudit(opts.LogWarn, format, args...)
 }

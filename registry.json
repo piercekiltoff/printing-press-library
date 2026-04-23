@@ -292,12 +292,12 @@
       "name": "salesforce-headless-360",
       "category": "sales-and-crm",
       "api": "Salesforce Headless 360",
-      "description": "Salesforce Headless 360 agent-context packager: signed, FLS-safe cross-surface bundles any agent can consume. Packages Customer 360 (Accounts, Contacts, Opps, Cases, Activities, Chatter, ContentDocumentLinks) plus optional Data Cloud profile and Slack linkage into a JWS-signed JSON bundle verifiable offline.",
+      "description": "Salesforce Headless 360 agent CLI v1.1: signed FLS-safe READS (cross-surface bundles) AND signed FLS-safe WRITES (update / upsert / create / log-activity / advance / close-case / note + plan mode for multi-agent workflows). 29 MCP tools. Apex companion for FLS-safe DML under JWT. SF360_Bundle_Audit__c + SF360_Write_Audit__c custom objects for GDPR Article 30 record-of-processing.",
       "path": "library/sales-and-crm/salesforce-headless-360",
       "mcp": {
         "binary": "salesforce-headless-360-pp-mcp",
         "transport": "stdio",
-        "tool_count": 10,
+        "tool_count": 29,
         "auth_type": "oauth2",
         "env_vars": [
           "SALESFORCE_ACCESS_TOKEN",

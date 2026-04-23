@@ -9,6 +9,10 @@ type Filter interface {
 	Apply(ctx context.Context, record *Record) *Record
 }
 
+type WriteFilter interface {
+	AllowFieldWrite(user, sobject, field string) bool
+}
+
 type Record struct {
 	SObject    string
 	Fields     map[string]any
@@ -75,6 +79,13 @@ func (c Composed) Apply(ctx context.Context, record *Record) *Record {
 		}
 	}
 	return record
+}
+
+func (c Composed) AllowFieldWrite(user, sobject, field string) bool {
+	if writeFilter, ok := c.FLS.(WriteFilter); ok {
+		return writeFilter.AllowFieldWrite(user, sobject, field)
+	}
+	return false
 }
 
 func ensureProvenance(record *Record) {

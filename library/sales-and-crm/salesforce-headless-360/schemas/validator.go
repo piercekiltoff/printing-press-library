@@ -71,6 +71,62 @@ func ValidateBundle(data []byte) error {
 	return nil
 }
 
+// ValidateWritePlan validates a v1 write-plan document using the same
+// dependency-free subset of JSON Schema checks as bundle validation.
+func ValidateWritePlan(data []byte) error {
+	var root map[string]any
+	if err := json.Unmarshal(data, &root); err != nil {
+		return schemaErr("parse write plan JSON: %w", err)
+	}
+	if err := rejectUnknownKeys(root, "write_plan", []string{"version", "plan_intent", "plan_metadata", "plan_jws", "countersignatures"}); err != nil {
+		return err
+	}
+	version, ok := number(root["version"])
+	if !ok || version != 1 {
+		return schemaErr("write_plan.version must be number 1")
+	}
+	intent, ok := object(root["plan_intent"])
+	if !ok {
+		return schemaErr("write_plan.plan_intent must be an object")
+	}
+	metadata, ok := object(root["plan_metadata"])
+	if !ok {
+		return schemaErr("write_plan.plan_metadata must be an object")
+	}
+	if stringRequired(root, "plan_jws") == "" {
+		return schemaErr("write_plan.plan_jws is required")
+	}
+	if err := validateWritePlanIntent(intent); err != nil {
+		return err
+	}
+	if err := validateWritePlanMetadata(metadata); err != nil {
+		return err
+	}
+	countersigs, ok := array(root["countersignatures"])
+	if !ok {
+		return schemaErr("write_plan.countersignatures must be an array")
+	}
+	for i, item := range countersigs {
+		sig, ok := object(item)
+		if !ok {
+			return schemaErr("write_plan.countersignatures[%d] must be an object", i)
+		}
+		if err := rejectUnknownKeys(sig, fmt.Sprintf("write_plan.countersignatures[%d]", i), []string{"kid", "signed_at", "jws"}); err != nil {
+			return err
+		}
+		if stringRequired(sig, "kid") == "" {
+			return schemaErr("write_plan.countersignatures[%d].kid is required", i)
+		}
+		if _, err := time.Parse(time.RFC3339, stringRequired(sig, "signed_at")); err != nil {
+			return schemaErr("write_plan.countersignatures[%d].signed_at must be RFC3339: %w", i, err)
+		}
+		if stringRequired(sig, "jws") == "" {
+			return schemaErr("write_plan.countersignatures[%d].jws is required", i)
+		}
+	}
+	return nil
+}
+
 // ManifestSHA returns the canonical JSON sha256 used by the signing claims.
 func ManifestSHA(manifest any) (string, error) {
 	data, err := json.Marshal(manifest)
@@ -107,6 +163,61 @@ func validateManifest(manifest map[string]any) error {
 	return nil
 }
 
+func validateWritePlanIntent(intent map[string]any) error {
+	if err := rejectUnknownKeys(intent, "write_plan.plan_intent", []string{"iss", "sub", "aud", "iat", "exp", "jti", "sobject", "record_id", "operation", "diff_sha256", "idempotency_key", "if_last_modified"}); err != nil {
+		return err
+	}
+	for _, key := range []string{"iss", "sub", "aud", "jti", "sobject", "operation"} {
+		if stringRequired(intent, key) == "" {
+			return schemaErr("write_plan.plan_intent.%s is required", key)
+		}
+	}
+	for _, key := range []string{"iat", "exp"} {
+		value, ok := number(intent[key])
+		if !ok || value != float64(int64(value)) {
+			return schemaErr("write_plan.plan_intent.%s must be an integer", key)
+		}
+	}
+	if diffSHA := stringRequired(intent, "diff_sha256"); diffSHA != "" && !hexSHA256.MatchString(diffSHA) {
+		return schemaErr("write_plan.plan_intent.diff_sha256 must be a lowercase sha256 hex string")
+	}
+	return nil
+}
+
+func validateWritePlanMetadata(metadata map[string]any) error {
+	if err := rejectUnknownKeys(metadata, "write_plan.plan_metadata", []string{"created_by_kid", "created_at", "fields", "auth_mode", "execute_path", "human_summary", "dry_run"}); err != nil {
+		return err
+	}
+	for _, key := range []string{"created_by_kid", "created_at", "auth_mode", "execute_path", "human_summary"} {
+		if stringRequired(metadata, key) == "" {
+			return schemaErr("write_plan.plan_metadata.%s is required", key)
+		}
+	}
+	if _, err := time.Parse(time.RFC3339, stringRequired(metadata, "created_at")); err != nil {
+		return schemaErr("write_plan.plan_metadata.created_at must be RFC3339: %w", err)
+	}
+	if fields, ok := object(metadata["fields"]); metadata["fields"] != nil && !ok {
+		return schemaErr("write_plan.plan_metadata.fields must be an object")
+	} else if ok {
+		for key, value := range fields {
+			field, ok := object(value)
+			if !ok {
+				return schemaErr("write_plan.plan_metadata.fields.%s must be an object", key)
+			}
+			if err := rejectUnknownKeys(field, "write_plan.plan_metadata.fields."+key, []string{"before", "after"}); err != nil {
+				return err
+			}
+			if _, ok := field["after"]; !ok {
+				return schemaErr("write_plan.plan_metadata.fields.%s.after is required", key)
+			}
+		}
+	}
+	if _, ok := metadata["dry_run"].(bool); metadata["dry_run"] != nil && !ok {
+		return schemaErr("write_plan.plan_metadata.dry_run must be a boolean")
+	}
+	return nil
+}
+
 func schemaErr(format string, args ...any) error {
 	return fmt.Errorf("SCHEMA_INVALID: "+format, args...)
 }
@@ -137,4 +248,17 @@ func stringRequired(m map[string]any, key string) string {
 func number(v any) (float64, bool) {
 	n, ok := v.(float64)
 	return n, ok
+}
+
+func rejectUnknownKeys(m map[string]any, path string, allowed []string) error {
+	allow := map[string]bool{}
+	for _, key := range allowed {
+		allow[key] = true
+	}
+	for key := range m {
+		if !allow[key] {
+			return schemaErr("%s.%s is not allowed", path, key)
+		}
+	}
+	return nil
 }

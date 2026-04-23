@@ -21,12 +21,52 @@ salesforce-headless-360-pp-cli agent verify acme.json --strict
 
 # Post a field-gated summary into Slack after channel-audience FLS intersection.
 salesforce-headless-360-pp-cli agent inject --slack C123456 --bundle acme.json
+
+# Preview then patch one Salesforce record with a signed, audited intent.
+salesforce-headless-360-pp-cli --org prod agent update 001xx000003DGb2AAG \
+  --field Description="Agent follow-up scheduled" \
+  --dry-run --json
+salesforce-headless-360-pp-cli --org prod agent update 001xx000003DGb2AAG \
+  --field Description="Agent follow-up scheduled" \
+  --json
+
+# Retry-safe create-or-update through the SF360 idempotency key.
+salesforce-headless-360-pp-cli --org prod agent upsert \
+  --sobject Account \
+  --idempotency-key "sf360:account:acme-renewal:2026-04-22" \
+  --field Name="Acme Renewal" \
+  --field Description="Created by signed agent workflow" \
+  --json
+
+# Agent-typical workflow verbs.
+salesforce-headless-360-pp-cli --org prod agent log-activity --type call --what 001xx000003DGb2AAG --subject "Renewal call completed" --idempotency-key "call:001xx000003DGb2AAG:2026-04-22"
+salesforce-headless-360-pp-cli --org prod agent advance --opp 006xx000001ABCDE --stage "Proposal/Price Quote"
+salesforce-headless-360-pp-cli --org prod agent close-case --case 500xx000001ABCDE --resolution "Resolved by renewal workflow"
+salesforce-headless-360-pp-cli --org prod agent note --entity 001xx000003DGb2AAG --text "Agent summary posted after strict bundle verification."
+
+# Multi-agent approval: propose, countersign, execute.
+salesforce-headless-360-pp-cli --org prod agent plan update 001xx000003DGb2AAG \
+  --field Description="Pending approver review" \
+  --output /tmp/acme-write-plan.json
+salesforce-headless-360-pp-cli --org prod agent sign-plan /tmp/acme-write-plan.json
+salesforce-headless-360-pp-cli --org prod agent execute-plan /tmp/acme-write-plan.json --require-countersignatures 1
+
+# Inspect local write forensics.
+salesforce-headless-360-pp-cli agent write-audit list --status executed
+salesforce-headless-360-pp-cli agent write-audit inspect <jti>
+salesforce-headless-360-pp-cli agent write-audit verify <jti>
 ```
 
 ## Safety Notes
 
 - FLS enforcement is always on before Salesforce records enter bundles, sync output, Data Cloud enrichment, or Slack linkage summaries.
+- Write FLS and CRUD enforcement is always on before fields enter an update, create, upsert, activity, workflow, or Chatter note payload.
+- Use `--dry-run` first for every write path. Dry-run validates and renders the payload without DML or write-audit emission.
+- `agent create`, `agent upsert`, and retryable workflow writes need stable `--idempotency-key` values. Prefer opaque intent hashes; do not put PII or customer business identifiers in keys.
+- MCP write tools refuse mutation unless `confirm:true` is passed. Keep `dry_run:true` for preview calls and add `confirm:true` only after checking the payload.
 - JWT auth requires `agent context --run-as-user <UserId>` for bundle emission; integration-user permissions are not treated as the human user's FLS boundary.
+- JWT writes require `--run-as-user <UserId>` and the Apex write companion because integration-user permissions are not a safe write boundary.
+- Bulk writes are gated by `--confirm-bulk <N>` and the value must match the computed record count exactly.
 - Slack inject re-FLSes the bundle against the Slack channel audience and blocks unmapped or external members unless the caller explicitly waives that guard.
 - `doctor` is local and has no telemetry; use `doctor --mock` as the first smoke test when auth or infrastructure is uncertain.
 - If doctor detects Agentforce MCP or Salesforce DX MCP, prefer those tools for tasks they cover directly.
@@ -42,6 +82,14 @@ Use `decay` for freshness triage. It returns a score and signal breakdown that a
 Use `verify` before trusting a bundle. Add `--strict` when the next step can mutate systems or expose data.
 
 Use `inject` only when the target Slack audience is the intended audience. It is for collaboration handoff, not bulk publishing.
+
+Use `update`, `create`, and `upsert` for single-record CRM mutation. Prefer `upsert` with a stable idempotency key when an agent, script, or MCP client may retry.
+
+Use `log-activity`, `advance`, `close-case`, and `note` for common agent workflows. They are convenience verbs over the same signed write intent, FLS filter, audit writer, and D9 error envelope.
+
+Use `plan`, `sign-plan`, and `execute-plan` when a proposed write needs another agent or human-controlled key to countersign before execution.
+
+Use `write-audit` when investigating what an agent wrote, which `kid` signed it, whether the intent JWS still verifies, and whether execution ended as `executed`, `rejected`, or `conflict`.
 
 ## Install
 

@@ -93,3 +93,38 @@ func TestFLSRequestIncludesQualifiedFields(t *testing.T) {
 		t.Fatalf("UI API fields were not qualified: %s", joined)
 	}
 }
+
+func TestFLSAllowFieldWriteRequiresObjectEditAndFieldEdit(t *testing.T) {
+	client := &fakeGetter{responses: map[string]json.RawMessage{
+		"/services/data/v63.0/sobjects/Contact/describe": json.RawMessage(`{
+			"updateable": true,
+			"fields": [
+				{"name":"Name","updateable":true},
+				{"name":"Salary__c","updateable":false}
+			]
+		}`),
+	}}
+	filter := NewFLSFilter(client)
+
+	if !filter.AllowFieldWrite("005USER", "Contact", "Name") {
+		t.Fatal("Name should be writeable")
+	}
+	if filter.AllowFieldWrite("005USER", "Contact", "Salary__c") {
+		t.Fatal("Salary__c should be rejected when visible but not editable")
+	}
+}
+
+func TestFLSAllowFieldWriteRequiresObjectEdit(t *testing.T) {
+	client := &fakeGetter{responses: map[string]json.RawMessage{
+		"/services/data/v63.0/sobjects/Contact/describe": json.RawMessage(`{
+			"updateable": false,
+			"fields": [
+				{"name":"Name","updateable":true}
+			]
+		}`),
+	}}
+
+	if NewFLSFilter(client).AllowFieldWrite("005USER", "Contact", "Name") {
+		t.Fatal("Name should be rejected when object CRUD edit is denied")
+	}
+}

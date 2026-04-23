@@ -146,6 +146,159 @@ func TestCertificateUnavailableFailModeRejectsCertificatePost(t *testing.T) {
 	}
 }
 
+func TestWritePatchRoutes(t *testing.T) {
+	server := newHandlerServer()
+	resp := doHandlerRequest(t, server, http.MethodPatch, apiPrefix+"/sobjects/Account/001ACME0001", `{"Name":"Acme Updated"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	if got := resp.Header.Get("LastModifiedDate"); got == "" {
+		t.Fatalf("LastModifiedDate header missing")
+	}
+	if body := ReadAll(resp); !strings.Contains(body, `"success": true`) {
+		t.Fatalf("body = %s, want success", body)
+	}
+
+	server.SetFailMode(FailStaleWrite)
+	resp = doHandlerRequest(t, server, http.MethodPatch, apiPrefix+"/sobjects/Account/001ACME0001", `{"Name":"Acme Updated"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("stale status = %d, want 409", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, "PRECONDITION_FAILED") {
+		t.Fatalf("body = %s, want PRECONDITION_FAILED", body)
+	}
+}
+
+func TestUIRecordPatchFLSFailMode(t *testing.T) {
+	server := newHandlerServer()
+	server.SetFailMode(FailFLSWriteDenied)
+
+	resp := doHandlerRequest(t, server, http.MethodPatch, apiPrefix+"/ui-api/records/003ACME0001", `{"fields":{"Salary__c":142000}}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, "INVALID_FIELD_FOR_INSERT_UPDATE") {
+		t.Fatalf("body = %s, want INVALID_FIELD_FOR_INSERT_UPDATE", body)
+	}
+}
+
+func TestWritePostRoutesAndFailureModes(t *testing.T) {
+	server := newHandlerServer()
+	resp := doHandlerRequest(t, server, http.MethodPost, apiPrefix+"/sobjects/Task", `{"Subject":"Follow up"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, want 201", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, `"id":"00TWRITE0001"`) {
+		t.Fatalf("body = %s, want mock Task id", body)
+	}
+
+	server.SetFailMode(FailValidationRule)
+	resp = doHandlerRequest(t, server, http.MethodPost, apiPrefix+"/sobjects/Task", `{"Subject":"Follow up"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("validation status = %d, want 400", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, "VALIDATION_RULE_VIOLATION") {
+		t.Fatalf("body = %s, want VALIDATION_RULE_VIOLATION", body)
+	}
+
+	server.SetFailMode("required_field_missing")
+	resp = doHandlerRequest(t, server, http.MethodPost, apiPrefix+"/sobjects/Task", `{}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("required-field status = %d, want 400", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, "REQUIRED_FIELD_MISSING") {
+		t.Fatalf("body = %s, want REQUIRED_FIELD_MISSING", body)
+	}
+}
+
+func TestSObjectIdempotentPatchTracksRepeatKeys(t *testing.T) {
+	server := newHandlerServer()
+	path := apiPrefix + "/sobjects/Task/SF360_Idempotency_Key__c/abc123"
+
+	resp := doHandlerRequest(t, server, http.MethodPatch, path, `{"Subject":"Follow up"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("first status = %d, want 201", resp.StatusCode)
+	}
+
+	resp = doHandlerRequest(t, server, http.MethodPatch, path, `{"Subject":"Follow up"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("repeat status = %d, want 204", resp.StatusCode)
+	}
+}
+
+func TestApexWriteRoutesAndFailureModes(t *testing.T) {
+	server := newHandlerServer()
+	resp := doHandlerRequest(t, server, http.MethodPost, "/services/apexrest/sf360/v1/safeWrite", `{"sobject":"Account"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("safeWrite status = %d, want 200", resp.StatusCode)
+	}
+
+	server.SetFailMode(FailFLSWriteDenied)
+	resp = doHandlerRequest(t, server, http.MethodPost, "/services/apexrest/sf360/v1/safeWrite", `{"sobject":"Contact"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("safeWrite FLS status = %d, want 400", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, "INVALID_FIELD_FOR_INSERT_UPDATE") {
+		t.Fatalf("body = %s, want INVALID_FIELD_FOR_INSERT_UPDATE", body)
+	}
+
+	server.SetFailMode(FailApexMissing)
+	resp = doHandlerRequest(t, server, http.MethodPost, "/services/apexrest/sf360/v1/safeWrite", `{"sobject":"Account"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("safeWrite missing status = %d, want 404", resp.StatusCode)
+	}
+}
+
+func TestApexSafeUpsertTracksRepeatKeys(t *testing.T) {
+	server := newHandlerServer()
+	path := "/services/apexrest/sf360/v1/safeUpsert"
+
+	resp := doHandlerRequest(t, server, http.MethodPost, path, `{"idempotencyKey":"abc123"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("first status = %d, want 201", resp.StatusCode)
+	}
+
+	resp = doHandlerRequest(t, server, http.MethodPost, path, `{"idempotencyKey":"abc123"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("repeat status = %d, want 200", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, `"created": false`) {
+		t.Fatalf("body = %s, want created false", body)
+	}
+}
+
+func TestWriteAuditPostRoutes(t *testing.T) {
+	server := newHandlerServer()
+	resp := doHandlerRequest(t, server, http.MethodPost, apiPrefix+"/sobjects/SF360_Write_Audit__c/", `{"TraceId__c":"trace-1"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusCreated {
+		t.Fatalf("status = %d, want 201", resp.StatusCode)
+	}
+
+	server.SetFailMode(FailAuditFailed)
+	resp = doHandlerRequest(t, server, http.MethodPost, apiPrefix+"/sobjects/SF360_Write_Audit__c/", `{"TraceId__c":"trace-1"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusInternalServerError {
+		t.Fatalf("audit failure status = %d, want 500", resp.StatusCode)
+	}
+	if body := ReadAll(resp); !strings.Contains(body, "SERVER_UNAVAILABLE") {
+		t.Fatalf("body = %s, want SERVER_UNAVAILABLE", body)
+	}
+}
+
 func TestUnknownRouteReturnsSalesforceErrorEnvelope(t *testing.T) {
 	server := newHandlerServer()
 	resp := doHandlerRequest(t, server, http.MethodGet, apiPrefix+"/not-a-route", "")
@@ -177,6 +330,13 @@ func TestStartRespondsToCanonicalRequests(t *testing.T) {
 		{http.MethodGet, apiPrefix + "/composite/graph?fixture=acme_large", ""},
 		{http.MethodPost, apiPrefix + "/composite/graph", `{"graphs":[]}`},
 		{http.MethodGet, apiPrefix + "/ui-api/records/003ACME0001", ""},
+		{http.MethodPatch, apiPrefix + "/ui-api/records/003ACME0001", `{"fields":{"Title":"VP"}}`},
+		{http.MethodPatch, apiPrefix + "/sobjects/Account/001ACME0001", `{"Name":"Acme Updated"}`},
+		{http.MethodPost, apiPrefix + "/sobjects/Task", `{"Subject":"Follow up"}`},
+		{http.MethodPatch, apiPrefix + "/sobjects/Task/SF360_Idempotency_Key__c/start-canonical", `{"Subject":"Follow up"}`},
+		{http.MethodPost, "/services/apexrest/sf360/v1/safeWrite", `{"sobject":"Account"}`},
+		{http.MethodPost, "/services/apexrest/sf360/v1/safeUpsert", `{"idempotencyKey":"canonical"}`},
+		{http.MethodPost, apiPrefix + "/sobjects/SF360_Write_Audit__c/", `{"TraceId__c":"trace-1"}`},
 		{http.MethodGet, apiPrefix + "/ui-api/records/001ACME0001", ""},
 		{http.MethodGet, apiPrefix + "/tooling/query?q=SELECT+Id+FROM+FieldDefinition", ""},
 		{http.MethodPost, apiPrefix + "/tooling/sobjects/Certificate", `{"DeveloperName":"SF360_Bundle_Mock"}`},

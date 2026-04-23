@@ -174,6 +174,8 @@ func RegisterTools(s *server.MCPServer) {
 		),
 		handleContext,
 	)
+
+	RegisterAgentWriteTools(s)
 }
 
 // makeAPIHandler creates a generic MCP tool handler for an API endpoint.

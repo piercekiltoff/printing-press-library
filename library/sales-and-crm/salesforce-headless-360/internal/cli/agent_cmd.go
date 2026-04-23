@@ -2,12 +2,15 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -46,10 +49,508 @@ Bundles are verifiable offline against a cached public key.`,
   # Narrative brief for one opportunity
   salesforce-headless-360-pp-cli agent brief --opp 006xx000001`,
 	}
-	// Subcommands are attached by the root command so each subcommand
-	// ctor has a call-site in root.go. The parent `agent` group is still
-	// registered in root.go via newAgentCmd.
+	// v1 read subcommands are attached in root.go. v1.1 write primitives
+	// live here so their shared command plumbing stays close together.
+	cmd.AddCommand(newAgentUpdateCmd(flags))
+	cmd.AddCommand(newAgentUpsertCmd(flags))
+	cmd.AddCommand(newAgentCreateCmd(flags))
+	cmd.AddCommand(newAgentLogActivityCmd(flags))
+	cmd.AddCommand(newAgentAdvanceCmd(flags))
+	cmd.AddCommand(newAgentCloseCaseCmd(flags))
+	cmd.AddCommand(newAgentNoteCmd(flags))
+	cmd.AddCommand(newAgentPlanCmd(flags))
+	cmd.AddCommand(newAgentSignPlanCmd(flags))
+	cmd.AddCommand(newAgentExecutePlanCmd(flags))
+	cmd.AddCommand(newAgentWriteAuditCmd(flags))
 	return cmd
+}
+
+func newAgentUpdateCmd(flags *rootFlags) *cobra.Command {
+	var fieldFlags []string
+	var ifLastModifiedRaw, idempotencyKey, runAsUser string
+	var confirmBulk int
+	var forceStale, dryRun, useMock bool
+	cmd := &cobra.Command{
+		Use:   "update <id>",
+		Short: "Patch one Salesforce record with a signed, audited write intent",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fields, err := agent.ParseFieldAssignments(fieldFlags)
+			if err != nil {
+				return err
+			}
+			if len(fields) == 0 {
+				return fmt.Errorf("at least one --field NAME=VALUE is required")
+			}
+			var ifLastModified time.Time
+			if ifLastModifiedRaw != "" {
+				ifLastModified, err = time.Parse(time.RFC3339, ifLastModifiedRaw)
+				if err != nil {
+					return fmt.Errorf("--if-last-modified must be RFC3339: %w", err)
+				}
+			}
+			opts := agent.NewUpdateWriteOptions(args[0], fields)
+			opts.IdempotencyKey = idempotencyKey
+			opts.IfLastModified = ifLastModified
+			opts.ForceStale = forceStale
+			opts.DryRun = dryRun || flags.dryRun
+			opts.RunAsUser = runAsUser
+			opts.ConfirmBulk = confirmBulk
+			return runAgentWrite(cmd, flags, opts, useMock)
+		},
+	}
+	cmd.Flags().StringArrayVar(&fieldFlags, "field", nil, "Field assignment NAME=VALUE; repeatable")
+	cmd.Flags().StringVar(&ifLastModifiedRaw, "if-last-modified", "", "Expected LastModifiedDate in RFC3339")
+	cmd.Flags().BoolVar(&forceStale, "force-stale", false, "Bypass optimistic concurrency")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview payload without DML or audit writes")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Optional idempotency key recorded in audit")
+	cmd.Flags().StringVar(&runAsUser, "run-as-user", "", "SF User Id required in JWT mode")
+	addConfirmBulkFlag(cmd, &confirmBulk)
+	cmd.Flags().BoolVar(&useMock, "mock", false, "Run against the in-process Salesforce mock server")
+	return cmd
+}
+
+func newAgentUpsertCmd(flags *rootFlags) *cobra.Command {
+	var fieldFlags []string
+	var sobject, idempotencyKey, runAsUser string
+	var confirmBulk int
+	var dryRun, useMock bool
+	cmd := &cobra.Command{
+		Use:   "upsert",
+		Short: "Upsert one Salesforce record by SF360 idempotency key",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fields, err := agent.ParseFieldAssignments(fieldFlags)
+			if err != nil {
+				return err
+			}
+			if len(fields) == 0 {
+				return fmt.Errorf("at least one --field NAME=VALUE is required")
+			}
+			opts := agent.NewUpsertWriteOptions(sobject, idempotencyKey, fields)
+			opts.DryRun = dryRun || flags.dryRun
+			opts.RunAsUser = runAsUser
+			opts.ConfirmBulk = confirmBulk
+			return runAgentWrite(cmd, flags, opts, useMock)
+		},
+	}
+	cmd.Flags().StringVar(&sobject, "sobject", "", "Salesforce object API name")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Required idempotency key")
+	cmd.Flags().StringArrayVar(&fieldFlags, "field", nil, "Field assignment NAME=VALUE; repeatable")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview payload without DML or audit writes")
+	cmd.Flags().StringVar(&runAsUser, "run-as-user", "", "SF User Id required in JWT mode")
+	addConfirmBulkFlag(cmd, &confirmBulk)
+	cmd.Flags().BoolVar(&useMock, "mock", false, "Run against the in-process Salesforce mock server")
+	_ = cmd.MarkFlagRequired("sobject")
+	_ = cmd.MarkFlagRequired("idempotency-key")
+	return cmd
+}
+
+func newAgentCreateCmd(flags *rootFlags) *cobra.Command {
+	var fieldFlags []string
+	var sobject, idempotencyKey, runAsUser string
+	var confirmBulk int
+	var dryRun, useMock bool
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create one Salesforce record with a signed, audited write intent",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fields, err := agent.ParseFieldAssignments(fieldFlags)
+			if err != nil {
+				return err
+			}
+			if len(fields) == 0 {
+				return fmt.Errorf("at least one --field NAME=VALUE is required")
+			}
+			opts := agent.NewCreateWriteOptions(sobject, idempotencyKey, fields)
+			opts.DryRun = dryRun || flags.dryRun
+			opts.RunAsUser = runAsUser
+			opts.ConfirmBulk = confirmBulk
+			return runAgentWrite(cmd, flags, opts, useMock)
+		},
+	}
+	cmd.Flags().StringVar(&sobject, "sobject", "", "Salesforce object API name")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Required idempotency key")
+	cmd.Flags().StringArrayVar(&fieldFlags, "field", nil, "Field assignment NAME=VALUE; repeatable")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview payload without DML or audit writes")
+	cmd.Flags().StringVar(&runAsUser, "run-as-user", "", "SF User Id required in JWT mode")
+	addConfirmBulkFlag(cmd, &confirmBulk)
+	cmd.Flags().BoolVar(&useMock, "mock", false, "Run against the in-process Salesforce mock server")
+	_ = cmd.MarkFlagRequired("sobject")
+	_ = cmd.MarkFlagRequired("idempotency-key")
+	return cmd
+}
+
+func newAgentLogActivityCmd(flags *rootFlags) *cobra.Command {
+	var activityType, whatID, whoID, subject, description, startRaw, endRaw, idempotencyKey, runAsUser string
+	var duration int
+	var confirmBulk int
+	var dryRun, useMock bool
+	cmd := &cobra.Command{
+		Use:   "log-activity",
+		Short: "Log a completed call/email Task or meeting Event",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var start, end time.Time
+			var err error
+			if startRaw != "" {
+				start, err = time.Parse(time.RFC3339, startRaw)
+				if err != nil {
+					return fmt.Errorf("INVALID_DATE: --start must be RFC3339")
+				}
+			}
+			if endRaw != "" {
+				end, err = time.Parse(time.RFC3339, endRaw)
+				if err != nil {
+					return fmt.Errorf("INVALID_DATE: --end must be RFC3339")
+				}
+			}
+			opts, err := agent.NewLogActivityWriteOptions(agent.LogActivityOptions{
+				Type:            activityType,
+				WhatID:          whatID,
+				WhoID:           whoID,
+				Subject:         subject,
+				Description:     description,
+				DurationSeconds: duration,
+				Start:           start,
+				End:             end,
+				IdempotencyKey:  idempotencyKey,
+			})
+			if err != nil {
+				return err
+			}
+			opts.DryRun = dryRun || flags.dryRun
+			opts.RunAsUser = runAsUser
+			opts.ConfirmBulk = confirmBulk
+			return runAgentWrite(cmd, flags, opts, useMock)
+		},
+	}
+	cmd.Flags().StringVar(&activityType, "type", "", "Activity type: call, email, or meeting")
+	cmd.Flags().StringVar(&whatID, "what", "", "Related WhatId such as an Account or Opportunity")
+	cmd.Flags().StringVar(&whoID, "who", "", "Related WhoId such as a Contact")
+	cmd.Flags().StringVar(&subject, "subject", "", "Activity subject")
+	cmd.Flags().StringVar(&description, "description", "", "Optional activity description")
+	cmd.Flags().IntVar(&duration, "duration", 0, "Optional duration in seconds for Task activities")
+	cmd.Flags().StringVar(&startRaw, "start", "", "Meeting start time in RFC3339")
+	cmd.Flags().StringVar(&endRaw, "end", "", "Meeting end time in RFC3339")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Required idempotency key")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview payload without DML or audit writes")
+	cmd.Flags().StringVar(&runAsUser, "run-as-user", "", "SF User Id required in JWT mode")
+	addConfirmBulkFlag(cmd, &confirmBulk)
+	cmd.Flags().BoolVar(&useMock, "mock", false, "Run against the in-process Salesforce mock server")
+	return cmd
+}
+
+func newAgentAdvanceCmd(flags *rootFlags) *cobra.Command {
+	var oppID, stage, closeDate, idempotencyKey, runAsUser string
+	var confirmBulk int
+	var forceStale, dryRun, useMock bool
+	cmd := &cobra.Command{
+		Use:   "advance",
+		Short: "Advance an Opportunity to a validated stage",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if strings.TrimSpace(oppID) == "" {
+				return fmt.Errorf("MISSING_REQUIRED_FLAG: --opp is required")
+			}
+			if strings.TrimSpace(stage) == "" {
+				return fmt.Errorf("MISSING_REQUIRED_FLAG: --stage is required")
+			}
+			if strings.TrimSpace(closeDate) != "" {
+				if _, err := time.Parse("2006-01-02", closeDate); err != nil {
+					return fmt.Errorf("INVALID_DATE: --close-date must be YYYY-MM-DD")
+				}
+			}
+			opts := agent.WriteOptions{
+				IdempotencyKey: idempotencyKey,
+				ForceStale:     forceStale,
+				DryRun:         dryRun || flags.dryRun,
+				RunAsUser:      runAsUser,
+				ConfirmBulk:    confirmBulk,
+			}
+			return runAgentWriteWithResolver(cmd, flags, opts, useMock, func(configured agent.WriteOptions) (agent.WriteOptions, error) {
+				resolved, err := agent.NewAdvanceWriteOptions(cmd.Context(), agent.AdvanceOptions{
+					OpportunityID: oppID,
+					StageName:     stage,
+					CloseDate:     closeDate,
+					Client:        configured.Client,
+				})
+				if err != nil {
+					return agent.WriteOptions{}, err
+				}
+				return resolved, nil
+			}, agent.ExecuteWrite)
+		},
+	}
+	cmd.Flags().StringVar(&oppID, "opp", "", "Opportunity Id")
+	cmd.Flags().StringVar(&stage, "stage", "", "Target Opportunity StageName")
+	cmd.Flags().StringVar(&closeDate, "close-date", "", "Optional CloseDate in YYYY-MM-DD")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Optional idempotency key recorded in audit")
+	cmd.Flags().BoolVar(&forceStale, "force-stale", false, "Bypass optimistic concurrency")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview payload without DML or audit writes")
+	cmd.Flags().StringVar(&runAsUser, "run-as-user", "", "SF User Id required in JWT mode")
+	addConfirmBulkFlag(cmd, &confirmBulk)
+	cmd.Flags().BoolVar(&useMock, "mock", false, "Run against the in-process Salesforce mock server")
+	return cmd
+}
+
+func newAgentCloseCaseCmd(flags *rootFlags) *cobra.Command {
+	var caseID, resolution, status, idempotencyKey, runAsUser string
+	var confirmBulk int
+	var forceStale, dryRun, useMock bool
+	cmd := &cobra.Command{
+		Use:   "close-case",
+		Short: "Close a Case with a resolution",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts, err := agent.NewCloseCaseWriteOptions(agent.CloseCaseOptions{
+				CaseID:     caseID,
+				Resolution: resolution,
+				Status:     status,
+			})
+			if err != nil {
+				return err
+			}
+			opts.IdempotencyKey = idempotencyKey
+			opts.ForceStale = forceStale
+			opts.DryRun = dryRun || flags.dryRun
+			opts.RunAsUser = runAsUser
+			opts.ConfirmBulk = confirmBulk
+			return runAgentWriteWithExecutor(cmd, flags, opts, useMock, agent.ExecuteCloseCase)
+		},
+	}
+	cmd.Flags().StringVar(&caseID, "case", "", "Case Id")
+	cmd.Flags().StringVar(&resolution, "resolution", "", "Resolution text")
+	cmd.Flags().StringVar(&status, "status", "Closed", "Case status to write")
+	cmd.Flags().StringVar(&idempotencyKey, "idempotency-key", "", "Optional idempotency key recorded in audit")
+	cmd.Flags().BoolVar(&forceStale, "force-stale", false, "Bypass optimistic concurrency")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview payload without DML or audit writes")
+	cmd.Flags().StringVar(&runAsUser, "run-as-user", "", "SF User Id required in JWT mode")
+	addConfirmBulkFlag(cmd, &confirmBulk)
+	cmd.Flags().BoolVar(&useMock, "mock", false, "Run against the in-process Salesforce mock server")
+	return cmd
+}
+
+func newAgentNoteCmd(flags *rootFlags) *cobra.Command {
+	var entityID, text, runAsUser string
+	var confirmBulk int
+	var dryRun, useMock bool
+	cmd := &cobra.Command{
+		Use:   "note",
+		Short: "Post a Chatter FeedItem note to one record",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts := agent.NewNoteWriteOptions(entityID, text)
+			opts.DryRun = dryRun || flags.dryRun
+			opts.RunAsUser = runAsUser
+			opts.ConfirmBulk = confirmBulk
+			return runAgentWriteWithExecutor(cmd, flags, opts, useMock, agent.ExecuteNote)
+		},
+	}
+	cmd.Flags().StringVar(&entityID, "entity", "", "Record Id to receive the Chatter note")
+	cmd.Flags().StringVar(&text, "text", "", "Note body")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "Preview payload without DML or audit writes")
+	cmd.Flags().StringVar(&runAsUser, "run-as-user", "", "SF User Id required in JWT mode")
+	addConfirmBulkFlag(cmd, &confirmBulk)
+	cmd.Flags().BoolVar(&useMock, "mock", false, "Run against the in-process Salesforce mock server")
+	return cmd
+}
+
+func addConfirmBulkFlag(cmd *cobra.Command, target *int) {
+	cmd.Flags().IntVar(target, "confirm-bulk", 0, "Confirm intentional bulk writes by passing the exact record count")
+}
+
+func runAgentWrite(cmd *cobra.Command, flags *rootFlags, opts agent.WriteOptions, useMock bool) error {
+	return runAgentWriteWithExecutor(cmd, flags, opts, useMock, agent.ExecuteWrite)
+}
+
+func runAgentWriteWithExecutor(cmd *cobra.Command, flags *rootFlags, opts agent.WriteOptions, useMock bool, executor func(context.Context, agent.WriteOptions) (*agent.WriteResult, error)) error {
+	return runAgentWriteWithResolver(cmd, flags, opts, useMock, nil, executor)
+}
+
+func runAgentWriteWithResolver(cmd *cobra.Command, flags *rootFlags, opts agent.WriteOptions, useMock bool, resolver func(agent.WriteOptions) (agent.WriteOptions, error), executor func(context.Context, agent.WriteOptions) (*agent.WriteResult, error)) error {
+	cleanup, err := configureTrustMock(useMock)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	c, err := flags.newClient()
+	if err != nil {
+		return err
+	}
+	c.DryRun = false
+	orgAlias := firstNonEmpty(ResolveOrgAlias(""), flags.profileName, "default")
+	profile, _ := GetProfile(orgAlias)
+	authMethod := strings.ToLower(os.Getenv("SF360_AUTH_METHOD"))
+	if authMethod == "" && profile != nil {
+		authMethod = strings.ToLower(profile.AuthMethod)
+	}
+	apexInstalled := false
+	if profile != nil && profile.Values != nil {
+		apexInstalled = strings.EqualFold(profile.Values["apex_safe_write_installed"], "true")
+	}
+	if useMock && authMethod != agent.AuthMethodJWT {
+		apexInstalled = true
+	}
+
+	signer, err := trust.NewFileSigner(orgAlias)
+	if err != nil {
+		return fmt.Errorf("load signer for org=%s: %w (hint: run 'trust register --org %s')", orgAlias, err, orgAlias)
+	}
+	writer := trust.NewWriteAuditWriter(trust.WriteAuditOptions{
+		Client:    c,
+		DBPath:    defaultDBPath("salesforce-headless-360-pp-cli"),
+		HIPAAMode: trust.HIPAAModeFromManifest(".printing-press.json"),
+		LogWarn: func(format string, args ...any) {
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: "+format+"\n", args...)
+		},
+	})
+	defer writer.Wait()
+
+	opts.Client = c
+	opts.Filter = security.NewDefaultFilter(security.Options{Client: c, OrgAlias: orgAlias})
+	if useMock && authMethod != agent.AuthMethodJWT {
+		opts.Filter = mockWriteFilter{}
+	}
+	opts.Signer = signer
+	opts.AuditWriter = writer
+	opts.AuthMethod = authMethod
+	opts.ApexCompanionInstalled = apexInstalled
+	opts.OrgAlias = orgAlias
+	opts.OrgID = firstNonEmpty(os.Getenv("SF360_ORG_ID"), orgAlias)
+	opts.ActingUser = firstNonEmpty(os.Getenv("SF360_USER_ID"), opts.RunAsUser)
+	opts.LogWarn = func(format string, args ...any) {
+		fmt.Fprintf(cmd.ErrOrStderr(), "warning: "+format+"\n", args...)
+	}
+	if resolver != nil {
+		resolved, err := resolver(opts)
+		if err != nil {
+			return err
+		}
+		opts = inheritConfiguredWriteOptions(resolved, opts)
+	}
+
+	result, err := executor(cmd.Context(), opts)
+	if err != nil {
+		var writeErr *agent.WriteError
+		if errors.As(err, &writeErr) {
+			envelope := agentWriteEnvelope(false, writeErr.Envelope.Code, writeErr.Envelope.HTTPStatus, writeErr.Envelope.Stage, writeErr.Envelope.Org, writeErr.Envelope.TraceID, nil)
+			envelope["hint"] = writeErr.Envelope.Hint
+			envelope["cause"] = writeErr.Envelope.Cause
+			envelope["data"] = writeErr.Envelope.Data
+			if flags.asJSON || flags.agent {
+				_ = flags.printJSON(cmd, envelope)
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "write failed: %s\n", writeErr.Envelope.Code)
+				if writeErr.Envelope.Hint != "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "hint: %s\n", writeErr.Envelope.Hint)
+				}
+			}
+		}
+		return err
+	}
+
+	envelope := agentWriteEnvelope(true, "", result.HTTPStatus, "salesforce_write", opts.OrgID, result.JTI, resultData(result))
+	if flags.asJSON || flags.agent {
+		return flags.printJSON(cmd, envelope)
+	}
+	printWriteSummary(cmd, result)
+	return nil
+}
+
+func inheritConfiguredWriteOptions(resolved, configured agent.WriteOptions) agent.WriteOptions {
+	if resolved.IdempotencyKey == "" {
+		resolved.IdempotencyKey = configured.IdempotencyKey
+	}
+	if resolved.IfLastModified.IsZero() {
+		resolved.IfLastModified = configured.IfLastModified
+	}
+	resolved.ForceStale = resolved.ForceStale || configured.ForceStale
+	resolved.DryRun = resolved.DryRun || configured.DryRun
+	if resolved.ConfirmBulk == 0 {
+		resolved.ConfirmBulk = configured.ConfirmBulk
+	}
+	if resolved.RecordCount == 0 {
+		resolved.RecordCount = configured.RecordCount
+	}
+	if resolved.RunAsUser == "" {
+		resolved.RunAsUser = configured.RunAsUser
+	}
+	resolved.Client = configured.Client
+	resolved.Filter = configured.Filter
+	resolved.Signer = configured.Signer
+	resolved.AuditWriter = configured.AuditWriter
+	resolved.AuthMethod = configured.AuthMethod
+	resolved.ApexCompanionInstalled = configured.ApexCompanionInstalled
+	resolved.OrgAlias = configured.OrgAlias
+	resolved.OrgID = configured.OrgID
+	resolved.ActingUser = configured.ActingUser
+	resolved.Now = configured.Now
+	resolved.LogWarn = configured.LogWarn
+	resolved.PlanExpiresIn = configured.PlanExpiresIn
+	resolved.JTI = configured.JTI
+	resolved.AuditMetadata = configured.AuditMetadata
+	return resolved
+}
+
+func agentWriteEnvelope(success bool, code string, status int, stage string, org string, traceID string, data any) map[string]any {
+	return map[string]any{
+		"success":     success,
+		"code":        code,
+		"http_status": status,
+		"stage":       stage,
+		"org":         org,
+		"trace_id":    traceID,
+		"data":        data,
+	}
+}
+
+func resultData(result *agent.WriteResult) map[string]any {
+	return map[string]any{
+		"jti":             result.JTI,
+		"operation":       result.Operation,
+		"sobject":         result.SObject,
+		"record_id":       result.RecordID,
+		"dry_run":         result.DryRun,
+		"apex_used":       result.ApexUsed,
+		"after_state":     result.AfterState,
+		"filter_dropped":  result.FilterDropped,
+		"diff":            result.Diff,
+		"no_change":       result.NoChange,
+		"http_status":     result.HTTPStatus,
+		"write_path":      result.WritePath,
+		"idempotency_key": result.IdempotencyKey,
+	}
+}
+
+func printWriteSummary(cmd *cobra.Command, result *agent.WriteResult) {
+	status := "executed"
+	if result.DryRun {
+		status = "dry-run"
+	} else if result.NoChange {
+		status = "no change"
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%s %s %s (%s)\n", result.Operation, result.SObject, firstNonEmpty(result.RecordID, "(new record)"), status)
+	fmt.Fprintf(cmd.OutOrStdout(), "jti: %s\n", result.JTI)
+	if len(result.FilterDropped) > 0 {
+		fmt.Fprintf(cmd.OutOrStdout(), "filtered: %s\n", strings.Join(result.FilterDropped, ", "))
+	}
+	if len(result.Diff) > 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), "diff:")
+		keys := make([]string, 0, len(result.Diff))
+		for key := range result.Diff {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			entry := result.Diff[key]
+			fmt.Fprintf(cmd.OutOrStdout(), "  %s: %v -> %v\n", key, entry["before"], entry["after"])
+		}
+	}
+}
+
+type mockWriteFilter struct{}
+
+func (mockWriteFilter) AllowFieldWrite(user, sobject, field string) bool {
+	_ = user
+	_ = sobject
+	return field != "Salary__c"
 }
 
 func newAgentContextActionCmd(flags *rootFlags) *cobra.Command {

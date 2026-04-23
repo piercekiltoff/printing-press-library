@@ -22,6 +22,11 @@ const (
 	FailShieldField            = "shield_field"
 	FailSharingRestricted      = "sharing_restricted"
 	FailCertificateUnavailable = "certificate_unavailable"
+	FailStaleWrite             = "stale_write"
+	FailValidationRule         = "validation_rule"
+	FailFLSWriteDenied         = "fls_write_denied"
+	FailApexMissing            = "apex_missing"
+	FailAuditFailed            = "audit_failed"
 )
 
 //go:embed fixtures
@@ -33,8 +38,9 @@ type Server struct {
 
 	ts *httptest.Server
 
-	mu       sync.RWMutex
-	failMode string
+	mu        sync.RWMutex
+	failMode  string
+	writeKeys map[string]bool
 }
 
 type fixtureFile struct {
@@ -149,18 +155,27 @@ func (s *Server) routes() []route {
 		{http.MethodGet, apiPrefix + "/composite/graph/{fixture}", s.handleCompositeGraph},
 		{http.MethodPost, apiPrefix + "/composite/graph/{fixture}", s.handleCompositeGraph},
 		{http.MethodGet, apiPrefix + "/ui-api/records/{id}", s.handleUIRecord},
+		{http.MethodPatch, apiPrefix + "/ui-api/records/{id}", s.handleUIRecordPatch},
+		{http.MethodPatch, apiPrefix + "/sobjects/{type}/SF360_Idempotency_Key__c/{key}", s.handleSObjectIdempotentPatch},
+		{http.MethodPost, apiPrefix + "/chatter/feeds/record/{id}/feed-elements", s.handleChatterFeedElementPost},
+		{http.MethodPost, apiPrefix + "/sobjects/SF360_Write_Audit__c", s.handleWriteAuditPost},
+		{http.MethodPost, apiPrefix + "/sobjects/SF360_Write_Audit__c/", s.handleWriteAuditPost},
+		{http.MethodPost, apiPrefix + "/sobjects/SF360_Bundle_Audit__c", s.handleBundleAuditPost},
+		{http.MethodPost, apiPrefix + "/sobjects/SF360_Bundle_Audit__c/", s.handleBundleAuditPost},
+		{http.MethodPatch, apiPrefix + "/sobjects/{type}/{id}", s.handleSObjectPatch},
+		{http.MethodPost, apiPrefix + "/sobjects/{type}", s.handleSObjectPost},
 		{http.MethodGet, apiPrefix + "/sobjects/Account/{id}", s.handleSObject},
 		{http.MethodGet, apiPrefix + "/sobjects/Contact/{id}", s.handleSObject},
 		{http.MethodGet, apiPrefix + "/sobjects/Opportunity/{id}", s.handleSObject},
 		{http.MethodGet, apiPrefix + "/sobjects/ContentVersion/{id}/VersionData", s.handleContentVersionData},
 		{http.MethodGet, apiPrefix + "/tooling/query", s.handleToolingQuery},
 		{http.MethodPost, apiPrefix + "/tooling/sobjects/Certificate", s.handleCertificatePost},
-		{http.MethodPost, apiPrefix + "/sobjects/SF360_Bundle_Audit__c", s.handleBundleAuditPost},
-		{http.MethodPost, apiPrefix + "/sobjects/SF360_Bundle_Audit__c/", s.handleBundleAuditPost},
 		{http.MethodGet, apiPrefix + "/query", s.handleSOQLQuery},
 		{http.MethodGet, apiPrefix + "/limits", s.handleLimits},
 		{http.MethodPost, apiPrefix + "/connect/data-cloud/oauth2/token", s.handleDataCloudToken},
 		{http.MethodGet, apiPrefix + "/connect/data-cloud/unified-profile/{id}", s.handleUnifiedProfile},
+		{http.MethodPost, "/services/apexrest/sf360/v1/safeWrite", s.handleApexSafeWrite},
+		{http.MethodPost, "/services/apexrest/sf360/v1/safeUpsert", s.handleApexSafeUpsert},
 	}
 }
 
@@ -196,8 +211,35 @@ func (s *Server) handleUIRecord(w http.ResponseWriter, r *http.Request, params m
 		s.writeFixture(w, r, "fixtures/ui_api/record_contact_fls_hidden.json", false)
 	case id == "003ACME0001" || strings.HasPrefix(id, "003"):
 		s.writeFixture(w, r, "fixtures/ui_api/record_contact_fls_visible.json", true)
+	case strings.HasPrefix(id, "500"):
+		status := "Working"
+		if strings.Contains(strings.ToLower(id), "closed") {
+			status = "Closed"
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"fields": map[string]any{
+				"Status":           map[string]any{"value": status},
+				"Resolution__c":    map[string]any{"value": nil},
+				"LastModifiedDate": map[string]any{"value": "2026-04-18T14:00:00.000Z"},
+			},
+			"id":               id,
+			"apiName":          "Case",
+			"lastModifiedDate": "2026-04-18T14:00:00.000Z",
+		})
 	default:
 		s.writeFixture(w, r, "fixtures/ui_api/record_not_found.json", false)
+	}
+}
+
+func (s *Server) handleUIRecordPatch(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+	switch s.getFailMode() {
+	case FailStaleWrite:
+		s.writeFixture(w, r, "fixtures/write/patch_stale_conflict.json", false)
+	case FailFLSWriteDenied:
+		s.writeFixture(w, r, "fixtures/write/fls_write_denied.json", false)
+	default:
+		w.Header().Set("LastModifiedDate", "2026-04-22T18:42:00.000Z")
+		s.writeFixture(w, r, "fixtures/write/patch_success.json", false)
 	}
 }
 
@@ -237,6 +279,87 @@ func (s *Server) handleSObject(w http.ResponseWriter, r *http.Request, params ma
 	default:
 		writeSalesforceError(w, http.StatusNotFound, "NOT_FOUND", "requested resource does not exist")
 	}
+}
+
+func (s *Server) handleSObjectPatch(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+	if s.getFailMode() == FailStaleWrite {
+		s.writeFixture(w, r, "fixtures/write/patch_stale_conflict.json", false)
+		return
+	}
+	w.Header().Set("LastModifiedDate", "2026-04-22T18:42:00.000Z")
+	s.writeFixture(w, r, "fixtures/write/patch_success.json", false)
+}
+
+func (s *Server) handleSObjectPost(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	switch s.getFailMode() {
+	case FailValidationRule:
+		s.writeFixture(w, r, "fixtures/write/validation_rule_rejection.json", false)
+	case FailFLSWriteDenied:
+		s.writeFixture(w, r, "fixtures/write/fls_write_denied.json", false)
+	case "required_field_missing":
+		s.writeFixture(w, r, "fixtures/write/required_field_missing.json", false)
+	default:
+		writeJSON(w, http.StatusCreated, map[string]any{
+			"id":      mockIDForType(params["type"]),
+			"success": true,
+			"errors":  []string{},
+		})
+	}
+}
+
+func (s *Server) handleSObjectIdempotentPatch(w http.ResponseWriter, r *http.Request, params map[string]string) {
+	key := params["type"] + ":" + params["key"]
+	if s.markWriteKeySeen(key) {
+		w.Header().Set("LastModifiedDate", "2026-04-22T18:45:00.000Z")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	w.Header().Set("LastModifiedDate", "2026-04-22T18:44:00.000Z")
+	writeJSON(w, http.StatusCreated, map[string]any{
+		"id":      mockIDForType(params["type"]),
+		"success": true,
+		"errors":  []string{},
+		"created": true,
+	})
+}
+
+func (s *Server) handleChatterFeedElementPost(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+	s.writeFixture(w, r, "fixtures/write/chatter_feed_item.json", false)
+}
+
+func (s *Server) handleApexSafeWrite(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+	switch s.getFailMode() {
+	case FailApexMissing:
+		writeSalesforceError(w, http.StatusNotFound, "NOT_FOUND", "Could not find Apex REST class sf360/v1/safeWrite.")
+	case FailFLSWriteDenied:
+		s.writeFixture(w, r, "fixtures/write/fls_write_denied.json", false)
+	case FailValidationRule:
+		s.writeFixture(w, r, "fixtures/write/apex_safewrite_validation.json", false)
+	default:
+		w.Header().Set("LastModifiedDate", "2026-04-22T18:43:00.000Z")
+		s.writeFixture(w, r, "fixtures/write/apex_safewrite_success.json", false)
+	}
+}
+
+func (s *Server) handleApexSafeUpsert(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+	if s.getFailMode() == FailApexMissing {
+		writeSalesforceError(w, http.StatusNotFound, "NOT_FOUND", "Could not find Apex REST class sf360/v1/safeUpsert.")
+		return
+	}
+	key := "apex-safe-upsert:" + safeUpsertKey(r)
+	if s.markWriteKeySeen(key) {
+		s.writeFixture(w, r, "fixtures/write/apex_safeupsert_repeat.json", false)
+		return
+	}
+	s.writeFixture(w, r, "fixtures/write/apex_safeupsert_success.json", false)
+}
+
+func (s *Server) handleWriteAuditPost(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+	if s.getFailMode() == FailAuditFailed {
+		s.writeFixture(w, r, "fixtures/write/audit_post_failure.json", false)
+		return
+	}
+	s.writeFixture(w, r, "fixtures/write/audit_post_success.json", false)
 }
 
 func (s *Server) handleToolingQuery(w http.ResponseWriter, r *http.Request, _ map[string]string) {
@@ -466,6 +589,55 @@ func nonEmpty(value, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func (s *Server) markWriteKeySeen(key string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.writeKeys == nil {
+		s.writeKeys = map[string]bool{}
+	}
+	seen := s.writeKeys[key]
+	s.writeKeys[key] = true
+	return seen
+}
+
+func safeUpsertKey(r *http.Request) string {
+	body, _ := io.ReadAll(r.Body)
+	if len(body) == 0 {
+		return "default"
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return string(body)
+	}
+	for _, field := range []string{"idempotencyKey", "idempotency_key", "SF360_Idempotency_Key__c"} {
+		if value, ok := payload[field].(string); ok && value != "" {
+			return value
+		}
+	}
+	return string(body)
+}
+
+func mockIDForType(recordType string) string {
+	switch recordType {
+	case "Account":
+		return "001WRITE0001"
+	case "Contact":
+		return "003WRITE0001"
+	case "Opportunity":
+		return "006WRITE0001"
+	case "Task":
+		return "00TWRITE0001"
+	case "Event":
+		return "00UWRITE0001"
+	case "FeedItem":
+		return "0D5ACME0001"
+	case "SF360_Write_Audit__c":
+		return "a00SF360WRITEAUDIT"
+	default:
+		return "a00WRITE0001"
+	}
 }
 
 // ReadAll is a tiny helper for tests that want response bodies as strings.

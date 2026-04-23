@@ -248,6 +248,10 @@ func (c *Client) PostWithHeaders(path string, body any, headers map[string]strin
 	return c.do("POST", path, nil, body, headers)
 }
 
+func (c *Client) PostWithHeadersAndResponseHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, http.Header, error) {
+	return c.doWithResponseHeaders("POST", path, nil, body, headers)
+}
+
 func (c *Client) Delete(path string) (json.RawMessage, int, error) {
 	return c.do("DELETE", path, nil, nil, nil)
 }
@@ -260,12 +264,24 @@ func (c *Client) Put(path string, body any) (json.RawMessage, int, error) {
 	return c.do("PUT", path, nil, body, nil)
 }
 
+func (c *Client) PutWithResponseHeaders(path string, body any) (json.RawMessage, int, http.Header, error) {
+	return c.doWithResponseHeaders("PUT", path, nil, body, nil)
+}
+
 func (c *Client) PutWithHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, error) {
 	return c.do("PUT", path, nil, body, headers)
 }
 
+func (c *Client) PutWithHeadersAndResponseHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, http.Header, error) {
+	return c.doWithResponseHeaders("PUT", path, nil, body, headers)
+}
+
 func (c *Client) Patch(path string, body any) (json.RawMessage, int, error) {
 	return c.do("PATCH", path, nil, body, nil)
+}
+
+func (c *Client) PatchWithResponseHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, http.Header, error) {
+	return c.doWithResponseHeaders("PATCH", path, nil, body, headers)
 }
 
 func (c *Client) PatchWithHeaders(path string, body any, headers map[string]string) (json.RawMessage, int, error) {
@@ -387,6 +403,17 @@ func (c *Client) doWithResponseHeaders(method, path string, params map[string]st
 			wait := retryAfter(resp)
 			fmt.Fprintf(os.Stderr, "rate limited, waiting %s (attempt %d/%d, rate adjusted to %.1f req/s)\n", wait, attempt+1, maxRetries, c.limiter.Rate())
 			time.Sleep(wait)
+			lastErr = apiErr
+			continue
+		}
+
+		// Unauthorized - refresh the token once and replay with the new auth header.
+		if resp.StatusCode == http.StatusUnauthorized && attempt == 0 && c.Config != nil && c.Config.RefreshToken != "" {
+			previousAuthHeader := authHeader
+			if err := c.refreshAccessToken(); err != nil && c.Config.AuthHeader() == previousAuthHeader {
+				return nil, resp.StatusCode, respHeaders, err
+			}
+			authHeader = c.Config.AuthHeader()
 			lastErr = apiErr
 			continue
 		}

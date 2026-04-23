@@ -14,11 +14,33 @@ CLI=${CLI:-salesforce-headless-360-pp-cli}
 ORG=${ORG:?ORG env var required (sf CLI alias)}
 ACME_ID=${ACME_ID:?ACME_ID env var required (Salesforce Account Id to test against)}
 RESTRICTED_USER=${RESTRICTED_USER:-}
+RESTRICTED_WRITE_USER=${RESTRICTED_WRITE_USER:-$RESTRICTED_USER}
+OPP_ID=${OPP_ID:-}
+OPP_STAGE=${OPP_STAGE:-Proposal/Price Quote}
 
 REPO_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 REPORT_JSON="${REPO_ROOT}/docs/live-verification-report.json"
 TMPDIR=$(mktemp -d)
-trap 'rm -rf "$TMPDIR"' EXIT
+cleanup_task_ids=()
+cleanup_opp_id=""
+cleanup_opp_stage=""
+cleanup_account_description=""
+
+cleanup_live_writes() {
+  for task_id in "${cleanup_task_ids[@]}"; do
+    if [ -n "$task_id" ]; then
+      sf data delete record --target-org "$ORG" --sobject Task --record-id "$task_id" >/dev/null 2>&1 || true
+    fi
+  done
+  if [ -n "$cleanup_opp_id" ] && [ -n "$cleanup_opp_stage" ]; then
+    sf data update record --target-org "$ORG" --sobject Opportunity --record-id "$cleanup_opp_id" --values "StageName='$cleanup_opp_stage'" >/dev/null 2>&1 || true
+  fi
+  if [ -n "$cleanup_account_description" ]; then
+    sf data update record --target-org "$ORG" --sobject Account --record-id "$ACME_ID" --values "Description='$cleanup_account_description'" >/dev/null 2>&1 || true
+  fi
+  rm -rf "$TMPDIR"
+}
+trap cleanup_live_writes EXIT
 
 results=()
 
@@ -35,6 +57,45 @@ run_or_fail() {
     record "$id" "$label" PASS "$(head -1 "${TMPDIR}/${id}.out")"
   else
     record "$id" "$label" FAIL "$(tail -3 "${TMPDIR}/${id}.out" | tr '\n' ';')"
+  fi
+}
+
+json_first_field() {
+  local field="$1"
+  python3 -c 'import json, sys
+field = sys.argv[1]
+try:
+    payload = json.load(sys.stdin)
+except Exception:
+    print("")
+    raise SystemExit(0)
+records = payload.get("result", {}).get("records", [])
+if not records:
+    print("")
+    raise SystemExit(0)
+value = records[0].get(field)
+print("" if value is None else value)' "$field"
+}
+
+query_first_field() {
+  local query="$1" field="$2"
+  sf data query --target-org "$ORG" --json --query "$query" 2>/dev/null | json_first_field "$field"
+}
+
+find_test_opp() {
+  if [ -n "$OPP_ID" ]; then
+    printf '%s\n' "$OPP_ID"
+    return
+  fi
+  query_first_field "SELECT Id FROM Opportunity WHERE AccountId = '$ACME_ID' ORDER BY LastModifiedDate DESC LIMIT 1" "Id"
+}
+
+record_write_result() {
+  local id="$1" label="$2" out="$3" expected="$4"
+  if grep -qi "$expected" "$out"; then
+    record "$id" "$label" PASS "$expected observed"
+  else
+    record "$id" "$label" FAIL "$(tail -3 "$out" | tr '\n' ';')"
   fi
 }
 
@@ -124,6 +185,123 @@ if sf data query --target-org "$ORG" --query "SELECT BundleJti__c FROM SF360_Bun
   record 11 "SF360_Bundle_Audit__c row appears" PASS "audit row found"
 else
   record 11 "SF360_Bundle_Audit__c row appears" FAIL "$(tail -1 "${TMPDIR}/audit.out")"
+fi
+
+# W1. agent update one safe Account field
+cleanup_account_description=$(query_first_field "SELECT Description FROM Account WHERE Id = '$ACME_ID'" "Description")
+if "$CLI" --org "$ORG" agent update "$ACME_ID" \
+    --field "Description=sf360 live verification W1" \
+    --dry-run --json > "${TMPDIR}/W1-dry.out" 2>&1 &&
+   "$CLI" --org "$ORG" agent update "$ACME_ID" \
+    --field "Description=sf360 live verification W1" \
+    --json > "${TMPDIR}/W1.out" 2>&1; then
+  if "$CLI" agent write-audit list --sobject Account --status executed --limit 5 > "${TMPDIR}/W1-audit.out" 2>&1; then
+    record W1 "agent update writes safe Account field" PASS "executed + audit list ok"
+  else
+    record W1 "agent update writes safe Account field" FAIL "$(tail -3 "${TMPDIR}/W1-audit.out" | tr '\n' ';')"
+  fi
+else
+  record W1 "agent update writes safe Account field" FAIL "$(cat "${TMPDIR}/W1-dry.out" "${TMPDIR}/W1.out" 2>/dev/null | tail -3 | tr '\n' ';')"
+fi
+
+# W2. agent upsert twice with same key
+upsert_key="sf360-live-upsert-$(date +%Y%m%d%H%M%S)"
+if "$CLI" --org "$ORG" agent upsert \
+    --sobject Account \
+    --idempotency-key "$upsert_key" \
+    --field "Name=SF360 Live Verify Upsert" \
+    --field "Description=first upsert" \
+    --json > "${TMPDIR}/W2-first.out" 2>&1 &&
+   "$CLI" --org "$ORG" agent upsert \
+    --sobject Account \
+    --idempotency-key "$upsert_key" \
+    --field "Name=SF360 Live Verify Upsert" \
+    --field "Description=first upsert" \
+    --json > "${TMPDIR}/W2-second.out" 2>&1; then
+  if grep -Eqi 'no[_ -]?change|no-op|already exists' "${TMPDIR}/W2-second.out"; then
+    record W2 "agent upsert retry is no-op" PASS "second call no-change"
+  else
+    record W2 "agent upsert retry is no-op" FAIL "second call succeeded but no no-change marker observed"
+  fi
+else
+  record W2 "agent upsert retry is no-op" FAIL "$(cat "${TMPDIR}/W2-first.out" "${TMPDIR}/W2-second.out" 2>/dev/null | tail -3 | tr '\n' ';')"
+fi
+
+# W3. agent log-activity creates a Task
+task_key="sf360-live-task-$(date +%Y%m%d%H%M%S)"
+if "$CLI" --org "$ORG" agent log-activity \
+    --type call \
+    --what "$ACME_ID" \
+    --subject "SF360 live verification call" \
+    --idempotency-key "$task_key" \
+    --json > "${TMPDIR}/W3.out" 2>&1; then
+  task_id=$(query_first_field "SELECT Id FROM Task WHERE WhatId = '$ACME_ID' AND Subject = 'SF360 live verification call' ORDER BY CreatedDate DESC LIMIT 1" "Id")
+  if [ -n "$task_id" ]; then
+    cleanup_task_ids+=("$task_id")
+    record W3 "agent log-activity creates Task" PASS "Task=$task_id"
+  else
+    record W3 "agent log-activity creates Task" FAIL "Task query returned no rows"
+  fi
+else
+  record W3 "agent log-activity creates Task" FAIL "$(tail -3 "${TMPDIR}/W3.out" | tr '\n' ';')"
+fi
+
+# W4. agent advance moves an Opportunity stage
+test_opp_id=$(find_test_opp)
+if [ -z "$test_opp_id" ]; then
+  record W4 "agent advance moves Opportunity stage" SKIP "OPP_ID not set and no Opportunity found for account"
+else
+  original_stage=$(query_first_field "SELECT StageName FROM Opportunity WHERE Id = '$test_opp_id'" "StageName")
+  cleanup_opp_id="$test_opp_id"
+  cleanup_opp_stage="$original_stage"
+  if [ "$original_stage" = "$OPP_STAGE" ]; then
+    record W4 "agent advance moves Opportunity stage" SKIP "OPP_STAGE equals current stage; set OPP_STAGE to a forward stage"
+  elif "$CLI" --org "$ORG" agent advance \
+      --opp "$test_opp_id" \
+      --stage "$OPP_STAGE" \
+      --json > "${TMPDIR}/W4.out" 2>&1; then
+    observed_stage=$(query_first_field "SELECT StageName FROM Opportunity WHERE Id = '$test_opp_id'" "StageName")
+    if [ "$observed_stage" = "$OPP_STAGE" ]; then
+      record W4 "agent advance moves Opportunity stage" PASS "$original_stage -> $observed_stage"
+    else
+      record W4 "agent advance moves Opportunity stage" FAIL "stage after write was $observed_stage"
+    fi
+  else
+    record W4 "agent advance moves Opportunity stage" FAIL "$(tail -3 "${TMPDIR}/W4.out" | tr '\n' ';')"
+  fi
+fi
+
+# W5. force stale-write conflict
+lmd=$(query_first_field "SELECT LastModifiedDate FROM Account WHERE Id = '$ACME_ID'" "LastModifiedDate")
+if [ -z "$lmd" ]; then
+  record W5 "stale write conflict rejected" FAIL "could not fetch LastModifiedDate"
+elif ! sf data update record --target-org "$ORG" --sobject Account --record-id "$ACME_ID" --values "Description='sf360 live verification external mutation'" > "${TMPDIR}/W5-mutate.out" 2>&1; then
+  record W5 "stale write conflict rejected" FAIL "$(tail -3 "${TMPDIR}/W5-mutate.out" | tr '\n' ';')"
+elif "$CLI" --org "$ORG" agent update "$ACME_ID" \
+    --field "Description=sf360 stale write should fail" \
+    --if-last-modified "$lmd" \
+    --json > "${TMPDIR}/W5.out" 2>&1; then
+  record W5 "stale write conflict rejected" FAIL "stale write succeeded"
+else
+  record_write_result W5 "stale write conflict rejected" "${TMPDIR}/W5.out" "CONFLICT_STALE_WRITE"
+fi
+
+# W6. FLS write denial
+if [ -n "$RESTRICTED_WRITE_USER" ]; then
+  if "$CLI" --org "$ORG" agent update "$ACME_ID" \
+      --run-as-user "$RESTRICTED_WRITE_USER" \
+      --field "AnnualRevenue=123" \
+      --json > "${TMPDIR}/W6.out" 2>&1; then
+    if grep -Eqi 'FLS_WRITE_DENIED|dropped|warning' "${TMPDIR}/W6.out"; then
+      record W6 "FLS write denial enforced" PASS "field dropped with warning"
+    else
+      record W6 "FLS write denial enforced" FAIL "restricted write appeared to succeed"
+    fi
+  else
+    record_write_result W6 "FLS write denial enforced" "${TMPDIR}/W6.out" "FLS_WRITE_DENIED"
+  fi
+else
+  record W6 "FLS write denial enforced" SKIP "RESTRICTED_WRITE_USER not set"
 fi
 
 echo "------------------------------------------------------------"

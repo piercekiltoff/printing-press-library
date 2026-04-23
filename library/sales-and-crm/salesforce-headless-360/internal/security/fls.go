@@ -33,8 +33,11 @@ type FLSFilter struct {
 }
 
 type describeEntry struct {
-	fields    map[string]struct{}
-	expiresAt time.Time
+	fields              map[string]struct{}
+	fieldUpdateable     map[string]bool
+	objectUpdateable    bool
+	hasWritePermissions bool
+	expiresAt           time.Time
 }
 
 func NewFLSFilter(client SalesforceGetter) *FLSFilter {
@@ -122,30 +125,79 @@ func (f *FLSFilter) describeFields(ctx context.Context, sobject string, fallback
 }
 
 func (f *FLSFilter) fetchDescribe(ctx context.Context, sobject string) (map[string]struct{}, error) {
-	if err := ctx.Err(); err != nil {
+	entry, err := f.fetchDescribeEntry(ctx, sobject)
+	if err != nil {
 		return nil, err
+	}
+	return entry.fields, nil
+}
+
+func (f *FLSFilter) AllowFieldWrite(user, sobject, field string) bool {
+	_ = user
+	if f == nil || f.Client == nil || sobject == "" || field == "" || systemField(field) {
+		return false
+	}
+	now := f.now()
+	f.mu.Lock()
+	if f.describe == nil {
+		f.describe = map[string]describeEntry{}
+	}
+	if cached, ok := f.describe[sobject]; ok && now.Before(cached.expiresAt) && cached.hasWritePermissions {
+		allowed := cached.objectUpdateable && cached.fieldUpdateable[field]
+		f.mu.Unlock()
+		return allowed
+	}
+	f.mu.Unlock()
+
+	entry, err := f.fetchDescribeEntry(context.Background(), sobject)
+	if err != nil {
+		return false
+	}
+	ttl := time.Hour
+	if f.Sandbox {
+		ttl = 24 * time.Hour
+	}
+	entry.expiresAt = now.Add(ttl)
+	f.mu.Lock()
+	f.describe[sobject] = entry
+	f.mu.Unlock()
+	return entry.objectUpdateable && entry.fieldUpdateable[field]
+}
+
+func (f *FLSFilter) fetchDescribeEntry(ctx context.Context, sobject string) (describeEntry, error) {
+	if err := ctx.Err(); err != nil {
+		return describeEntry{}, err
 	}
 	path := "/services/data/" + APIVersion + "/sobjects/" + sobject + "/describe"
 	body, _, err := f.Client.GetWithResponseHeaders(path, nil)
 	if err != nil {
-		return nil, err
+		return describeEntry{}, err
 	}
 	body = unwrapEnvelope(body)
 	var payload struct {
-		Fields []struct {
-			Name string `json:"name"`
+		Updateable bool `json:"updateable"`
+		Fields     []struct {
+			Name       string `json:"name"`
+			Updateable bool   `json:"updateable"`
 		} `json:"fields"`
 	}
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, err
+		return describeEntry{}, err
 	}
 	fields := map[string]struct{}{}
+	fieldUpdateable := map[string]bool{}
 	for _, field := range payload.Fields {
 		if field.Name != "" {
 			fields[field.Name] = struct{}{}
+			fieldUpdateable[field.Name] = field.Updateable
 		}
 	}
-	return fields, nil
+	return describeEntry{
+		fields:              fields,
+		fieldUpdateable:     fieldUpdateable,
+		objectUpdateable:    payload.Updateable,
+		hasWritePermissions: true,
+	}, nil
 }
 
 func (f *FLSFilter) uiRecordFields(ctx context.Context, sobject, id string, fields []string) (map[string]any, bool) {

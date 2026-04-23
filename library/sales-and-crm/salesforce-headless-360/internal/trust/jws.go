@@ -11,6 +11,16 @@ import (
 
 var ErrSignatureInvalid = errors.New("SIGNATURE_INVALID")
 
+const (
+	JWSAudienceAgentContext  = "agent-context"
+	JWSAudienceAgentMutation = "agent-mutation"
+)
+
+type jwsSigner interface {
+	Sign(payload []byte) ([]byte, error)
+	KID() string
+}
+
 // b64url encodes bytes using unpadded URL-safe base64 per RFC 7515.
 func b64url(b []byte) string {
 	return base64.RawURLEncoding.EncodeToString(b)
@@ -27,7 +37,7 @@ func b64urlDecode(s string) ([]byte, error) {
 //
 // payloadJSON is the byte-serialized claims object. Callers construct it
 // with encoding/json.
-func SignJWS(s Signer, payloadJSON []byte) (string, error) {
+func SignJWS(s jwsSigner, payloadJSON []byte) (string, error) {
 	header := map[string]string{
 		"alg": "EdDSA",
 		"typ": "JWT",

@@ -7,7 +7,8 @@
   "spec_format": "internal",
   "spec_checksum": "sha256:a4922e59cdaf8d1f06f45c30b887c8397cfb05ba76fb70d41a1fe477d784ebb3",
   "mcp_binary": "salesforce-headless-360-pp-mcp",
-  "mcp_tool_count": 10,
+  "version": "1.1.0",
+  "mcp_tool_count": 29,
   "mcp_ready": "full",
   "auth_type": "oauth2",
   "auth_env_vars": [

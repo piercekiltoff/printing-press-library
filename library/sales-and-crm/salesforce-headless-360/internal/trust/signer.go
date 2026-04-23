@@ -24,6 +24,8 @@ import (
 // are reserved drop-ins that implement the same interface.
 type Signer interface {
 	Sign(payload []byte) ([]byte, error)
+	SignWriteIntent(claims WriteIntentClaims) ([]byte, error)
+	VerifyWriteIntent(jws []byte) (WriteIntentClaims, error)
 	PublicKeyPEM() string
 	KID() string
 }

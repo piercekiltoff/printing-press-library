@@ -24,6 +24,14 @@ HIPAA mode is enabled by `SF360_HIPAA_MODE=true`, `SF360_HIPAA_MODE=1`, or an in
 
 In HIPAA mode, audit failure is a release-blocking condition, not a warning. Operators should monitor local audit health and Salesforce audit object writes before enabling scheduled bundle generation.
 
+## Write Audit Sync-Mode
+
+HIPAA mode also requires synchronous write audit. If `agent update`, `agent create`, `agent upsert`, `agent log-activity`, `agent advance`, `agent close-case`, `agent note`, or `agent execute-plan` cannot write its pending intent audit row, the Salesforce mutation is blocked with `WRITE_INTENT_AUDIT_FAILED`. This is the write-side equivalent of bundle audit sync-mode: no PHI-bearing mutation should occur without a durable forensic record of which key authored it and what payload was intended.
+
+Write audit rows capture the acting user, signing `kid`, target object, target record, operation, intent JWS, execution status, and `FieldDiff__c`. `FieldDiff__c` is the PHI-sensitive field because it records before/after values. Fields hidden by FLS are preserved as `{"redacted":"FLS"}` instead of the original value, so the audit row proves a field was excluded without leaking data the acting user could not read.
+
+Operators should treat both `SF360_Write_Audit__c` and the local `write_audit_local` mirror as regulated records when Salesforce contains PHI. Restrict access, set retention deliberately, and review failed or pending write-audit rows before enabling scheduled agent writes.
+
 ## Controlled Infrastructure
 
 Run HIPAA workflows only on controlled infrastructure:
