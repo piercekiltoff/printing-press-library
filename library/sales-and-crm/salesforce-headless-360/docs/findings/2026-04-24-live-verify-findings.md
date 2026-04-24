@@ -157,3 +157,57 @@ Total: 5 rounds of seed-debug-edit.
 **Where:** `scripts/live-verify.sh:29`
 **Reality:** when script fails early (before any Task is created), `cleanup_task_ids` is empty. `set -u` + `${cleanup_task_ids[@]}` → unbound variable crash DURING cleanup trap, masking the real failure and potentially leaving state unreverted.
 **Fix suggestion:** use `${cleanup_task_ids[@]:-}` or wrap loop with `[[ ${#cleanup_task_ids[@]} -gt 0 ]] &&`.
+
+## Finding F-021: `sync --account` fails with "composite graph acme-graph was not successful"
+**Severity:** CRITICAL (blocks live-verify Check 3, Check 5, Check 8)
+**Where:** CLI Go code — Salesforce Composite Graph request construction
+**Reality:** `salesforce-headless-360-pp-cli sync --account <validAccountId>` returns:
+```
+Error: composite graph acme-graph was not successful
+composite graph acme-graph was not successful
+```
+Reproduced against NFC TrentDev1 Developer sandbox with a valid Account Id (001Ek00001sldZQIAY) that has Contacts, Opportunities, a Case, and a Task.
+**Hypothesis:** the composite graph payload likely references fields that don't exist on the target org's customized schema (e.g., `AnnualRevenue` on Account, which NFC has removed). Salesforce rejects the whole graph if any sub-request fails. The CLI does not emit the underlying composite-graph error response, only a generic top-level failure.
+**Impact:** `agent context --live` cannot produce bundles, so all downstream check 8-10 + W1-W6 writes are blocked.
+**Fix suggestion:**
+1. Emit the full composite-graph error response in the error message (which sub-request failed, and why).
+2. Make the graph's field list per-object adaptive: query `sf sobject describe` before building the graph, exclude fields that don't exist on the target org.
+3. As a near-term patch: add `--graph-fields <comma-list>` to let the caller override defaults.
+
+## Finding F-022: `trust register` fails — obsolete Certificate schema field
+**Severity:** CRITICAL (blocks live-verify Check 7)
+**Where:** CLI Go code — Tooling API Certificate object POST
+**Reality:** `salesforce-headless-360-pp-cli trust register --org <alias>` returns:
+```
+Error: POST /services/data/v63.0/tooling/sobjects/Certificate returned HTTP 400:
+[{"message":"No such column 'CertificateData' on sobject of type Certificate","errorCode":"INVALID_FIELD"}]
+```
+The CLI is sending a `CertificateData` field that modern Salesforce Tooling API does not accept (API v63.0 on TrentDev1).
+**Hypothesis:** field was renamed (possibly to `Data`, `Certificate`, or entirely removed in favor of ContentVersion uploads).
+**Impact:** bundle-signing trust store cannot be initialized via the Certificate path. The CMDT fallback path (`SF360_Bundle_Key__mdt`) isn't exercised because the CLI short-circuits on Certificate errors.
+**Fix suggestion:**
+1. Consult the Salesforce Metadata Coverage Report for the current Certificate sobject schema.
+2. Detect `INVALID_FIELD` on Certificate POST and fall through to the CMDT path rather than erroring.
+3. Pin the Tooling API version used for Certificate operations, and document the minimum supported org API version.
+
+## Finding F-023: Script queries wrong SQLite database file
+**Severity:** high (blocks live-verify Checks 4, 6)
+**Where:** `scripts/live-verify.sh` — every `sqlite3 $HOME/.local/share/salesforce-headless-360-pp-cli/sf360.db …` invocation
+**Reality:** the CLI binary writes its state to `~/.local/share/salesforce-headless-360-pp-cli/data.db`. The script queries `sf360.db` which exists (zero bytes) but contains no tables. Script checks 4 and 6 therefore always fail with `Error: no such table: sharing_drop_audit` / `… compliance_field_map`.
+```
+$ sqlite3 ~/.local/share/salesforce-headless-360-pp-cli/data.db ".tables"
+accounts bundle_audit_local cases compliance_field_map contacts
+events fls_unknown_field_seen limits opportunities resources
+resources_fts resources_fts_config ... sharing_drop_audit sync_state
+tasks write_audit_local
+```
+The tables the script wants DO exist — but in `data.db`, not `sf360.db`.
+**Fix suggestion:** either rename the CLI's SQLite file to `sf360.db` (matching the script's expectation + the CLI's own internal database_name constant per grep), or update the script to query `data.db`. Pick one and align.
+
+---
+
+# Final Summary
+
+**23 findings total.** After working fixes, the verify script achieved 2/11 PASS (Checks 1 and 2) with the remaining 9 reads failing on a mix of CLI Go-code bugs (F-021, F-022) and script-CLI path mismatches (F-023). No write verb checks (W1-W6) were reached because trust register (Check 7) is a hard dependency blocker for bundle signing and W1+.
+
+The metadata layer, seed helpers, and documentation are in solid shape after this session. The remaining failures require Matt's Go code changes — not reachable from verification-level work.
