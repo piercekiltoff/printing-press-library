@@ -3,7 +3,7 @@ name: pp-scrape-creators
 description: "Scrape Creators CLI — scrape public social-media data across TikTok, Instagram, YouTube, Twitter/X, LinkedIn, Facebook, Reddit, Threads, Bluesky, Pinterest, Snapchat, Twitch, Kick, Truth Social, and 15+ link-in-bio platforms. Use when the user wants to fetch a profile, posts, comments, videos, ads, or transcripts from a social platform; compare creators; find spike/viral videos; track follower growth; analyze posting cadence; snapshot hashtag trends; inspect API credit budget; or sync a platform's data locally for offline search and analytics."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
-metadata: '{"openclaw":{"requires":{"bins":["scrape-creators-pp-cli"],"env":["SCRAPE_CREATORS_API_KEY_AUTH"]},"primaryEnv":"SCRAPE_CREATORS_API_KEY_AUTH","install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/developer-tools/scrape-creators/cmd/scrape-creators-pp-cli@latest","bins":["scrape-creators-pp-cli"],"label":"Install via go install"}]}}'
+metadata: '{"openclaw":{"requires":{"bins":["scrape-creators-pp-cli"],"env":["SCRAPE_CREATORS_API_KEY"]},"primaryEnv":"SCRAPE_CREATORS_API_KEY","install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/developer-tools/scrape-creators/cmd/scrape-creators-pp-cli@latest","bins":["scrape-creators-pp-cli"],"label":"Install via go install"}]}}'
 ---
 
 # Scrape Creators CLI
@@ -52,7 +52,7 @@ Parse `$ARGUMENTS`:
 4. Ensure `$GOPATH/bin` (or `$HOME/go/bin`) is on `$PATH`.
 5. Auth setup:
    ```bash
-   export SCRAPE_CREATORS_API_KEY_AUTH="<your-key>"
+   export SCRAPE_CREATORS_API_KEY="<your-key>"
    ```
    Get a key at <https://app.scrapecreators.com>.
 6. Verify: `scrape-creators-pp-cli doctor` reports config, auth, and connectivity status.
@@ -75,19 +75,19 @@ scrape-creators-pp-cli agent add claude-code --hosted
 scrape-creators-pp-cli agent add cursor --force
 ```
 
-`agent add` does not require credentials up front. If `SCRAPE_CREATORS_API_KEY_AUTH` is missing, the CLI still writes the MCP entry and leaves auth for you to add later.
+`agent add` does not require credentials up front. If `SCRAPE_CREATORS_API_KEY` is missing, the CLI still writes the MCP entry and leaves auth for you to add later.
 
 All writes land at mode `0600`. Alternatively, install the MCP binary manually:
 
 ```bash
 go install github.com/mvanhorn/printing-press-library/library/developer-tools/scrape-creators/cmd/scrape-creators-pp-mcp@latest
-claude mcp add scrape-creators scrape-creators-pp-mcp -e SCRAPE_CREATORS_API_KEY_AUTH=<your-key>
+claude mcp add scrape-creators scrape-creators-pp-mcp -e SCRAPE_CREATORS_API_KEY=<your-key>
 ```
 
 ## Direct Use
 
 1. Check installed: `which scrape-creators-pp-cli`. If missing, offer CLI installation.
-2. Ensure `SCRAPE_CREATORS_API_KEY_AUTH` is exported (or saved to the config file) before any call that hits the API.
+2. Ensure `SCRAPE_CREATORS_API_KEY` is exported (or saved to the config file) before any call that hits the API.
 3. Discover commands: `scrape-creators-pp-cli --help`; drill in with `scrape-creators-pp-cli <platform> --help`.
 4. Execute with `--agent` for structured output:
    ```bash
@@ -186,7 +186,7 @@ Data-layer commands wrap successful output in `{"meta": {...}, "results": <data>
 | 0 | Success |
 | 2 | Usage error (wrong arguments) |
 | 3 | Resource not found (profile, post, video, …) |
-| 4 | Authentication required (`SCRAPE_CREATORS_API_KEY_AUTH` missing or invalid) |
+| 4 | Authentication required (`SCRAPE_CREATORS_API_KEY` missing or invalid) |
 | 5 | API error (Scrape Creators upstream) |
 | 7 | Rate limited |
 | 10 | Config error |

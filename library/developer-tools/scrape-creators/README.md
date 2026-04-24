@@ -43,7 +43,7 @@ Download from [Releases](https://github.com/mvanhorn/printing-press-library/rele
 
 ```bash
 # 1. Get an API key at https://app.scrapecreators.com and export it
-export SCRAPE_CREATORS_API_KEY_AUTH="<your-key>"
+export SCRAPE_CREATORS_API_KEY="<your-key>"
 
 # 2. Verify your setup
 scrape-creators-pp-cli doctor
@@ -399,7 +399,7 @@ All writes are `chmod 0600`. Existing entries are refused without `--force`. If 
     "scrape-creators": {
       "command": "scrape-creators-pp-mcp",
       "env": {
-        "SCRAPE_CREATORS_API_KEY_AUTH": "<your-key>"
+        "SCRAPE_CREATORS_API_KEY": "<your-key>"
       }
     }
   }
@@ -409,7 +409,7 @@ All writes are `chmod 0600`. Existing entries are refused without `--force`. If 
 ### Claude Code via `claude mcp add`
 
 ```bash
-claude mcp add scrape-creators scrape-creators-pp-mcp -e SCRAPE_CREATORS_API_KEY_AUTH=<your-key>
+claude mcp add scrape-creators scrape-creators-pp-mcp -e SCRAPE_CREATORS_API_KEY=<your-key>
 ```
 
 ## Cookbook
@@ -457,7 +457,7 @@ Config file: `~/.config/scrape-creators-pp-cli/config.toml`
 
 Required environment variable:
 
-- `SCRAPE_CREATORS_API_KEY_AUTH` — your API key from <https://app.scrapecreators.com>
+- `SCRAPE_CREATORS_API_KEY` — your API key from <https://app.scrapecreators.com>
 
 Optional:
 
@@ -467,7 +467,7 @@ Optional:
 
 **Auth error (exit 4)**
 - `scrape-creators-pp-cli doctor` to see what's set
-- `echo $SCRAPE_CREATORS_API_KEY_AUTH` to verify the variable is exported
+- `echo $SCRAPE_CREATORS_API_KEY` to verify the variable is exported
 
 **`doctor` says credentials are inconclusive**
 - The CLI could not prove your credentials from the upstream validation endpoint, but it also did not see an explicit auth rejection
@@ -491,7 +491,7 @@ Optional:
 
 **MCP install before auth**
 - `scrape-creators-pp-cli agent add <target>` works even before you have a key
-- Re-run it later with `SCRAPE_CREATORS_API_KEY_AUTH` exported, or edit the generated agent config to add the key manually
+- Re-run it later with `SCRAPE_CREATORS_API_KEY` exported, or edit the generated agent config to add the key manually
 
 **Wizard did not launch**
 - The wizard only runs on a TTY with no command path
