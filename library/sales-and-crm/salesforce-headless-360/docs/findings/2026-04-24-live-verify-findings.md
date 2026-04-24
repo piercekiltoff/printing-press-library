@@ -211,3 +211,40 @@ The tables the script wants DO exist — but in `data.db`, not `sf360.db`.
 **23 findings total.** After working fixes, the verify script achieved 2/11 PASS (Checks 1 and 2) with the remaining 9 reads failing on a mix of CLI Go-code bugs (F-021, F-022) and script-CLI path mismatches (F-023). No write verb checks (W1-W6) were reached because trust register (Check 7) is a hard dependency blocker for bundle signing and W1+.
 
 The metadata layer, seed helpers, and documentation are in solid shape after this session. The remaining failures require Matt's Go code changes — not reachable from verification-level work.
+
+## Finding F-024: `agent context --mock` crashes with JSON unmarshal error
+**Severity:** medium (blocks smoke-testing without a real org)
+**Where:** CLI Go code — mock server response decoding OR mock server response schema
+**Reality:** `salesforce-headless-360-pp-cli agent context 001xx000003DGb2AAG --mock` returns:
+```
+Error: json: cannot unmarshal object into Go struct field .Email of type string
+json: cannot unmarshal object into Go struct field .Email of type string
+```
+**Impact:** the README's Quick Start ("This path verifies the CLI in under a minute without a Salesforce account") is broken. Testers cannot smoke-test the CLI without first provisioning a sandbox — which defeats the purpose of the `--mock` mode.
+**Hypothesis:** mock server emits a `{"address": "...", "type": "..."}` object for Contact.Email, while the CLI's Contact struct expects `Email string`. Either the Go struct needs to be `Email emailField` (with custom unmarshal) or the mock needs to emit bare strings.
+**Fix suggestion:**
+1. Grep for `.Email` fields in internal/ — likely Contact, Lead, User. Confirm type is `string`.
+2. Check the mock server fixtures (testdata/ or internal/mock/) — ensure the fixture JSON emits bare strings for these fields.
+3. Add a mock-mode smoke test to CI: `go test ./... -tags=mock` or similar.
+
+## Finding F-025: `doctor` reports auth not configured even after successful `auth login`
+**Severity:** high (misleading — suggests CLI isn't usable when it actually is)
+**Where:** CLI Go code — doctor's auth-detection logic vs auth login's state-writing logic
+**Reality:** sequence:
+```
+$ salesforce-headless-360-pp-cli auth login --sf sf360-test
+OK Authentication successful for sf360-test via sf_fallthrough
+$ salesforce-headless-360-pp-cli doctor
+  ...
+  FAIL Auth: not configured
+  OK API: reachable
+  FAIL REST: red
+```
+`auth login` writes some state but `doctor` reads a different state location. Or doctor checks for a specific auth artifact that `auth login --sf` doesn't produce. Either way, `doctor` is misleading — `agent context --dry-run` runs successfully immediately after, proving auth IS usable.
+**Impact:**
+1. Testers see a red `Auth: not configured` row and assume the CLI is broken, retry `auth login`, see the same red row, conclude the CLI is broken.
+2. The `live-verify.sh` Check 2 (`doctor`) nonetheless returned PASS because the script's PASS predicate only requires exit code 0, not row-by-row green. So the overall script reports Check 2 as PASS even though doctor itself is signaling problems.
+**Fix suggestion:**
+1. Unify auth state. `auth login` and `doctor` should read/write the same config file or keystore entry.
+2. If `auth login --sf` intentionally delegates to sf CLI passthrough (i.e., no CLI-internal token is cached), doctor's Auth row should treat sf-passthrough-available as green, not red.
+3. Make `doctor` exit non-zero on any FAIL row, so `live-verify.sh` Check 2 catches these honestly.
