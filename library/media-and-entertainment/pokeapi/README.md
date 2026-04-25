@@ -23,7 +23,7 @@ Learn more at [Pokeapi](https://pokeapi.co/docs/v2).
 ### Go
 
 ```
-go install github.com/mvanhorn/printing-press-library/library/other/pokeapi-pp-cli/cmd/pokeapi-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/cmd/pokeapi-pp-cli@latest
 ```
 
 ### Binary

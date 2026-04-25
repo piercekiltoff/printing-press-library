@@ -3,7 +3,7 @@ name: pp-pokeapi
 description: "Printing Press CLI for Pokeapi. All the Pokémon data you'll ever need in one place, easily accessible through a modern free open-source RESTful..."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
-metadata: '{"openclaw":{"requires":{"bins":["pokeapi-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/other/pokeapi-pp-cli/cmd/pokeapi-pp-cli@latest","bins":["pokeapi-pp-cli"],"label":"Install via go install"}]}}'
+metadata: '{"openclaw":{"requires":{"bins":["pokeapi-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/cmd/pokeapi-pp-cli@latest","bins":["pokeapi-pp-cli"],"label":"Install via go install"}]}}'
 ---
 
 # Pokeapi — Printing Press CLI
@@ -246,7 +246,7 @@ Parse `$ARGUMENTS`:
 1. Check Go is installed: `go version` (requires Go 1.23+)
 2. Install:
    ```bash
-   go install github.com/mvanhorn/printing-press-library/library/other/pokeapi-pp-cli/cmd/pokeapi-pp-cli@latest
+   go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/cmd/pokeapi-pp-cli@latest
    ```
 3. Verify: `pokeapi-pp-cli --version`
 4. Ensure `$GOPATH/bin` (or `$HOME/go/bin`) is on `$PATH`.
@@ -255,7 +255,7 @@ Parse `$ARGUMENTS`:
 
 1. Install the MCP server:
    ```bash
-   go install github.com/mvanhorn/printing-press-library/library/other/pokeapi-pp-cli/cmd/pokeapi-pp-mcp@latest
+   go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/cmd/pokeapi-pp-mcp@latest
    ```
 2. Register with Claude Code:
    ```bash

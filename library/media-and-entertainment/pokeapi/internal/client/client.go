@@ -19,7 +19,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"pokeapi-pp-cli/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/config"
 )
 
 type Client struct {

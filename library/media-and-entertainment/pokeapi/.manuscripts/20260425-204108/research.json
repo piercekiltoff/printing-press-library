@@ -1,11 +1,12 @@
 {
   "api_name": "PokeAPI",
+  "api_slug": "pokeapi",
+  "cli_name": "pokeapi-pp-cli",
   "spec_source": "official",
   "spec_url": "https://raw.githubusercontent.com/PokeAPI/pokeapi/master/openapi.yml",
   "generated_at": "2026-04-25T20:41:08.777332Z",
   "printing_press_version": "1.3.3-0.20260425194309-5f68784d9e6d+dirty",
-  "cli_name": "pokeapi-pp-cli",
   "mcp_binary": "pokeapi-pp-mcp",
   "mcp_tool_count": 97,
-  "notes": "Free, no-auth Pokemon data API. Official OpenAPI spec. Generated name override used to avoid non-ASCII module path from \u201cPok\u00e9API\u201d."
+  "notes": "Free Pokemon data API generated from official OpenAPI spec. Generated with --name pokeapi to avoid non-ASCII module path from Pok\u00e9API."
 }

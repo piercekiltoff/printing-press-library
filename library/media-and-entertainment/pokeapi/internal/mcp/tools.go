@@ -15,9 +15,9 @@ import (
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"pokeapi-pp-cli/internal/client"
-	"pokeapi-pp-cli/internal/config"
-	"pokeapi-pp-cli/internal/store"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/client"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/config"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/store"
 )
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
 func looksLikeAuthError(msg string) bool {

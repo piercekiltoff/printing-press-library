@@ -16,7 +16,7 @@ import (
 	"text/tabwriter"
 	"time"
 	"unicode"
-	"pokeapi-pp-cli/internal/client"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/pokeapi/internal/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
