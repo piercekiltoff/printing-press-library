@@ -1020,6 +1020,38 @@ func (s *Store) Count(resourceType string) (int, error) {
 	return count, err
 }
 
+// ListIDs returns all primary-key IDs for a given resource type. Tries the
+// typed domain table first; falls back to the generic `resources` table when
+// the typed table doesn't exist OR is empty (UpsertBatch writes to the
+// generic table for paginated arrays, so the typed table is often empty).
+//
+// Used by the dependent-resources sync flow to enumerate parent IDs (e.g.
+// account IDs needed to expand `/{account_id}/campaigns` for every parent).
+func (s *Store) ListIDs(resourceType string) ([]string, error) {
+	if ids, err := queryIDs(s.db, fmt.Sprintf("SELECT id FROM %s", resourceType)); err == nil && len(ids) > 0 {
+		return ids, nil
+	}
+	return queryIDs(s.db, "SELECT id FROM resources WHERE resource_type = ?", resourceType)
+}
+
+func queryIDs(db *sql.DB, query string, args ...any) ([]string, error) {
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
+}
+
 func (s *Store) Status() (map[string]int, error) {
 	rows, err := s.db.Query(
 		`SELECT resource_type, COUNT(*) FROM resources GROUP BY resource_type ORDER BY resource_type`,
