@@ -118,17 +118,22 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 			return mcplib.NewToolResultError(err.Error()), nil
 		}
 
+		// mcp-go v0.47+ made CallToolParams.Arguments an `any` to support
+		// non-map payloads; GetArguments() returns the map[string]any shape
+		// we rely on here (or an empty map when the payload is something else).
+		args := req.GetArguments()
+
 		// Build path by substituting positional params
 		path := pathTemplate
 		for _, p := range positionalParams {
-			if v, ok := req.Params.Arguments[p]; ok {
+			if v, ok := args[p]; ok {
 				path = strings.Replace(path, "{"+p+"}", fmt.Sprintf("%v", v), 1)
 			}
 		}
 
 		// Collect non-positional params as query params
 		params := make(map[string]string)
-		for k, v := range req.Params.Arguments {
+		for k, v := range args {
 			isPositional := false
 			for _, p := range positionalParams {
 				if k == p {
@@ -146,13 +151,13 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 		case "GET":
 			data, err = c.Get(path, params)
 		case "POST":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Post(path, body)
 		case "PUT":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Put(path, body)
 		case "PATCH":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Patch(path, body)
 		case "DELETE":
 			data, _, err = c.Delete(path)
@@ -234,7 +239,8 @@ func handleSync(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallTo
 }
 
 func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	query, ok := req.Params.Arguments["query"].(string)
+	args := req.GetArguments()
+	query, ok := args["query"].(string)
 	if !ok || query == "" {
 		return mcplib.NewToolResultError("query is required"), nil
 	}
@@ -282,7 +288,7 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
 		"api":         "recipe-goat",
-		"description": "Recipe GOAT — find the best version of any recipe across curated sites, with offline cookbook, pantry match,...",
+		"description": "Recipe GOAT — find the best version of any recipe across 37 trusted sites, with offline cookbook, pantry match,...",
 		"archetype":   "generic",
 		"tool_count":  3,
 		"auth": map[string]any{
@@ -306,7 +312,7 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 			"Prefer sql/search over repeated API calls when the data is already synced.",
 		},
 		"unique_capabilities": []map[string]string{
-			{"name": "Best-version ranker", "command": "goat", "description": "Query any dish across curated recipe sites and rank results by normalized rating × review count × site trust × recency.", "rationale": "No existing tool ranks recipes across sites. recipe-scrapers extracts one URL at a time; Paprika/Mealie import one..."},
+			{"name": "Best-version ranker", "command": "goat", "description": "Query any dish across 37 recipe sites and rank results by normalized rating × review count × author trust...", "rationale": "No existing tool ranks recipes across sites. recipe-scrapers extracts one URL at a time; Paprika/Mealie import one..."},
 			{"name": "Substitution lookup", "command": "sub", "description": "Aggregate ingredient substitutions from King Arthur, Serious Eats, AllRecipes reviews, and Budget Bytes. Ranked by...", "rationale": "Substitutions are tribal knowledge scattered across per-ingredient pages; no unified tool aggregates them."},
 			{"name": "Pantry match", "command": "cookbook match", "description": "Find recipes in the local cookbook that you can make right now with listed ingredients, or with ≤N missing...", "rationale": "Requires local pantry + canonicalized ingredient store. No web tool has your pantry data."},
 			{"name": "Tonight picker", "command": "tonight", "description": "Pick dinner in 2 seconds: filter cookbook by time budget, recency from cook log, and dietary/kid-friendly flags.", "rationale": "Decision-fatigue killer. Requires local cook log + cookbook + filter set."},
@@ -314,7 +320,7 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 			{"name": "USDA nutrition backfill", "command": "recipe get --nutrition", "description": "When a site omits nutrition, parse ingredients, match USDA FoodData Central IDs, compute per-serving macros locally.", "rationale": "~30% of recipes omit nutrition. USDA is free, authoritative, and fills the gap."},
 			{"name": "Kid-friendly filter", "command": "search --kid-friendly", "description": "Filter recipes against an editable ingredient-exclusion list (capers, anchovies, excess heat, raw fish, etc.)....", "rationale": "No recipe site has a useful kid-friendly filter; existing ones just show white-bread pasta."},
 			{"name": "Unit-reconciling shopping list", "command": "meal-plan shopping-list", "description": "Aggregate ingredients across planned meals, reconcile units (2 cup + 1 cup milk → 3 cup), group by grocery aisle.", "rationale": "Everyone makes a shopping list; everyone fails at unit math. Mealie/Tandoor do this but they're web apps."},
-			{"name": "Inline seasonal flag", "command": "recipe get (auto)", "description": "Flag out-of-season ingredients inline ('⚠ asparagus is out of season in November — peak April–June') and...", "rationale": "Seasonal awareness improves quality and cost; no CLI provides it."},
+			{"name": "Inline seasonal flag", "command": "recipe get", "description": "Flag out-of-season ingredients inline ('⚠ asparagus is out of season in November — peak April–June') and...", "rationale": "Seasonal awareness improves quality and cost; no CLI provides it."},
 			{"name": "Honest cost estimate", "command": "recipe cost", "description": "Rough cost per serving using Budget Bytes line-item data plus USDA retail averages as fallback. Always shows an...", "rationale": "Budget matters; precision is impossible; honest estimates beat silence."},
 		},
 		"playbook": []map[string]string{

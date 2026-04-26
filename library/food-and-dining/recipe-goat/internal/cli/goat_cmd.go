@@ -42,7 +42,15 @@ a weighted score of rating, review volume, site trust, and recency.
 
 Ranking weights:
   0.55 rating_normalized + 0.25 log(reviews+1)/log(1000)
-  + 0.15 site_trust + 0.05 recency_norm`,
+  + 0.15 site_trust + 0.05 recency_norm
+
+Two trust-aware adjustments before scoring:
+  - Editorial baseline: curated sites (trust >= 0.9) with no Schema.org
+    rating get rating=4.5/reviews=100 imputed (treats curation as ~100
+    implicit favorable reviews).
+  - Bayesian smoothing: aggregator sites (trust < 0.85) ratings smoothed
+    toward prior mean 4.0 with credibility C=200. A 5.0/100 becomes
+    effective 4.33; a 4.7/5000 stays at 4.67.`,
 		Example: "  recipe-goat-pp-cli goat \"chicken tikka masala\" --limit 5",
 		Args:    cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -218,17 +226,45 @@ Ranking weights:
 }
 
 // goatScore implements the ranking formula. All components are in [0,1].
+//
+// Two trust-aware adjustments before the weighted sum (added 2026-04-26):
+//
+//  1. Editorial-baseline imputation. When a curated site (trust >= 0.9)
+//     publishes a recipe with NO Schema.org aggregateRating (rating=0,
+//     reviews=0), impute rating=4.5 and reviews=100. Rationale: those
+//     sites have human editorial vetting; the absence of a rating widget
+//     is not the same as the absence of curation. This gives niche
+//     curated recipes a fair floor without making them invincible.
+//
+//  2. Bayesian smoothing on aggregator-site ratings. When a crowdsourced
+//     aggregator (trust < 0.85) reports a rating, smooth toward the prior
+//     mean 4.0 with credibility weight C=200. A 5.0 with 100 reviews
+//     becomes effective 4.33; a 4.7 with 5000 reviews stays 4.67. This
+//     fixes the "100 reviewers gave it 5 stars" ≠ "5000 reviewers gave
+//     it 4.7 stars" credibility problem the raw mean ignores.
 func goatScore(r *recipes.Recipe, site recipes.Site) float64 {
+	rating := r.AggregateRating.Value
+	reviews := r.AggregateRating.Count
+	if rating == 0 && reviews == 0 && site.Trust >= 0.9 {
+		rating = 4.5
+		reviews = 100
+	}
+	if site.Trust < 0.85 && rating > 0 && reviews > 0 {
+		const credibilityC = 200.0
+		const priorMean = 4.0
+		rating = (rating*float64(reviews) + priorMean*credibilityC) / (float64(reviews) + credibilityC)
+	}
+
 	ratingNorm := 0.0
-	if r.AggregateRating.Value > 0 {
-		ratingNorm = r.AggregateRating.Value / 5.0
+	if rating > 0 {
+		ratingNorm = rating / 5.0
 		if ratingNorm > 1.0 {
 			ratingNorm = 1.0
 		}
 	}
 	reviewNorm := 0.0
-	if r.AggregateRating.Count > 0 {
-		reviewNorm = math.Log(float64(r.AggregateRating.Count+1)) / math.Log(1000)
+	if reviews > 0 {
+		reviewNorm = math.Log(float64(reviews+1)) / math.Log(1000)
 		if reviewNorm > 1.0 {
 			reviewNorm = 1.0
 		}

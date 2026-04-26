@@ -23,6 +23,7 @@ type syncResult struct {
 	Resource string
 	Count    int
 	Err      error
+	Warn     error
 	Duration time.Duration
 }
 
@@ -33,13 +34,23 @@ func newSyncCmd(flags *rootFlags) *cobra.Command {
 	var concurrency int
 	var dbPath string
 	var maxPages int
+	var latestOnly bool
 
 	cmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Sync API data to local SQLite for offline search and analysis",
 		Long: `Sync data from the API into a local SQLite database. Supports resumable
 incremental sync (only fetches new data since last sync) and full resync.
-Once synced, use the 'search' command for instant full-text search.`,
+Once synced, use the 'search' command for instant full-text search.
+
+Exit codes & warnings:
+  Resources the API denies access to (HTTP 403, or HTTP 400 with an
+  access-policy body) are reported as warnings rather than failing the
+  run. In --json mode each is emitted as a {"event":"sync_warning",...}
+  line carrying status, reason, and message fields, and a final
+  {"event":"sync_summary",...} aggregates the run. The command exits
+  non-zero only when every selected resource was access-denied or any
+  resource hit a hard error.`,
 		Example: `  # Sync all resources
   recipe-goat-pp-cli sync
 
@@ -53,7 +64,10 @@ Once synced, use the 'search' command for instant full-text search.`,
   recipe-goat-pp-cli sync --since 7d
 
   # Parallel sync with 8 workers
-  recipe-goat-pp-cli sync --concurrency 8`,
+  recipe-goat-pp-cli sync --concurrency 8
+
+  # Latest-only: refresh head of each resource, no historical backfill
+  recipe-goat-pp-cli sync --latest-only`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
 			if err != nil {
@@ -80,6 +94,29 @@ Once synced, use the 'search' command for instant full-text search.`,
 			if full {
 				for _, resource := range resources {
 					_ = db.SaveSyncState(resource, "", 0)
+				}
+			}
+
+			// --latest-only narrows to the first page of each resource
+			// ignoring the historical resume cursor. We cap maxPages at 1
+			// here rather than re-interpreting it downstream so the rest
+			// of the sync loop stays oblivious. Mutually-useful with
+			// --since: if the user set --since, that threshold still wins
+			// and we don't short-circuit historical context they asked for.
+			if latestOnly {
+				if since == "" {
+					maxPages = 1
+					// Clear the cursor so we start from the head each time;
+					// the goal of --latest-only is "refresh the top" not
+					// "resume from wherever I left off".
+					for _, resource := range resources {
+						existing, _, _, _ := db.GetSyncState(resource)
+						if existing != "" {
+							_ = db.SaveSyncState(resource, "", 0)
+						}
+					}
+				} else if humanFriendly {
+					fmt.Fprintln(os.Stderr, "warning: --latest-only ignored because --since is set; --since takes precedence")
 				}
 			}
 
@@ -128,26 +165,47 @@ Once synced, use the 'search' command for instant full-text search.`,
 
 			var totalSynced int
 			var errCount int
+			var warnCount int
+			var successCount int
 			for res := range results {
 				if res.Err != nil {
 					if humanFriendly {
 						fmt.Fprintf(os.Stderr, "  %s: error: %v\n", res.Resource, res.Err)
 					}
 					errCount++
+				} else if res.Warn != nil {
+					if humanFriendly {
+						fmt.Fprintf(os.Stderr, "  %s: warning: %v\n", res.Resource, res.Warn)
+					}
+					warnCount++
 				} else {
 					if humanFriendly {
 						fmt.Fprintf(os.Stderr, "  %s: %d synced (done)\n", res.Resource, res.Count)
 					}
 					totalSynced += res.Count
+					successCount++
 				}
 			}
 
 			elapsed := time.Since(started)
-			fmt.Fprintf(os.Stderr, "Sync complete: %d records across %d resources (%.1fs)\n",
-				totalSynced, len(resources), elapsed.Seconds())
+			totalResources := successCount + warnCount + errCount
+			if !humanFriendly {
+				fmt.Fprintf(os.Stderr, `{"event":"sync_summary","total_records":%d,"resources":%d,"success":%d,"warned":%d,"errored":%d,"duration_ms":%d}`+"\n",
+					totalSynced, totalResources, successCount, warnCount, errCount, elapsed.Milliseconds())
+			}
+			if warnCount > 0 {
+				fmt.Fprintf(os.Stderr, "Sync complete: %d records across %d resources (%d warned, %.1fs)\n",
+					totalSynced, totalResources, warnCount, elapsed.Seconds())
+			} else {
+				fmt.Fprintf(os.Stderr, "Sync complete: %d records across %d resources (%.1fs)\n",
+					totalSynced, totalResources, elapsed.Seconds())
+			}
 
 			if errCount > 0 {
 				return fmt.Errorf("%d resource(s) failed to sync", errCount)
+			}
+			if warnCount > 0 && successCount == 0 {
+				return fmt.Errorf("%d resource(s) skipped due to insufficient access", warnCount)
 			}
 			return nil
 		},
@@ -159,6 +217,7 @@ Once synced, use the 'search' command for instant full-text search.`,
 	cmd.Flags().IntVar(&concurrency, "concurrency", 4, "Number of parallel sync workers")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/recipe-goat-pp-cli/data.db)")
 	cmd.Flags().IntVar(&maxPages, "max-pages", 10, "Maximum pages to fetch per resource (0 = unlimited)")
+	cmd.Flags().BoolVar(&latestOnly, "latest-only", false, "Refresh head of each resource only; clears resume cursor and caps pages at 1. Mutually exclusive with --since (--since wins).")
 
 	return cmd
 }
@@ -214,6 +273,13 @@ func syncResource(c interface {
 
 		data, err := c.Get(path, params)
 		if err != nil {
+			if w, ok := isSyncAccessWarning(err); ok {
+				if !humanFriendly {
+					fmt.Fprintf(os.Stderr, `{"event":"sync_warning","resource":"%s","status":%d,"reason":"%s","message":"%s"}`+"\n",
+						resource, w.Status, w.Reason, strings.ReplaceAll(w.Message, `"`, `\"`))
+				}
+				return syncResult{Resource: resource, Count: totalCount, Warn: fmt.Errorf("skipped %s: %s", resource, w.Reason), Duration: time.Since(started)}
+			}
 			if !humanFriendly {
 				fmt.Fprintf(os.Stderr, `{"event":"sync_error","resource":"%s","error":"%s"}`+"\n", resource, strings.ReplaceAll(err.Error(), `"`, `\"`))
 			}

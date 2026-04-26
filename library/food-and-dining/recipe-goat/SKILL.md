@@ -1,18 +1,22 @@
 ---
 name: pp-recipe-goat
-description: "Find the best version of any recipe across curated cuisine-authority sites — then plan, shop, and cook with a local kitchen companion. Trigger phrases: `find me the best recipe for`, `what can I make with`, `substitute for`, `plan meals for the week`, `shopping list from my meal plan`, `use recipe-goat`, `run recipe-goat`."
+description: "Find the best version of any recipe across 37 trusted sites — then plan, shop, and cook with a local kitchen companion. Trigger phrases: `find me the best recipe for`, `what can I make with`, `substitute for`, `set up a meal plan`, `shopping list from my meal plan`, `tonight's dinner`, `use recipe-goat`, `run recipe-goat`."
 argument-hint: "<command> [args] | install cli|mcp"
 allowed-tools: "Read Bash"
-metadata: '{"openclaw":{"requires":{"bins":["recipe-goat-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat-pp-cli/cmd/recipe-goat-pp-cli@latest","bins":["recipe-goat-pp-cli"],"label":"Install via go install"}]}}'
+metadata: '{"openclaw":{"requires":{"bins":["recipe-goat-pp-cli"]},"install":[{"id":"go","kind":"shell","command":"go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/cmd/recipe-goat-pp-cli@latest","bins":["recipe-goat-pp-cli"],"label":"Install via go install"}]}}'
 ---
 
 # Recipe Goat — Printing Press CLI
 
-Recipe GOAT aggregates a curated set of independent, cuisine-authoritative recipe sites — Nagi (RecipeTin Eats), Swasthi (Indian Healthy Recipes), Elaine (China Sichuan Food), The Woks of Life, Just One Cookbook, Sally's Baking Addiction, King Arthur Baking, Budget Bytes, BBC Food, and more — ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. When users paste URLs from bot-detection-gated sites (allrecipes, food52, etc.), archive.org's Wayback Machine is used to recover the content. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution aggregation), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
+Recipe GOAT aggregates 37 of the web's most trusted recipe sites (King Arthur, Serious Eats, Budget Bytes, Smitten Kitchen, Food52, AllRecipes, Food Network, Simply Recipes, EatingWell, BBC Good Food, Bon Appétit, Epicurious, and 25 more), ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution lookup), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
 
 ## When to Use This CLI
 
-Reach for Recipe GOAT when the user needs the best version of a dish without site-hopping, wants to query their own cookbook by pantry contents, needs unit-reconciled shopping lists for a meal plan, or wants substitution guidance grounded in authoritative baker knowledge. Especially useful for home cooks of any skill level — the CLI's ranking and review-digest features surface the collective wisdom that makes a 4-star recipe into a 5-star one.
+Reach for Recipe GOAT when the user needs the best version of a dish without site-hopping, wants to query their own cookbook by pantry contents, needs a shopping list for a meal plan, or wants ingredient substitution lookups. The ranking weights real reader signal (rating × log(reviews)) at 80% and editorial site-trust at 15%, so tie-break favors curated chef/baker sites over crowdsourced aggregators like AllRecipes.
+
+## When Not to Use This CLI
+
+This CLI does not change remote state. Do not use it to order groceries (use Instacart-pp-cli), order delivery (use Domino's-pp-cli or another delivery CLI), book restaurant reservations, send recipe links by email or message, or post to social platforms. Recipe GOAT does build local SQLite state — saved cookbook, tags, cook log, meal plan slots — and supports `import` (POSTs to USDA endpoints), so local-side mutation is fully expected.
 
 ## Unique Capabilities
 
@@ -20,26 +24,24 @@ These capabilities aren't available in any other tool for this API.
 
 ### Cross-site intelligence
 
-- **`goat`** — Query any dish across curated recipe sites and rank results by normalized rating × review count × site trust × recency.
+- **`goat`** — Query any dish across 37 recipe sites and rank results by normalized rating × review count × author trust × site trust × recency.
 
   _Use this when you need the single best version of a dish — the agent gets structured results with provenance and trust signals instead of guessing from a web search._
 
   ```bash
   recipe-goat-pp-cli goat "chicken tikka masala" --limit 5 --json
   ```
-- **`sub`** — Aggregate ingredient substitutions from King Arthur Baking and other trusted baking-science sources. Ranked by source trust with ratios and context.
+- **`sub`** — Curated ingredient-substitution table sourced from King Arthur, Serious Eats, Budget Bytes, Minimalist Baker, and AllRecipes community reviews. Hand-curated and shipped with the binary (no live fetching at query time); ranked by source trust with ratios and context filters.
 
   _When a recipe needs a sub, agents can pick the best one given the cooking context (baking vs marinade) instead of suggesting the first hit on Google._
 
   ```bash
   recipe-goat-pp-cli sub buttermilk --context baking
   ```
-- **`recipe reviews`** — Surface the top modifications cooks actually made to a recipe ("added an egg: 22 cooks; baked 5 min less: 17; honey instead of sugar: 14").
-
-  _Agents give the user the collective wisdom of reviewers instead of just star ratings._
+- **`recipe reviews`** *(planned, work-in-progress — emits a stub today)* — Will surface the top modifications cooks made to a recipe once the source-review fetcher is wired. Today the command returns a clearly-labeled placeholder so agents don't depend on it.
 
   ```bash
-  recipe-goat-pp-cli recipe reviews <id> --limit 10
+  recipe-goat-pp-cli recipe reviews <id> --limit 10  # emits stub message in v1
   ```
 - **`recipe get --nutrition`** — When a site omits nutrition, parse ingredients, match USDA FoodData Central IDs, compute per-serving macros locally.
 
@@ -48,7 +50,7 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   recipe-goat-pp-cli recipe get https://www.budgetbytes.com/creamy-mushroom-pasta/ --nutrition
   ```
-- **`recipe get (auto)`** — Flag out-of-season ingredients inline ("⚠ asparagus is out of season in November — peak April–June") and suggest in-season swaps.
+- **`recipe get`** — Flag out-of-season ingredients inline ("⚠ asparagus is out of season in November — peak April–June") and suggest in-season swaps.
 
   _Agents surface cost + quality signals the user wouldn't otherwise see._
 
@@ -86,13 +88,15 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   recipe-goat-pp-cli meal-plan shopping-list --week --export md
   ```
-- **`recipe cost`** — Rough cost per serving using Budget Bytes line-item data plus USDA retail averages as fallback. Always shows an honesty band (±30%).
-
-  _Agents can triage recipes by rough cost without pretending to precision grocery data doesn't provide._
+- **`recipe cost`** *(approximate, work-in-progress — placeholder heuristic only)* — Will eventually estimate cost per serving from Budget Bytes line-item data plus USDA retail averages. Today the command emits a clearly-labeled stub with a note that ingredient-price data integration is not yet wired.
 
   ```bash
-  recipe-goat-pp-cli recipe cost <id>  # output: '$6–$9 for 4 servings (±30%)'
+  recipe-goat-pp-cli recipe cost <id>  # emits placeholder + wip note in v1
   ```
+
+## HTTP Transport
+
+This CLI uses Chrome-compatible HTTP transport for browser-facing endpoints. It does not require a resident browser process for normal API calls.
 
 ## Command Reference
 
@@ -103,6 +107,16 @@ These capabilities aren't available in any other tool for this API.
 - `recipe-goat-pp-cli foods search` — Search USDA FoodData Central for foods matching a query
 
 
+### Finding the right command
+
+When you know what you want to do but not which command does it, ask the CLI directly:
+
+```bash
+recipe-goat-pp-cli which "<capability in your own words>"
+```
+
+`which` resolves a natural-language capability query to the best matching command from this CLI's curated feature index. Exit code `0` means at least one match; exit code `2` means no confident match — fall back to `--help` or use a narrower query.
+
 ## Recipes
 
 
@@ -112,7 +126,7 @@ These capabilities aren't available in any other tool for this API.
 recipe-goat-pp-cli goat "carbonara" --limit 5
 ```
 
-Query the curated corpus, return the top 5 ranked by trust + rating + reviews with source attribution.
+Fetches each site's listing for the query, validates JSON-LD on each candidate, and ranks survivors by `0.55 × rating + 0.25 × log(reviews+1)/log(1000) + 0.15 × site_trust + 0.05 × recency`. Rating/reviews come from each page's Schema.org `aggregateRating`. `site_trust` is hand-curated 0.70–0.95 (editorial chef/baker sites 0.9–0.95; crowdsourced aggregators 0.70–0.75). Two trust-aware adjustments run before scoring: curated sites with no Schema.org rating get an imputed 4.5/100 baseline (editorial vetting ≈ 100 implicit favorable reviews); aggregator-site ratings are Bayesian-smoothed toward 4.0 with credibility C=200 (so a 5.0/100 from AllRecipes effectively becomes 4.33, while a 4.7/5000 stays 4.67). Net effect: niche curated recipes with no ratings can outrank mid-tier AllRecipes results; heavily-reviewed AllRecipes blockbusters still rank where their reader signal earns them.
 
 ### Save and tag for weeknight
 
@@ -146,45 +160,79 @@ recipe-goat-pp-cli sub eggs --context baking --vegan
 
 Context-aware substitutions ranked by source trust.
 
-## Auth Setup (optional)
+## Auth Setup
 
-**All core commands work without any setup.** The API key below is only needed to unlock `recipe get --nutrition` backfill.
+USDA FoodData Central (free, 3,500 req/hr) enables nutrition backfill when a recipe site omits macros. Get a key at https://fdc.nal.usda.gov/api-key-signup and export USDA_FDC_API_KEY. All other features work without any authentication.
 
-### When to recommend setting the key
-
-Only when the user wants accurate per-serving macros for recipes whose source site omits nutrition data (≈30% of recipes across the supported sites). For all other workflows — best-version ranking, pantry match, meal plans, substitutions, cookbook search — no key is needed.
-
-### How to set it up
-
-1. User signs up at https://fdc.nal.usda.gov/api-key-signup (free, 3,500 req/hour, no payment).
-2. Export: `export USDA_FDC_API_KEY=<their-key>` — or persist with `recipe-goat-pp-cli auth set-token <their-key>`.
-3. Verify: `recipe-goat-pp-cli doctor` — Auth should show `INFO Auth: optional — not configured` before, `OK Auth: configured` after.
+Run `recipe-goat-pp-cli doctor` to verify setup.
 
 ## Agent Mode
 
 Add `--agent` to any command. Expands to: `--json --compact --no-input --no-color --yes`.
 
 - **Pipeable** — JSON on stdout, errors on stderr
-- **Filterable** — `--select id,name` returns a subset of fields
+- **Filterable** — `--select` keeps a subset of fields. Dotted paths descend into nested structures; arrays traverse element-wise. Critical for keeping context small on verbose APIs:
+
+  ```bash
+  recipe-goat-pp-cli foods list --agent --select id,name,status
+  ```
 - **Previewable** — `--dry-run` shows the request without sending
-- **Cacheable** — GET responses cached for 5 minutes, bypass with `--no-cache`
+- **Offline-friendly** — sync/search commands can use the local SQLite store when available
 - **Non-interactive** — never prompts, every input is a flag
-
-### Filtering output
-
-`--select` accepts dotted paths to descend into nested responses; arrays traverse element-wise:
-
-```bash
-recipe-goat-pp-cli <command> --agent --select id,name
-recipe-goat-pp-cli <command> --agent --select items.id,items.owner.name
-```
-
-Use this to narrow huge payloads to the fields you actually need — critical for deeply nested API responses.
-
+- **Read-only** — do not use this CLI for create, update, delete, publish, comment, upvote, invite, order, send, or other mutating requests
 
 ### Response envelope
 
-Data-layer commands wrap output in `{"meta": {...}, "results": <data>}`. Parse `.results` for data and `.meta.source` to know whether it's `live` or local. The `N results (live)` summary is printed to stderr only when stdout is a TTY; piped/agent consumers see pure JSON on stdout.
+Commands that read from the local store or the API wrap output in a provenance envelope:
+
+```json
+{
+  "meta": {"source": "live" | "local", "synced_at": "...", "reason": "..."},
+  "results": <data>
+}
+```
+
+Parse `.results` for data and `.meta.source` to know whether it's live or local. A human-readable `N results (live)` summary is printed to stderr only when stdout is a terminal — piped/agent consumers get pure JSON on stdout.
+
+## Agent Feedback
+
+When you (or the agent) notice something off about this CLI, record it:
+
+```
+recipe-goat-pp-cli feedback "the --since flag is inclusive but docs say exclusive"
+recipe-goat-pp-cli feedback --stdin < notes.txt
+recipe-goat-pp-cli feedback list --json --limit 10
+```
+
+Entries are stored locally at `~/.recipe-goat-pp-cli/feedback.jsonl`. They are never POSTed unless `RECIPE_GOAT_FEEDBACK_ENDPOINT` is set AND either `--send` is passed or `RECIPE_GOAT_FEEDBACK_AUTO_SEND=true`. Default behavior is local-only.
+
+Write what *surprised* you, not a bug report. Short, specific, one line: that is the part that compounds.
+
+## Output Delivery
+
+Every command accepts `--deliver <sink>`. The output goes to the named sink in addition to (or instead of) stdout, so agents can route command results without hand-piping. Three sinks are supported:
+
+| Sink | Effect |
+|------|--------|
+| `stdout` | Default; write to stdout only |
+| `file:<path>` | Atomically write output to `<path>` (tmp + rename) |
+| `webhook:<url>` | POST the output body to the URL (`application/json` or `application/x-ndjson` when `--compact`) |
+
+Unknown schemes are refused with a structured error naming the supported set. Webhook failures return non-zero and log the URL + HTTP status on stderr.
+
+## Named Profiles
+
+A profile is a saved set of flag values, reused across invocations. Use it when a scheduled agent calls the same command every run with the same configuration - HeyGen's "Beacon" pattern.
+
+```
+recipe-goat-pp-cli profile save briefing --json
+recipe-goat-pp-cli --profile briefing foods list
+recipe-goat-pp-cli profile list --json
+recipe-goat-pp-cli profile show briefing
+recipe-goat-pp-cli profile delete briefing --yes
+```
+
+Explicit flags always win over profile values; profile values win over defaults. `agent-context` lists all available profiles under `available_profiles` so introspecting agents discover them at runtime.
 
 ## Exit Codes
 
@@ -208,10 +256,10 @@ Parse `$ARGUMENTS`:
 
 ## CLI Installation
 
-1. Check Go is installed: `go version` (requires Go 1.23+)
+1. Check Go is installed: `go version` (requires Go 1.25+)
 2. Install:
    ```bash
-   go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat-pp-cli/cmd/recipe-goat-pp-cli@latest
+   go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/cmd/recipe-goat-pp-cli@latest
    ```
 3. Verify: `recipe-goat-pp-cli --version`
 4. Ensure `$GOPATH/bin` (or `$HOME/go/bin`) is on `$PATH`.
@@ -220,7 +268,7 @@ Parse `$ARGUMENTS`:
 
 1. Install the MCP server:
    ```bash
-   go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat-pp-cli/cmd/recipe-goat-pp-mcp@latest
+   go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/cmd/recipe-goat-pp-mcp@latest
    ```
 2. Register with Claude Code:
    ```bash
@@ -238,51 +286,3 @@ Parse `$ARGUMENTS`:
    recipe-goat-pp-cli <command> [subcommand] [args] --agent
    ```
 4. If ambiguous, drill into subcommand help: `recipe-goat-pp-cli <command> --help`.
-
-<!-- pr-218-features -->
-## Agent Workflow Features
-
-This CLI exposes three shared agent-workflow capabilities patched in from cli-printing-press PR #218.
-
-### Named profiles
-
-Persist a set of flags under a name and reuse them across invocations.
-
-```bash
-# Save the current non-default flags as a named profile
-recipe-goat-pp-cli profile save <name>
-
-# Use a profile — overlays its values onto any flag you don't set explicitly
-recipe-goat-pp-cli --profile <name> <command>
-
-# List / inspect / remove
-recipe-goat-pp-cli profile list
-recipe-goat-pp-cli profile show <name>
-recipe-goat-pp-cli profile delete <name> --yes
-```
-
-Flag precedence: explicit flag > env var > profile > default.
-
-### --deliver
-
-Route command output to a sink other than stdout. Useful when an agent needs to hand a result to a file, a webhook, or another process without plumbing.
-
-```bash
-recipe-goat-pp-cli <command> --deliver file:/path/to/out.json
-recipe-goat-pp-cli <command> --deliver webhook:https://hooks.example/in
-```
-
-File sinks write atomically (tmp + rename). Webhook sinks POST `application/json` (or `application/x-ndjson` when `--compact` is set). Unknown schemes produce a structured refusal listing the supported set.
-
-### feedback
-
-Record in-band feedback about this CLI from the agent side of the loop. Local-only by default; safe to call without configuration.
-
-```bash
-recipe-goat-pp-cli feedback "what surprised you or tripped you up"
-recipe-goat-pp-cli feedback list         # show local entries
-recipe-goat-pp-cli feedback clear --yes  # wipe
-```
-
-Entries append to `~/.recipe-goat-pp-cli/feedback.jsonl` as JSON lines. When `RECIPE_GOAT_FEEDBACK_ENDPOINT` is set and either `--send` is passed or `RECIPE_GOAT_FEEDBACK_AUTO_SEND=true`, the entry is also POSTed upstream (non-blocking — local write always succeeds).
-

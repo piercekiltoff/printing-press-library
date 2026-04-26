@@ -11,17 +11,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newFoodsPromotedCmd(flags *rootFlags) *cobra.Command {
+func newFoodsSearchCmd(flags *rootFlags) *cobra.Command {
 	var flagQuery string
 	var flagPageSize int
 	var flagPageNumber int
 	var flagDataType string
 
 	cmd := &cobra.Command{
-		Use:     "foods",
+		Use:     "search",
 		Short:   "Search USDA FoodData Central for foods matching a query",
-		Long:    "Shortcut for 'foods search'. Search USDA FoodData Central for foods matching a query",
-		Example: "  recipe-goat-pp-cli foods",
+		Example: "  recipe-goat-pp-cli foods search",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.Flags().Changed("query") && !flags.dryRun {
 				return fmt.Errorf("required flag \"%s\" not set", "query")
@@ -49,24 +48,13 @@ func newFoodsPromotedCmd(flags *rootFlags) *cobra.Command {
 			if err != nil {
 				return classifyAPIError(err)
 			}
-			// Unwrap API response envelopes (e.g. {"status":"success","data":[...]})
-			// so output helpers see the inner data, not the wrapper.
-			data = extractResponseData(data)
-
-			// Print provenance to stderr
+			// Print provenance to stderr for human-facing output
 			{
 				var countItems []json.RawMessage
-				if json.Unmarshal(data, &countItems) != nil {
-					// Single object, not an array
-					countItems = []json.RawMessage{data}
-				}
+				_ = json.Unmarshal(data, &countItems)
 				printProvenance(cmd, len(countItems), prov)
 			}
-			// CSV bypasses JSON pipe path so --csv works when piped
-			if flags.csv {
-				return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
-			}
-			// For JSON output, wrap with provenance envelope
+			// For JSON output, wrap with provenance envelope before passing through flags
 			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
 				filtered := data
 				if flags.compact {
@@ -81,6 +69,7 @@ func newFoodsPromotedCmd(flags *rootFlags) *cobra.Command {
 				}
 				return printOutput(cmd.OutOrStdout(), wrapped, true)
 			}
+			// For all other output modes (table, csv, plain, quiet), use the standard pipeline
 			if wantsHumanTable(cmd.OutOrStdout(), flags) {
 				var items []map[string]any
 				if json.Unmarshal(data, &items) == nil && len(items) > 0 {
@@ -100,10 +89,6 @@ func newFoodsPromotedCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().IntVar(&flagPageSize, "page-size", 0, "Results per page (1–200)")
 	cmd.Flags().IntVar(&flagPageNumber, "page-number", 0, "Page number (1-indexed)")
 	cmd.Flags().StringVar(&flagDataType, "data-type", "", "Comma-separated list: Foundation,SR Legacy,Branded,Survey (FNDDS)")
-
-	// Wire sibling endpoints and sub-resources as subcommands
-	cmd.AddCommand(newFoodsGetCmd(flags))
-	cmd.AddCommand(newFoodsListCmd(flags))
 
 	return cmd
 }

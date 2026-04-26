@@ -26,6 +26,14 @@ func IsUUID(s string) bool {
 	return uuidPattern.MatchString(s)
 }
 
+// StoreSchemaVersion is the on-disk schema version this binary understands.
+// It is stamped into SQLite's PRAGMA user_version on fresh databases and
+// checked on every open. Bump this whenever a migration changes table
+// shape — adding columns, dropping indexes, changing FTS5 tokenizers —
+// so an older binary refuses to open a newer database rather than silently
+// producing wrong results against a schema it cannot read.
+const StoreSchemaVersion = 1
+
 type Store struct {
 	db   *sql.DB
 	path string
@@ -59,7 +67,133 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+// Path returns the on-disk path of the backing SQLite file.
+func (s *Store) Path() string {
+	return s.path
+}
+
+// DB exposes the underlying *sql.DB for callers that need to run ad-hoc
+// queries (e.g., doctor's cache inspection, share snapshot import).
+// Callers must not call Close on the returned handle.
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
+
+// SchemaVersion reads PRAGMA user_version, which is stamped by migrate().
+// A zero value means the database predates the schema-version gate — not
+// a bug, but the caller may want to warn.
+func (s *Store) SchemaVersion() (int, error) {
+	var v int
+	if err := s.db.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
+		return 0, fmt.Errorf("read user_version: %w", err)
+	}
+	return v, nil
+}
+
+// setSchemaVersion stamps PRAGMA user_version. The value is not parameterizable
+// in SQLite's PRAGMA syntax, so it is formatted into the statement; migrate()
+// only calls this with the compile-time StoreSchemaVersion constant, so there
+// is no untrusted input.
+func (s *Store) setSchemaVersion(version int) error {
+	stmt := fmt.Sprintf(`PRAGMA user_version = %d`, version)
+	if _, err := s.db.Exec(stmt); err != nil {
+		return fmt.Errorf("stamp user_version: %w", err)
+	}
+	return nil
+}
+
+// ensureColumn adds a column to an existing table if it isn't already
+// present. It is the upgrade-path safety valve for schema additions:
+// CREATE TABLE IF NOT EXISTS is a no-op when the table already exists, so
+// columns added by newer binaries (e.g. parent_id from the dependent-
+// resources work) never land on databases created by older binaries —
+// which then trip "no such column" when a follow-on CREATE INDEX runs.
+//
+// Skips silently if the table doesn't yet exist (fresh install — the
+// CREATE TABLE migration will create it with the column already declared)
+// or if the column already exists.
+func (s *Store) ensureColumn(table, column, decl string) error {
+	var name string
+	err := s.db.QueryRow(
+		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`, table,
+	).Scan(&name)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("checking table %s: %w", table, err)
+	}
+
+	rows, err := s.db.Query(fmt.Sprintf(`PRAGMA table_info("%s")`, table))
+	if err != nil {
+		return fmt.Errorf("table_info %s: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var n, typ string
+		var notnull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &n, &typ, &notnull, &dflt, &pk); err != nil {
+			return fmt.Errorf("scan table_info %s: %w", table, err)
+		}
+		if n == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterating table_info %s: %w", table, err)
+	}
+
+	if _, err := s.db.Exec(fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, table, column, decl)); err != nil {
+		// A concurrent Open() may have added the column between our
+		// PRAGMA check and this ALTER. SQLite returns SQLITE_ERROR with
+		// "duplicate column name", which busy_timeout does not retry.
+		// The DB is now in the desired state regardless of who won.
+		if strings.Contains(err.Error(), "duplicate column name") {
+			return nil
+		}
+		return fmt.Errorf("add column %s.%s: %w", table, column, err)
+	}
+	return nil
+}
+
+// backfillColumns adds columns that newer binaries declare but that
+// pre-existing databases (created before those columns were added) lack.
+// Must run before the migrations slice so that subsequent CREATE INDEX
+// statements referencing the column can succeed against the upgraded
+// table. Idempotent: safe to call on fresh DBs (table-not-found short-
+// circuit) and on already-current DBs (column-exists short-circuit).
+//
+// Table names are emitted bare (no safeName) — ensureColumn double-quotes
+// them at SQL emit time and uses parameter binding for the sqlite_master
+// lookup, so the values flow as Go string literals first and SQL
+// identifiers second. Wrapping with safeName here would embed literal
+// double-quote characters into the Go string and break compilation for
+// any spec whose dependent-resource snake_cased name is a SQL reserved
+// word.
+func (s *Store) backfillColumns() error {
+	for _, c := range []struct{ table, column, decl string }{} {
+		if err := s.ensureColumn(c.table, c.column, c.decl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Store) migrate() error {
+	current, err := s.SchemaVersion()
+	if err != nil {
+		return fmt.Errorf("reading schema version: %w", err)
+	}
+	if current > StoreSchemaVersion {
+		return fmt.Errorf("database schema version %d is newer than supported version %d; upgrade the CLI binary or open an older database", current, StoreSchemaVersion)
+	}
+
+	if err := s.backfillColumns(); err != nil {
+		return fmt.Errorf("backfilling columns: %w", err)
+	}
+
 	migrations := []string{
 		`CREATE TABLE IF NOT EXISTS resources (
 			id TEXT PRIMARY KEY,
@@ -92,7 +226,7 @@ func (s *Store) migrate() error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_foods_fdc_id ON foods(fdc_id)`,
 
-		// Recipe aggregation schema (Phase 3).
+		// Recipe aggregation schema (Phase 3) — hand-extended from the generator scaffold.
 		`CREATE TABLE IF NOT EXISTS recipes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			url TEXT UNIQUE NOT NULL,
@@ -163,6 +297,14 @@ func (s *Store) migrate() error {
 		if _, err := s.db.Exec(m); err != nil {
 			return fmt.Errorf("migration failed: %w", err)
 		}
+	}
+	// Stamp the schema version after successful migration. On a fresh DB
+	// this writes 1; on an already-stamped DB this is a no-op write of the
+	// same value. An older DB with user_version = 0 and pre-existing tables
+	// gets stamped here without any data rewrites because the migrations
+	// above are idempotent via CREATE TABLE IF NOT EXISTS.
+	if err := s.setSchemaVersion(StoreSchemaVersion); err != nil {
+		return err
 	}
 	return nil
 }
@@ -315,6 +457,32 @@ func lookupFieldValue(obj map[string]any, snakeKey string) any {
 	return nil
 }
 
+// upsertFoodsTx writes the typed-table portion of a foods upsert
+// inside an existing transaction. The caller is responsible for the generic
+// resources insert (via upsertGenericResourceTx) and for committing the tx.
+// Splitting this out lets UpsertBatch dispatch typed inserts per item without
+// opening a per-item transaction.
+func (s *Store) upsertFoodsTx(tx *sql.Tx, id string, obj map[string]any, data json.RawMessage) error {
+	if _, err := tx.Exec(
+		`INSERT INTO foods (id, data, synced_at, query, page_size, page_number, data_type, fdc_id, nutrients)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		 ON CONFLICT(id) DO UPDATE SET data = excluded.data, synced_at = excluded.synced_at, query = excluded.query, page_size = excluded.page_size, page_number = excluded.page_number, data_type = excluded.data_type, fdc_id = excluded.fdc_id, nutrients = excluded.nutrients`,
+		id,
+		string(data),
+		time.Now(),
+		lookupFieldValue(obj, "query"),
+		lookupFieldValue(obj, "page_size"),
+		lookupFieldValue(obj, "page_number"),
+		lookupFieldValue(obj, "data_type"),
+		lookupFieldValue(obj, "fdc_id"),
+		lookupFieldValue(obj, "nutrients"),
+	); err != nil {
+		return fmt.Errorf("insert into foods: %w", err)
+	}
+
+	return nil
+}
+
 // UpsertFoods inserts or updates a foods record with domain-specific columns.
 func (s *Store) UpsertFoods(data json.RawMessage) error {
 	var obj map[string]any
@@ -336,22 +504,7 @@ func (s *Store) UpsertFoods(data json.RawMessage) error {
 	if err := s.upsertGenericResourceTx(tx, "foods", id, data); err != nil {
 		return err
 	}
-
-	_, err = tx.Exec(
-		`INSERT INTO foods (id, data, synced_at, query, page_size, page_number, data_type, fdc_id, nutrients)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		 ON CONFLICT(id) DO UPDATE SET data = excluded.data, synced_at = excluded.synced_at, query = excluded.query, page_size = excluded.page_size, page_number = excluded.page_number, data_type = excluded.data_type, fdc_id = excluded.fdc_id, nutrients = excluded.nutrients`,
-		id,
-		string(data),
-		time.Now(),
-		lookupFieldValue(obj, "query"),
-		lookupFieldValue(obj, "page_size"),
-		lookupFieldValue(obj, "page_number"),
-		lookupFieldValue(obj, "data_type"),
-		lookupFieldValue(obj, "fdc_id"),
-		lookupFieldValue(obj, "nutrients"),
-	)
-	if err != nil {
+	if err := s.upsertFoodsTx(tx, id, obj, data); err != nil {
 		return err
 	}
 
@@ -360,6 +513,12 @@ func (s *Store) UpsertFoods(data json.RawMessage) error {
 
 // UpsertBatch inserts or replaces multiple records in a single transaction.
 // This is 10-100x faster than individual Upsert calls for bulk operations.
+//
+// For resource types that have a domain-specific typed table, the per-item
+// generic insert is followed by a dispatch to the matching upsert<Pascal>Tx
+// inside the same transaction. Without that dispatch, paginated syncs would
+// only populate the generic resources table — typed tables (and indexed
+// columns like parent_id added by dependent-resource sync) would stay empty.
 func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -389,26 +548,15 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) error 
 			continue
 		}
 
-		_, err := tx.Exec(
-			`INSERT OR REPLACE INTO resources (id, resource_type, data, synced_at, updated_at)
-			 VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-			id, resourceType, string(item),
-		)
-		if err != nil {
+		if err := s.upsertGenericResourceTx(tx, resourceType, id, item); err != nil {
 			return fmt.Errorf("upserting %s/%s: %w", resourceType, id, err)
 		}
 
-		// Update FTS index (non-fatal — matches upsertGenericResourceTx pattern).
-		// Use explicit rowid for FTS5 compatibility with modernc.org/sqlite.
-		ftsRowid := ftsRowID(id)
-		if _, ftsErr := tx.Exec(`DELETE FROM resources_fts WHERE rowid = ?`, ftsRowid); ftsErr != nil {
-			fmt.Fprintf(os.Stderr, "warning: FTS index cleanup failed for %s/%s: %v\n", resourceType, id, ftsErr)
-		}
-		if _, ftsErr := tx.Exec(
-			`INSERT INTO resources_fts (rowid, id, resource_type, content) VALUES (?, ?, ?, ?)`,
-			ftsRowid, id, resourceType, string(item),
-		); ftsErr != nil {
-			fmt.Fprintf(os.Stderr, "warning: FTS index update failed for %s/%s: %v\n", resourceType, id, ftsErr)
+		switch resourceType {
+		case "foods":
+			if err := s.upsertFoodsTx(tx, id, obj, item); err != nil {
+				return fmt.Errorf("typed upsert for %s/%s: %w", resourceType, id, err)
+			}
 		}
 	}
 

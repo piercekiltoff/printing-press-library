@@ -1,40 +1,24 @@
 # Recipe Goat CLI
 
-**Find the best version of any recipe across curated cuisine-authority sites — then plan, shop, and cook with a local kitchen companion.**
+**Find the best version of any recipe across 37 trusted sites — then plan, shop, and cook with a local kitchen companion.**
 
-Recipe GOAT aggregates a curated set of independent, cuisine-authoritative recipe sites — Nagi (RecipeTin Eats), Swasthi (Indian Healthy Recipes), Elaine (China Sichuan Food), The Woks of Life, Just One Cookbook, Sally's Baking Addiction, King Arthur Baking, Budget Bytes, BBC Food, and more — ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. When users paste URLs from bot-detection-gated sites (allrecipes, food52, etc.), archive.org's Wayback Machine is used to recover the content. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution aggregation), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
+Recipe GOAT aggregates 37 of the web's most trusted recipe sites (King Arthur, Serious Eats, Budget Bytes, Smitten Kitchen, Food52, AllRecipes, Food Network, Simply Recipes, EatingWell, BBC Good Food, Bon Appétit, Epicurious, and 25 more), ranks results by merged trust + rating + review-count signals, and builds a local SQLite cookbook that powers pantry match, cook log, meal plans, and aisle-grouped shopping lists. Unique commands like `goat` (best-version ranker), `sub` (cross-site substitution aggregation), `tonight` (decision-fatigue killer), and `cookbook match --have` (pantry match) solve problems no single recipe site can.
 
 ## Install
 
 ### Go
 
 ```
-go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat-pp-cli/cmd/recipe-goat-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/cmd/recipe-goat-pp-cli@latest
 ```
 
 ### Binary
 
 Download from [Releases](https://github.com/mvanhorn/printing-press-library/releases).
 
-## Optional: USDA API Key (nutrition backfill)
+## Authentication
 
-**All core commands work without any setup.** The API key below is only needed to unlock one feature: nutrition backfill when a recipe site omits macros.
-
-### What the key unlocks
-
-`recipe get <url> --nutrition` computes per-serving calories/protein/carbs/fat from USDA FoodData Central when the source recipe doesn't publish them. Useful because roughly 30% of recipes across the supported sites omit nutrition. Without the key you'll see `[nutrition source: site]` when it's published, or `[nutrition source: unavailable]` when it's not.
-
-### Get a key (free, 1 minute)
-
-1. Sign up at https://fdc.nal.usda.gov/api-key-signup — no payment required, 3,500 requests/hour quota.
-2. Copy the key from the confirmation email.
-3. Export it:
-   ```bash
-   export USDA_FDC_API_KEY=<your-key>
-   ```
-   Or persist it with `recipe-goat-pp-cli auth set-token <your-key>`.
-
-Verify with `recipe-goat-pp-cli doctor` — Auth should show `INFO Auth: optional — not configured` before you set the key, and `OK Auth: configured` after.
+USDA FoodData Central (free, 3,500 req/hr) enables nutrition backfill when a recipe site omits macros. Get a key at https://fdc.nal.usda.gov/api-key-signup and export USDA_FDC_API_KEY. All other features work without any authentication.
 
 ## Quick Start
 
@@ -43,7 +27,7 @@ Verify with `recipe-goat-pp-cli doctor` — Auth should show `INFO Auth: optiona
 recipe-goat-pp-cli doctor
 
 
-# Rank the best version across the curated corpus
+# Rank the best version across 37 sites
 recipe-goat-pp-cli goat "chicken tikka masala" --limit 5
 
 
@@ -70,26 +54,24 @@ These capabilities aren't available in any other tool for this API.
 
 ### Cross-site intelligence
 
-- **`goat`** — Query any dish across curated recipe sites and rank results by normalized rating × review count × site trust × recency.
+- **`goat`** — Query any dish across 37 recipe sites and rank surviving Recipe-JSON-LD candidates by `0.55·rating + 0.25·log(reviews+1)/log(1000) + 0.15·site_trust + 0.05·recency`. Rating and review count come from each source page's Schema.org `aggregateRating`. `site_trust` is hand-curated (see `internal/recipes/sites.go`): editorially-curated chef/baker sites get 0.9–0.95, mass-market crowdsourced aggregators (AllRecipes, Food Network, Simply Recipes, EatingWell) get 0.70–0.75. Two trust-aware adjustments run before scoring: (1) curated sites with no Schema.org rating get an imputed 4.5/100 baseline (editorial vetting ≈ 100 implicit favorable reviews); (2) aggregator-site ratings are Bayesian-smoothed toward 4.0 with credibility C=200 — so AllRecipes "5.0 with 100 reviews" effectively becomes 4.33, while "4.7 with 5000 reviews" stays 4.67. Net effect: a niche curated recipe with no ratings can outrank a mid-tier AllRecipes result, but a heavily-reviewed AllRecipes blockbuster still wins.
 
   _Use this when you need the single best version of a dish — the agent gets structured results with provenance and trust signals instead of guessing from a web search._
 
   ```bash
   recipe-goat-pp-cli goat "chicken tikka masala" --limit 5 --json
   ```
-- **`sub`** — Aggregate ingredient substitutions from King Arthur Baking and other trusted baking-science sources. Ranked by source trust with ratios and context.
+- **`sub`** — Curated ingredient-substitution table sourced from King Arthur, Serious Eats, Budget Bytes, Minimalist Baker, and AllRecipes community reviews. Hand-curated and shipped with the binary (no live fetching at query time); ranked by source trust with ratios and context filters.
 
   _When a recipe needs a sub, agents can pick the best one given the cooking context (baking vs marinade) instead of suggesting the first hit on Google._
 
   ```bash
   recipe-goat-pp-cli sub buttermilk --context baking
   ```
-- **`recipe reviews`** — Surface the top modifications cooks actually made to a recipe ("added an egg: 22 cooks; baked 5 min less: 17; honey instead of sugar: 14").
-
-  _Agents give the user the collective wisdom of reviewers instead of just star ratings._
+- **`recipe reviews`** *(planned, work-in-progress — emits a stub today, no review aggregation yet)* — Will surface the top modifications cooks made to a recipe (e.g., "added an egg: 22 cooks; baked 5 min less: 17") once the source-review fetcher is wired. Today the command returns a clearly-labeled placeholder so agents don't depend on it.
 
   ```bash
-  recipe-goat-pp-cli recipe reviews <id> --limit 10
+  recipe-goat-pp-cli recipe reviews <id> --limit 10  # emits stub message in v1
   ```
 - **`recipe get --nutrition`** — When a site omits nutrition, parse ingredients, match USDA FoodData Central IDs, compute per-serving macros locally.
 
@@ -98,7 +80,7 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   recipe-goat-pp-cli recipe get https://www.budgetbytes.com/creamy-mushroom-pasta/ --nutrition
   ```
-- **`recipe get (auto)`** — Flag out-of-season ingredients inline ("⚠ asparagus is out of season in November — peak April–June") and suggest in-season swaps.
+- **`recipe get`** — Flag out-of-season ingredients inline ("⚠ asparagus is out of season in November — peak April–June") and suggest in-season swaps.
 
   _Agents surface cost + quality signals the user wouldn't otherwise see._
 
@@ -136,12 +118,10 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   recipe-goat-pp-cli meal-plan shopping-list --week --export md
   ```
-- **`recipe cost`** — Rough cost per serving using Budget Bytes line-item data plus USDA retail averages as fallback. Always shows an honesty band (±30%).
-
-  _Agents can triage recipes by rough cost without pretending to precision grocery data doesn't provide._
+- **`recipe cost`** *(approximate, work-in-progress — placeholder heuristic only)* — Will eventually estimate cost per serving from Budget Bytes line-item data plus USDA retail averages. Today the command emits a clearly-labeled stub with a note that ingredient-price data integration is not yet wired.
 
   ```bash
-  recipe-goat-pp-cli recipe cost <id>  # output: '$6–$9 for 4 servings (±30%)'
+  recipe-goat-pp-cli recipe cost <id>  # emits placeholder + wip note in v1
   ```
 
 ## Usage
@@ -186,12 +166,9 @@ This CLI is designed for AI agent consumption:
 - **Pipeable** - `--json` output to stdout, errors to stderr
 - **Filterable** - `--select id,name` returns only fields you need
 - **Previewable** - `--dry-run` shows the request without sending
-- **Retryable** - creates return "already exists" on retry, deletes return "already deleted"
-- **Confirmable** - `--yes` for explicit confirmation of destructive actions
-- **Piped input** - `echo '{"key":"value"}' | recipe-goat-pp-cli <resource> create --stdin`
-- **Cacheable** - GET responses cached for 5 minutes, bypass with `--no-cache`
+- **Read-only by default** - this CLI does not create, update, delete, publish, send, or mutate remote resources
+- **Offline-friendly** - sync/search commands can use the local SQLite store when available
 - **Agent-safe by default** - no colors or formatting unless `--human-friendly` is set
-- **Progress events** - paginated commands emit NDJSON events to stderr in default mode
 
 Exit codes: `0` success, `2` usage error, `3` not found, `4` auth error, `5` API error, `7` rate limited, `10` config error.
 
@@ -238,26 +215,23 @@ Environment variables:
 - `USDA_FDC_API_KEY`
 
 ## Troubleshooting
-
 **Authentication errors (exit code 4)**
 - Run `recipe-goat-pp-cli doctor` to check credentials
 - Verify the environment variable is set: `echo $USDA_FDC_API_KEY`
-
 **Not found errors (exit code 3)**
 - Check the resource ID is correct
 - Run the `list` command to see available items
 
-**Rate limit errors (exit code 7)**
-- The CLI auto-retries with exponential backoff
-- If persistent, wait a few minutes and try again
-
 ### API-specific
 
-- **HTTP 402 or 403 on AllRecipes / Simply Recipes / EatingWell / Food52 / FoodNetwork fetches** — These sites serve Cloudflare/Akamai bot-detection challenges to non-browser clients and are not in the default `goat` fan-out. When you paste a URL from one of them into `recipe get`, the CLI automatically falls back to archive.org's Wayback Machine and prints `warn: archive fallback: <url>` on stderr so you know the content came from an archived snapshot rather than live.
-- **HTTP 403 on Serious Eats fetches** — Still in the default corpus but intermittently Akamai-gated. Run `recipe-goat-pp-cli doctor` to see current reachability; your `goat` ranking still ranks across reachable sites.
+- **HTTP 402 or 403 on AllRecipes / Simply Recipes / EatingWell / Serious Eats fetches** — These are Dotdash Meredith sites with TLS-fingerprint bot detection. Run `recipe-goat-pp-cli doctor` to see per-site reachability. The CLI falls back to other sources automatically; your `goat` ranking will show results from reachable sites.
 - **Nutrition missing or marked `[source: site]` with obviously wrong numbers** — Pass `--nutrition` to force USDA backfill. Requires USDA_FDC_API_KEY. Mark suspect recipes with `cookbook tag <id> nutrition-suspect`.
-- **`goat` query returns nothing** — Check `--site` filter if set. Try broader terms. Use `search --debug` to see per-site fetch attempts and which sites fell back to cache or failed.
-- **Shopping list has duplicate entries with different units** — Run `cookbook ingredients canonicalize` to re-run the parser. If an ingredient consistently fails, add to `~/.config/recipe-goat-pp-cli/ingredient-aliases.toml`.
+- **`goat` query returns nothing** — Check `--site` filter if set. Try broader terms. Run `doctor` to see per-site reachability; sites with `WARN` are the likely zero-result culprits. Note: Food52's search HTML is JS-rendered — `goat`/`search` returns 0 from Food52, but `recipe get <food52-url>` and `save <food52-url>` work normally.
+- **Shopping list has duplicate entries with different units** — Unit reconciliation is wip; the v1 aggregator counts ingredient lines verbatim. Until that lands, edit the export manually or pass `--csv` and reconcile in a spreadsheet.
+
+## HTTP Transport
+
+This CLI uses Chrome-compatible HTTP transport for browser-facing endpoints. It does not require a resident browser process for normal API calls.
 
 ---
 
@@ -274,12 +248,3 @@ This CLI was built by studying these projects and resources:
 - [**marcon29/CLI-dinner-finder-grocery-list**](https://github.com/marcon29/CLI-dinner-finder-grocery-list) — Ruby (5 stars)
 
 Generated by [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press)
-
-<!-- pr-218-features -->
-## Agent workflow features
-
-This CLI was patched to add these agent-workflow capabilities (see [`printing-press patch`](https://github.com/mvanhorn/cli-printing-press/pull/221)):
-
-- **Named profiles** — save a set of flags under a name and reuse them: `recipe-goat-pp-cli profile save <name> --<flag> <value>`, then `recipe-goat-pp-cli --profile <name> <command>`. Flag precedence: explicit flag > env var > profile > default.
-- **`--deliver`** — route command output to a sink other than stdout. Values: `file:<path>` writes atomically via tmp+rename; `webhook:<url>` POSTs as JSON (or NDJSON with `--compact`).
-- **`feedback`** — record in-band feedback about the CLI. Entries append as JSON lines to `~/.recipe-goat-pp-cli/feedback.jsonl`. When `RECIPE_GOAT_FEEDBACK_ENDPOINT` is set and either `--send` is passed or `RECIPE_GOAT_FEEDBACK_AUTO_SEND=true`, the entry is also POSTed upstream.

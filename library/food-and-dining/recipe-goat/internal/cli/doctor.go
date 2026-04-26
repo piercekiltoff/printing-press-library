@@ -5,14 +5,15 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/recipes"
-	"github.com/spf13/cobra"
 )
 
 func newDoctorCmd(flags *rootFlags) *cobra.Command {
@@ -126,12 +127,26 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			// Recipe site reachability — probes every site in the registry with
 			// a short-timeout HEAD. Results land in report["sites"] for JSON,
 			// and in the human output block below.
+			//
+			// Surf-Chrome impersonation: probe drift between this command and
+			// the real Fetch path was a documented bug class — ChromeUA over
+			// stdlib transport returned "blocked" for sites Surf actually
+			// reaches. Use the same client builder used by goat/search/recipe.
 			siteStatuses := make([]map[string]any, 0, len(recipes.Sites))
-			probeClient := &http.Client{Timeout: 5 * time.Second}
+			probeClient := httpClientForSites(5 * time.Second)
 			for _, s := range recipes.Sites {
 				u := "https://www." + s.Hostname + "/"
-				req, _ := http.NewRequest("HEAD", u, nil)
+				// Use GET, not HEAD: many recipe-site CDNs (BBC, RecipeTin
+				// Eats, AllRecipes, Serious Eats, The Kitchn) terminate
+				// HEAD requests with a TLS shutdown / EOF even though they
+				// serve GET cleanly. Doctor was reporting these as
+				// "unreachable EOF" when they were actually fine — a probe
+				// drift bug. GET with a 1-byte Range works for sites that
+				// support it; for those that don't, we still read the
+				// headers and discard the body.
+				req, _ := http.NewRequest("GET", u, nil)
 				req.Header.Set("User-Agent", recipes.ChromeUA)
+				req.Header.Set("Range", "bytes=0-1023")
 				status := "reachable"
 				code := 0
 				resp, err := probeClient.Do(req)
@@ -139,8 +154,12 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 					status = fmt.Sprintf("unreachable (%s)", err)
 				} else {
 					code = resp.StatusCode
+					_, _ = io.Copy(io.Discard, resp.Body)
 					resp.Body.Close()
-					if code >= 400 {
+					if code >= 400 && code != 416 {
+						// 416 Range Not Satisfiable is a partial-response
+						// quirk on sites that don't support Range — treat
+						// as reachable since headers came back.
 						status = fmt.Sprintf("blocked (HTTP %d)", code)
 					}
 				}

@@ -68,6 +68,13 @@ func localProvenance(db *store.Store, resourceType, reason string) DataProvenanc
 	return prov
 }
 
+func attachFreshness(prov DataProvenance, flags *rootFlags) DataProvenance {
+	if flags != nil {
+		prov.Freshness = flags.freshnessMeta
+	}
+	return prov
+}
+
 // resolveRead dispatches a GET request to either the live API or local store
 // based on the --data-source flag. Returns the response data and provenance metadata.
 //
@@ -81,32 +88,32 @@ func localProvenance(db *store.Store, resourceType, reason string) DataProvenanc
 func resolveRead(c *client.Client, flags *rootFlags, resourceType string, isList bool, path string, params map[string]string) (json.RawMessage, DataProvenance, error) {
 	switch flags.dataSource {
 	case "local":
-		return resolveLocal(resourceType, isList, path, params, "user_requested")
+		data, prov, err := resolveLocal(resourceType, isList, path, params, "user_requested")
+		return data, attachFreshness(prov, flags), err
 
 	case "live":
 		data, err := c.Get(path, params)
 		if err != nil {
 			return nil, DataProvenance{}, err
 		}
-		writeThroughCache(resourceType, data)
-		return data, DataProvenance{Source: "live"}, nil
+		return data, attachFreshness(DataProvenance{Source: "live"}, flags), nil
 
 	default: // "auto"
 		data, err := c.Get(path, params)
 		if err == nil {
 			writeThroughCache(resourceType, data)
-			return data, DataProvenance{Source: "live"}, nil
+			return data, attachFreshness(DataProvenance{Source: "live"}, flags), nil
 		}
 		if !isNetworkError(err) {
 			// HTTP 4xx/5xx errors propagate — not a fallback case
 			return nil, DataProvenance{}, err
 		}
 		// Network error — try local fallback
-		localData, prov, localErr := resolveLocal(resourceType, isList, path, params, "api_unreachable")
-		if localErr != nil {
+		fallbackData, fallbackProv, fallbackErr := resolveLocal(resourceType, isList, path, params, "api_unreachable")
+		if fallbackErr != nil {
 			return nil, DataProvenance{}, fmt.Errorf("API unreachable and no local data. Run 'recipe-goat-pp-cli sync' to enable offline access.\n\nOriginal error: %w", err)
 		}
-		return localData, prov, nil
+		return fallbackData, attachFreshness(fallbackProv, flags), nil
 	}
 }
 
@@ -115,30 +122,30 @@ func resolveRead(c *client.Client, flags *rootFlags, resourceType string, isList
 func resolvePaginatedRead(c *client.Client, flags *rootFlags, resourceType string, path string, params map[string]string, fetchAll bool, cursorParam, nextCursorPath, hasMoreField string) (json.RawMessage, DataProvenance, error) {
 	switch flags.dataSource {
 	case "local":
-		return resolveLocal(resourceType, true, path, params, "user_requested")
+		data, prov, err := resolveLocal(resourceType, true, path, params, "user_requested")
+		return data, attachFreshness(prov, flags), err
 
 	case "live":
 		data, err := paginatedGet(c, path, params, fetchAll, cursorParam, nextCursorPath, hasMoreField)
 		if err != nil {
 			return nil, DataProvenance{}, err
 		}
-		writeThroughCache(resourceType, data)
-		return data, DataProvenance{Source: "live"}, nil
+		return data, attachFreshness(DataProvenance{Source: "live"}, flags), nil
 
 	default: // "auto"
 		data, err := paginatedGet(c, path, params, fetchAll, cursorParam, nextCursorPath, hasMoreField)
 		if err == nil {
 			writeThroughCache(resourceType, data)
-			return data, DataProvenance{Source: "live"}, nil
+			return data, attachFreshness(DataProvenance{Source: "live"}, flags), nil
 		}
 		if !isNetworkError(err) {
 			return nil, DataProvenance{}, err
 		}
-		localData, prov, localErr := resolveLocal(resourceType, true, path, params, "api_unreachable")
-		if localErr != nil {
+		fallbackData, fallbackProv, fallbackErr := resolveLocal(resourceType, true, path, params, "api_unreachable")
+		if fallbackErr != nil {
 			return nil, DataProvenance{}, fmt.Errorf("API unreachable and no local data. Run 'recipe-goat-pp-cli sync' to enable offline access.\n\nOriginal error: %w", err)
 		}
-		return localData, prov, nil
+		return fallbackData, attachFreshness(fallbackProv, flags), nil
 	}
 }
 

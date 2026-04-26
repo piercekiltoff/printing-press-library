@@ -309,8 +309,8 @@
     {
       "name": "recipe-goat",
       "category": "food-and-dining",
-      "api": "Cross-site recipe aggregator (15 trusted sites) + USDA FoodData Central",
-      "description": "Find the best version of any recipe across 15 trusted sites \u2014 rank by trust \u00d7 rating \u00d7 reviews, build a local SQLite cookbook with pantry match, meal plans, cook log, substitutions, and USDA-backed nutrition backfill",
+      "api": "Cross-site recipe aggregator (37 trusted sites: King Arthur, Serious Eats, Smitten Kitchen, AllRecipes, Food52, BBC Food, EatingWell, Food Network, and 29 more) + USDA FoodData Central",
+      "description": "Find the best version of any recipe across 37 trusted sites \u2014 trust-aware ranking weights real reader signal at 80% and editorial trust at 15% (curated chef/baker sites win tie-break over crowdsourced aggregators). Builds a local SQLite cookbook with pantry match, meal plans, cook log, substitutions, and USDA-backed nutrition backfill. Powered by Surf-Chrome HTTP transport \u2014 bypasses TLS-fingerprint bot detection that previously blocked Dotdash properties.",
       "path": "library/food-and-dining/recipe-goat",
       "mcp": {
         "binary": "recipe-goat-pp-mcp",
@@ -320,7 +320,10 @@
         "env_vars": [
           "USDA_FDC_API_KEY"
         ],
-        "mcp_ready": "full"
+        "mcp_ready": "full",
+        "manifest_checksum": "sha256:53a55af50647137cf7df0c57a65ba4b4458d4364b545dad54045e7faeade93fb",
+        "spec_format": "internal",
+        "manifest_url": "library/food-and-dining/recipe-goat/tools-manifest.json"
       }
     },
     {

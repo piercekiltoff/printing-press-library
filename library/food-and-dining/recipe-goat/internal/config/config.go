@@ -60,7 +60,6 @@ func Load(configPath string) (*Config, error) {
 	if v := os.Getenv("RECIPE_GOAT_BASE_URL"); v != "" {
 		cfg.BaseURL = v
 	}
-
 	return cfg, nil
 }
 

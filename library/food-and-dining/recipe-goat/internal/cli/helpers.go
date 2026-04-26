@@ -7,18 +7,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"io"
 	"os"
 	"path/filepath"
+	"github.com/mvanhorn/printing-press-library/library/food-and-dining/recipe-goat/internal/client"
 	"regexp"
 	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
 	"unicode"
-
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var As = errors.As
@@ -130,6 +130,78 @@ func sanitizeErrorBody(msg string) string {
 	credPatterns := regexp.MustCompile(`(?i)(sk-[a-zA-Z0-9]{8,}|sk_live_[a-zA-Z0-9]+|Bearer\s+[a-zA-Z0-9._\-]+|key=[a-zA-Z0-9._\-]+)`)
 	msg = credPatterns.ReplaceAllString(msg, "[REDACTED]")
 	return msg
+}
+
+// accessWarning describes an API access-denial that sync converts into a
+// non-fatal warning. It carries enough structured data for the sync_warning
+// JSON event without parsing free-form error strings downstream.
+type accessWarning struct {
+	Status  int    // HTTP status when applicable; 0 for GraphQL field-level denials.
+	Reason  string // "forbidden" | "insufficient_access" | "unauthenticated"
+	Message string // human-readable detail (the API's body or GraphQL error message)
+}
+
+// accessDenialPatterns matches API error bodies that indicate the request was
+// rejected for access-policy reasons rather than for input validity. Matching
+// is case-insensitive and uses word boundaries so common substrings inside
+// unrelated tokens (e.g. "author", "pagination_token", "insufficient_funds")
+// do not produce false positives. The set deliberately excludes brand names —
+// vendor-specific phrasings should be addressed at the spec/profiler level,
+// not in this universal classifier.
+var accessDenialPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`\bforbidden\b`),
+	regexp.MustCompile(`\bunauthorized\b`),
+	regexp.MustCompile(`\bnot[\s_-]?authorized\b`),
+	regexp.MustCompile(`\bpermission[\s_-]?denied\b`),
+	regexp.MustCompile(`\baccess[\s_-]?denied\b`),
+	regexp.MustCompile(`\binsufficient[\s_-]?(scope|permission|privilege)`),
+	regexp.MustCompile(`\binvalid[\s_-]?scope\b`),
+	regexp.MustCompile(`\bmissing[\s_-]?scope\b`),
+	regexp.MustCompile(`\brequires?\s+(elevated|admin|enterprise|business|workspace|enterprise[\s_-]?tier)`),
+}
+
+// looksLikeAccessDenial reports whether body text describes an access-policy
+// rejection. Use it on response-body content (apiErr.Body), not on the full
+// error string — the request path can contain words like "auth" or "tokens"
+// that would produce false positives if the whole error message were scanned.
+func looksLikeAccessDenial(body string) bool {
+	lower := strings.ToLower(body)
+	for _, p := range accessDenialPatterns {
+		if p.MatchString(lower) {
+			return true
+		}
+	}
+	return false
+}
+
+// isSyncAccessWarning classifies err as an access-denial warning suitable for
+// sync's warn-and-continue path. It returns nil, false for any error that
+// should remain a hard sync failure: HTTP 401 (token-level auth failure
+// requiring re-auth), 5xx, network errors, and HTTP 400 responses whose
+// bodies do not match an access-policy pattern.
+//
+// Recognized warning shapes:
+//   - HTTP 403 (per-resource ACL rejection)
+//   - HTTP 400 + access-denial body keyword (insufficient scope, etc.)
+//   - GraphQL response carrying only access-denial extension codes
+func isSyncAccessWarning(err error) (*accessWarning, bool) {
+	if err == nil {
+		return nil, false
+	}
+
+	var apiErr *client.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.StatusCode {
+		case 403:
+			return &accessWarning{Status: 403, Reason: "forbidden", Message: apiErr.Body}, true
+		case 400:
+			if looksLikeAccessDenial(apiErr.Body) {
+				return &accessWarning{Status: 400, Reason: "insufficient_access", Message: apiErr.Body}, true
+			}
+		}
+	}
+
+	return nil, false
 }
 
 // classifyAPIError maps API errors to structured exit codes with actionable hints.
@@ -387,34 +459,6 @@ func printOutputWithFlags(w io.Writer, data json.RawMessage, flags *rootFlags) e
 		return printCSV(w, data)
 	}
 	return printOutput(w, data, flags.asJSON)
-}
-
-// extractResponseData unwraps common API response envelopes for display.
-// Many APIs return {"status":"success","data":[...]} instead of a bare array.
-// This extracts the inner data for output helpers (filterFields, compactFields,
-// printAutoTable) that expect arrays or flat objects.
-//
-// Only unwraps when a "status" field is present and indicates success — this
-// avoids false positives on APIs where "data" is a regular field (e.g., Stripe
-// returns {"data":[...],"has_more":true} where "data" is the list, not an
-// envelope wrapper).
-func extractResponseData(data json.RawMessage) json.RawMessage {
-	var envelope struct {
-		Status string          `json:"status"`
-		Data   json.RawMessage `json:"data"`
-	}
-	if err := json.Unmarshal(data, &envelope); err != nil {
-		return data
-	}
-	if envelope.Data == nil || envelope.Status == "" {
-		return data // No status field = not an envelope, might be regular "data" field
-	}
-	switch envelope.Status {
-	case "success", "ok", "OK", "Success":
-		return envelope.Data
-	default:
-		return data
-	}
 }
 
 // compactFields keeps only the most important fields for agent consumption.
@@ -1023,6 +1067,7 @@ type DataProvenance struct {
 	SyncedAt     *time.Time `json:"synced_at,omitempty"`     // when local data was last synced
 	Reason       string     `json:"reason,omitempty"`        // why local was used: "user_requested", "api_unreachable", "no_search_endpoint"
 	ResourceType string     `json:"resource_type,omitempty"` // which resource type was queried
+	Freshness    any        `json:"freshness,omitempty"`     // optional machine-owned freshness metadata for covered command paths
 }
 
 // printProvenance writes a one-line provenance message to stderr for TTY users.
@@ -1069,6 +1114,9 @@ func wrapWithProvenance(data json.RawMessage, prov DataProvenance) (json.RawMess
 	}
 	if prov.ResourceType != "" {
 		meta["resource_type"] = prov.ResourceType
+	}
+	if prov.Freshness != nil {
+		meta["freshness"] = prov.Freshness
 	}
 	envelope := map[string]any{
 		"results": json.RawMessage(data),

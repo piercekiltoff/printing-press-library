@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/enetx/surf"
 	"io"
 	"math"
 	"net/http"
@@ -130,13 +131,32 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("%s %s returned HTTP %d: %s", e.Method, e.Path, e.StatusCode, e.Body)
 }
 
+func newHTTPClient(timeout time.Duration, jar http.CookieJar) *http.Client {
+	builder := surf.NewClient().
+		Builder().
+		Impersonate().
+		Chrome().
+		Timeout(timeout)
+	if jar == nil {
+		builder = builder.Session()
+	}
+	surfClient := builder.Build().Unwrap()
+	httpClient := surfClient.Std()
+	httpClient.Timeout = timeout
+	if jar != nil {
+		httpClient.Jar = jar
+	}
+	return httpClient
+}
+
 func New(cfg *config.Config, timeout time.Duration, rateLimit float64) *Client {
 	homeDir, _ := os.UserHomeDir()
 	cacheDir := filepath.Join(homeDir, ".cache", "recipe-goat-pp-cli")
+	httpClient := newHTTPClient(timeout, nil)
 	return &Client{
 		BaseURL:    strings.TrimRight(cfg.BaseURL, "/"),
 		Config:     cfg,
-		HTTPClient: &http.Client{Timeout: timeout},
+		HTTPClient: httpClient,
 		cacheDir:   cacheDir,
 		limiter:    newAdaptiveLimiter(rateLimit),
 	}
@@ -163,6 +183,11 @@ func (c *Client) GetWithHeaders(path string, params map[string]string, headers m
 		c.writeCache(path, params, result)
 	}
 	return result, err
+}
+
+func (c *Client) ProbeGet(path string) (int, error) {
+	_, status, err := c.do("GET", path, nil, nil, nil)
+	return status, err
 }
 
 func (c *Client) cacheKey(path string, params map[string]string) string {
@@ -289,7 +314,6 @@ func (c *Client) do(method, path string, params map[string]string, body any, hea
 		for k, v := range headerOverrides {
 			req.Header.Set(k, v)
 		}
-		req.Header.Set("User-Agent", "recipe-goat-pp-cli/0.1.0")
 
 		resp, err := c.HTTPClient.Do(req)
 		if err != nil {
@@ -369,6 +393,13 @@ func (c *Client) dryRun(method, targetURL, path string, params map[string]string
 	}
 	fmt.Fprintf(os.Stderr, "\n(dry run - no request sent)\n")
 	return json.RawMessage(`{"dry_run": true}`), 0, nil
+}
+
+func (c *Client) ConfiguredTimeout() time.Duration {
+	if c.HTTPClient != nil && c.HTTPClient.Timeout > 0 {
+		return c.HTTPClient.Timeout
+	}
+	return 30 * time.Second
 }
 
 func (c *Client) authHeader() (string, error) {

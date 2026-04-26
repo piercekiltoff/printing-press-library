@@ -14,7 +14,7 @@ import (
 func newAuthCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "auth",
-		Short: "Manage the optional USDA_FDC_API_KEY (enables USDA nutrition backfill; not needed for core commands)",
+		Short: "Manage USDA_FDC_API_KEY credentials",
 	}
 
 	cmd.AddCommand(newAuthStatusCmd(flags))

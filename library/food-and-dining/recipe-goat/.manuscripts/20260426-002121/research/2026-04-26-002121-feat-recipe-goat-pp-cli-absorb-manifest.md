@@ -102,3 +102,36 @@ These are mentioned so the engineering scope is honest; they're not features in 
 - **32 user-facing commands** — down from 40 in v1 but substantially more *useful*
 - **Sources:** 15 recipe sites (tier-1 curl-friendly, tier-2 Condé Nast, tier-3 Dotdash best-effort) + USDA FoodData Central + TheMealDB
 - **No paid APIs. No headless Chrome. No login required for core features.**
+
+---
+
+## 2026-04-26 update — site list expansion (final)
+
+Since the original 2026-04-13 manifest, the printing-press generator now embeds `github.com/enetx/surf` with Chrome impersonation in every emitted HTTP client. Surf bypasses TLS-fingerprint bot detection that previously blocked Dotdash properties.
+
+**Initially planned**: re-add the user's three target sites — AllRecipes, Food52, Smitten Kitchen.
+
+**Actually delivered after re-probe**: every Tier 3 / "removed" site Surf could reach. The user's question "do tier 2/3 truly not work even with surf" surfaced systemic outdated information: Surf reaches **all 37 sites** in the registry today.
+
+**Sites added or promoted (tested live 2026-04-26 with Surf-Chrome):**
+
+| Site | Status before | Status now | Search results (brownies) |
+|---|---|---|---|
+| AllRecipes | excluded (Dotdash 403) | Tier 1 | 9+ real permalinks |
+| Food52 | excluded (CDN 429) | Tier 1 | 0 (search is JS-rendered; `recipe get`/`save` work fine) |
+| Food Network | excluded (429) | Tier 1 | 18 permalinks |
+| Simply Recipes | excluded (Dotdash) | Tier 1 | 3+ permalinks, recipe pages parse |
+| EatingWell | excluded (Dotdash) | Tier 1 | 14 permalinks, recipe pages parse |
+| Serious Eats | Tier 3 (best-effort) | Tier 1 | 16 permalinks |
+| Epicurious | Tier 2 with broken search URL | Tier 2 with `/search?q={q}` | 12 permalinks |
+| Smitten Kitchen | Tier 1 | Tier 1 (unchanged) | works as before |
+
+**Site count: 28 → 37.**
+
+**Doctor probe bug fixed**: doctor was using `HEAD` for site reachability but six sites (BBC Good Food, BBC Food, The Kitchn, RecipeTin Eats, AllRecipes, Serious Eats) reject HEAD with TLS shutdown / EOF while serving GET 200 cleanly. Doctor now uses `GET` with `Range: bytes=0-1023` so headers come back without pulling the whole page.
+
+**Tier label semantics changed**: the Tier 1/2/3 split was a reachability hierarchy in the pre-Surf world. With Surf in the transport, every site is reachable; tier is now a content-trust signal only.
+
+**Live verification**: `goat "brownies"` returns 59 of 61 validated recipe candidates across the expanded registry (was 51/52 across the 28-site baseline).
+
+No new transcendence features. No new commands. The 6 added/promoted sites flow through the existing fan-out (`goat`, `search --site <host>`, `recipe get <url>`, `save <url>`) and the same dedup/trust pipeline.

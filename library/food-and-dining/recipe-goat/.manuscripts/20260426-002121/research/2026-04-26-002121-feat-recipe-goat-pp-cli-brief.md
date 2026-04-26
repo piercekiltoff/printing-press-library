@@ -20,6 +20,30 @@ Every major recipe site publishes Schema.org JSON-LD for SEO. Every existing too
 | 3 — Dotdash hostile | AllRecipes, Simply Recipes, EatingWell, Serious Eats | 402/403 on automated requests; best-effort only, cache hits, document as optional |
 | API — free auth | USDA FoodData Central (key needed, free, 3,500 req/hr), TheMealDB (no key) | Essential for nutrition backfill; use as first-class data sources |
 
+## 2026-04-26 update — Surf-equipped HTTP unblocks Tier 3
+
+Since the original 2026-04-13 brief, the printing-press generator (now v2.3.6) wires `github.com/enetx/surf` with Chrome impersonation into every emitted client (`Impersonate().Chrome()`). The April CLI predated this and used `net/http` directly, which is why Dotdash properties (TLS-fingerprint bot detection) returned 403/429.
+
+**Re-probed 2026-04-26 against live sites** (raw output: `/tmp/printing-press/recipe-probe/results*.txt`):
+
+| Site | Plain Go client | Surf-Chrome client | Decision |
+|---|---|---|---|
+| AllRecipes | 403 on `/`; 404 on recipes | 200 + Recipe JSON-LD on permalinks; search returns real `/recipe/<id>/<slug>/` permalinks | ✅ Re-added to Sites |
+| Food52 | 429 on every URL | 200 + Recipe JSON-LD on real `/recipes/<id>-<slug>` permalinks; search HTML lacks recipe permalinks (JS-rendered) | ✅ Re-added; `recipe get`/`save` work; search returns 0 |
+| Food Network | (was excluded) | 200 on homepage, search returns 18 permalinks under `/recipes/<slug>-recipe-<id>` | ✅ Re-added |
+| Simply Recipes | (was excluded) | 200 on homepage, search returns recipe permalinks ending `-recipe-<numeric>`; recipe pages parse | ✅ Re-added |
+| EatingWell | (was excluded) | 200 on homepage, search returns 14 permalinks under `/recipe/<id>/<slug>/`; recipe pages parse | ✅ Re-added |
+| Serious Eats | (Tier 3 in registry) | 200 on homepage, search returns 16 real recipe permalinks | ✅ Promoted Tier 3 → Tier 1 |
+| Epicurious | already in Tier 2 | search URL was wrong (`/search/{q}` 404s); fixed to `/search?q={q}` returns 12 permalinks | 🔧 SearchURL fixed |
+| Bon Appétit, Gaz Oakley | already in Tier 2 | reachable | Unchanged |
+| Smitten Kitchen | already 200 | already 200 | Unchanged (already in Tier 1) |
+
+**Doctor's HEAD probe was lying.** Six sites (BBC Good Food, BBC Food, The Kitchn, RecipeTin Eats, AllRecipes, Serious Eats) reject `HEAD` requests with TLS shutdown / EOF, but serve `GET` 200 cleanly. Those sites were silently working in `goat`/`search` even though `doctor` reported them "unreachable". Doctor now uses `GET` with a `Range: bytes=0-1023` header.
+
+**Implication for build priorities:** the same Surf client used by `internal/client/` for USDA must back the recipe site fetcher (`internal/recipes/fetch.go`). With Surf, every site previously labeled "Tier 3 hostile" is reachable; the Tier label is now a content-trust signal only, not a reachability signal. Site registry expanded from 28 to **37**.
+
+The 2026-04-13 acceptance report's "Known limitation #1" (Dotdash 403/402) is closed. Live `goat "brownies"` returns 59 of 61 validated recipe candidates across 37 sites (was 51/52 across 28).
+
 ## Top Workflows
 1. **"What's the best X recipe?"** — query across 15 sites, rank by trust × rating × review_count, return top 5 with provenance.
 2. **"Get this recipe clean"** — given any URL, extract JSON-LD, strip ads/life-story, render as terminal card / markdown / print.
