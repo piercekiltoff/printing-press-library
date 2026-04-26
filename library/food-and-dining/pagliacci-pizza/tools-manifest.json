@@ -1,0 +1,15 @@
+{
+  "api_name": "pagliacci",
+  "base_url": "https://pag-api.azurewebsites.net/api",
+  "description": "CLI for the Pagliacci Pizza ordering API. Browse stores, menus, and\navailable slices; manage your cart, place orders, and track delivery\nwindows; manage saved addresses, rewards, stored coupons, credit, and\ngifts. Backed by Pagliacci's Azure-hosted REST API and authenticated\nvia Chrome cookies (composed PagliacciAuth header).",
+  "mcp_ready": "cli-only",
+  "http_transport": "standard",
+  "auth": {
+    "type": "composed",
+    "header": "Authorization",
+    "format": "PagliacciAuth {customerId}|{authToken}",
+    "cookie_domain": "pagliacci.com"
+  },
+  "required_headers": [],
+  "tools": []
+}

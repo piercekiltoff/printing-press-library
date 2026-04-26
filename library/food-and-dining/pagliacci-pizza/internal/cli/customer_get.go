@@ -14,13 +14,11 @@ import (
 func newCustomerGetCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "get <customerId>",
-		Short: "Get customer profile",
-		Example: "  pagliacci-pizza-pp-cli customer get 42",
+		Use:     "get <customerId>",
+		Short:   "Get customer profile by ID",
+		Example: "  pagliacci-pizza-pp-cli customer get 12345",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cmd.Help()
-			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err

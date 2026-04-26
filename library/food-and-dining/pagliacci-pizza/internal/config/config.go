@@ -4,26 +4,24 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/pelletier/go-toml/v2"
 )
 
 type Config struct {
-	BaseURL        string `toml:"base_url"`
-	AuthHeaderVal  string `toml:"auth_header"`
-	AuthSource     string `toml:"-"`
-	AccessToken    string `toml:"access_token"`
-	RefreshToken   string `toml:"refresh_token"`
-	TokenExpiry    time.Time `toml:"token_expiry"`
-	ClientID       string `toml:"client_id"`
-	ClientSecret   string `toml:"client_secret"`
-	Path           string `toml:"-"`
-	PagliacciPizzaPagliacciAuth string `toml:"pizza_pagliacci_auth"`
+	BaseURL       string    `json:"base_url"`
+	AuthHeaderVal string    `json:"auth_header"`
+	AuthSource    string    `json:"-"`
+	AccessToken   string    `json:"access_token"`
+	RefreshToken  string    `json:"refresh_token"`
+	TokenExpiry   time.Time `json:"token_expiry"`
+	ClientID      string    `json:"client_id"`
+	ClientSecret  string    `json:"client_secret"`
+	Path          string    `json:"-"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -34,33 +32,26 @@ func Load(configPath string) (*Config, error) {
 	// Resolve config path
 	path := configPath
 	if path == "" {
-		path = os.Getenv("PAGLIACCI_PIZZA_CONFIG")
+		path = os.Getenv("PAGLIACCI_CONFIG")
 	}
 	if path == "" {
 		home, _ := os.UserHomeDir()
-		path = filepath.Join(home, ".config", "pagliacci-pizza-pp-cli", "config.toml")
+		path = filepath.Join(home, ".config", "pagliacci-pizza-pp-cli", "config.json")
 	}
 	cfg.Path = path
 
 	// Try to load config file
-	data, err := os.ReadFile(path)
-	if err == nil {
-		if err := toml.Unmarshal(data, cfg); err != nil {
-			return nil, fmt.Errorf("parsing config %s: %w", path, err)
-		}
+	if data, err := os.ReadFile(path); err == nil {
+		_ = json.Unmarshal(data, cfg)
+		cfg.Path = path
 	}
 
 	// Env var overrides
-	if v := os.Getenv("PAGLIACCI_PIZZA_PAGLIACCI_AUTH"); v != "" {
-		cfg.PagliacciPizzaPagliacciAuth = v
-		cfg.AuthSource = "env:PAGLIACCI_PIZZA_PAGLIACCI_AUTH"
-	}
 
 	// Base URL override (used by printing-press verify to point at mock/test servers)
-	if v := os.Getenv("PAGLIACCI_PIZZA_BASE_URL"); v != "" {
+	if v := os.Getenv("PAGLIACCI_BASE_URL"); v != "" {
 		cfg.BaseURL = v
 	}
-
 	return cfg, nil
 }
 
@@ -68,14 +59,11 @@ func (c *Config) AuthHeader() string {
 	if c.AuthHeaderVal != "" {
 		return c.AuthHeaderVal
 	}
-	token := c.PagliacciPizzaPagliacciAuth
-	if token == "" {
-		return ""
+	if c.AccessToken != "" {
+		c.AuthSource = "chrome-composed"
+		return c.AccessToken
 	}
-	if c.PagliacciPizzaPagliacciAuth == "" {
-		return ""
-	}
-	return token
+	return ""
 }
 
 func applyAuthFormat(format string, replacements map[string]string) string {
@@ -112,11 +100,14 @@ func (c *Config) save() error {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return fmt.Errorf("creating config dir: %w", err)
 	}
-	data, err := toml.Marshal(c)
+	data, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
 	}
-	return os.WriteFile(c.Path, data, 0o600)
+	if err := os.WriteFile(c.Path, data, 0o600); err != nil {
+		return fmt.Errorf("writing config: %w", err)
+	}
+	return nil
 }
 
 // Ensure strings import is used

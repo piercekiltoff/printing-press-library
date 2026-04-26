@@ -10,9 +10,14 @@ import (
 func newStoreCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "store",
-		Short: "Manage store",
+		Short: "Pagliacci store locations, hours, and quote info",
 	}
 
+	cmd.AddCommand(newStoreComputeQuoteCmd(flags))
+	cmd.AddCommand(newStoreGetCmd(flags))
+	cmd.AddCommand(newStoreGetQuoteCmd(flags))
 	cmd.AddCommand(newStoreListCmd(flags))
+	cmd.AddCommand(newStoreListQuotesCmd(flags))
+	cmd.AddCommand(newStoreTonightCmd(flags))
 	return cmd
 }

@@ -1,8 +1,10 @@
 # Pagliacci Pizza CLI
 
-REST API for Pagliacci Pizza - Seattle's favorite pizza. Browse stores, menus, slices, time windows, manage rewards, view order history, and place orders. Authenticated endpoints use the custom PagliacciAuth scheme with a required Version-Num header.
+**Order Seattle's favorite pizza from the terminal — every endpoint, plus discount stacking, slice rotation across stores, and a local order history nobody else has.**
 
-Learn more at [Pagliacci Pizza](https://pagliacci.com).
+First and only CLI for the Pagliacci API. Browse menus and slice availability across all Seattle stores, build and price orders, manage your reward card and stored coupons, and replay past orders — all with offline search, agent-native output, and Chrome-cookie login (no manual token paste).
+
+Learn more at [Pagliacci Pizza](https://pag-api.azurewebsites.net).
 
 ## Install
 
@@ -16,268 +18,239 @@ go install github.com/mvanhorn/printing-press-library/library/food-and-dining/pa
 
 Download from [Releases](https://github.com/mvanhorn/printing-press-library/releases).
 
+## Authentication
+
+Pagliacci has no public API and uses a custom composed `PagliacciAuth {customerId}|{authToken}` header constructed from cookies. Run `pagliacci-pizza-pp-cli auth login --chrome` while logged into pagliacci.com in Chrome — the CLI reads the auth cookies and constructs the header for you. No manual token paste required.
+
 ## Quick Start
 
-### 1. Install
-
-See [Install](#install) above.
-
-### 2. Set Up Credentials
-
-Get your API key from your API provider's developer portal. The key typically looks like a long alphanumeric string.
-
 ```bash
-export PAGLIACCI_PIZZA_PAGLIACCI_AUTH="<paste-your-key>"
+# Log in by reading cookies from your active Chrome session
+pagliacci-pizza-pp-cli auth login --chrome
+
+
+# Sync stores, menu, slices, orders, rewards into the local SQLite store
+pagliacci-pizza-pp-cli sync --full
+
+
+# See what slices are available right now across every Seattle store
+pagliacci-pizza-pp-cli slices today --agent
+
+
+# Check your current reward balance and available rewards
+pagliacci-pizza-pp-cli rewards card --json
+
+
+# Review your last 5 orders
+pagliacci-pizza-pp-cli orders list --limit 5 --json
+
+
+# Re-create your most recent order as a priced cart, without sending
+pagliacci-pizza-pp-cli orders reorder --last --dry-run
+
 ```
 
-You can also persist this in your config file at `~/.config/pagliacci-pizza-pp-cli/config.toml`.
+## Unique Features
 
-### 3. Verify Setup
+These capabilities aren't available in any other tool for this API.
 
-```bash
-pagliacci-pizza-pp-cli doctor
-```
+### Local state that compounds
 
-This checks your configuration and credentials.
+- **`slices today`** — See which Pagliacci slices are available right now at every Seattle store, sorted by proximity to your saved address.
 
-### 4. Try Your First Command
+  _When the agent is asked 'what slices can I get tonight?', this returns a single comparable list — no per-store iteration needed._
 
-```bash
-pagliacci-pizza-pp-cli access-device list
-```
+  ```bash
+  pagliacci-pizza-pp-cli slices today --agent
+  ```
+- **`rewards stack`** — Compute the best application of stored coupons, reward redemption, and account credit for a given order total. Defaults to single-best-coupon + credit; multi-coupon stacking is flagged --experimental.
+
+  _Agents helping with order placement can pick the optimal discount, not just the first valid coupon._
+
+  ```bash
+  pagliacci-pizza-pp-cli rewards stack --order-total 45.00 --agent
+  ```
+- **`orders summary`** — Aggregate order spend over a time range, with top items and store breakdown.
+
+  _Agents helping with budgeting or reimbursement can produce a single roll-up report._
+
+  ```bash
+  pagliacci-pizza-pp-cli orders summary --since 90d --agent
+  ```
+
+### Time-aware composed lookups
+
+- **`store tonight`** — List stores that are still open and can deliver to your saved address right now, sorted by ETA.
+
+  _Late-night ordering: the agent only surfaces stores that will actually take the order._
+
+  ```bash
+  pagliacci-pizza-pp-cli store tonight --address-label home --agent
+  ```
+- **`address best-time`** — Resolve a saved address label to the next available delivery slot in one call.
+
+  _Agents scheduling orders for a specific address don't need to discover the delivery zone separately._
+
+  ```bash
+  pagliacci-pizza-pp-cli address best-time --label home --agent
+  ```
+
+### Order workflows
+
+- **`orders reorder`** — Re-create a past order as a fresh cart, with price revalidation since prices change. Add --send to also submit.
+
+  _Agents can replay a routine order without rebuilding the cart line by line._
+
+  ```bash
+  pagliacci-pizza-pp-cli orders reorder --last --dry-run
+  ```
 
 ## Usage
 
-<!-- HELP_OUTPUT -->
+Run `pagliacci-pizza-pp-cli --help` for the full command reference and flag list.
 
 ## Commands
 
-### access-device
+### account
 
-Manage access device
+Authentication and registration (no auth required for these endpoints)
 
-- **`pagliacci-pizza-pp-cli access-device get`** - Get device access info
+- **`pagliacci-pizza-pp-cli account confirm_email`** - Confirm a new account by clicking the email-confirmation link's token
+- **`pagliacci-pizza-pp-cli account create_token`** - Issue a session token (used internally by the SPA for token refresh)
+- **`pagliacci-pizza-pp-cli account login`** - Authenticate with email/phone + password. Response sets customerId and authToken cookies.
+- **`pagliacci-pizza-pp-cli account logout`** - Invalidate the current session
+- **`pagliacci-pizza-pp-cli account password_forgot`** - Request a password reset email
+- **`pagliacci-pizza-pp-cli account password_reset`** - Reset a password using a token from PasswordForgot email
+- **`pagliacci-pizza-pp-cli account register`** - Create a new customer account
 
-### address-info
+### address
 
-Manage address info
+Address validation and saved address book
 
-- **`pagliacci-pizza-pp-cli address-info lookup-address`** - Validate and look up a delivery address
+- **`pagliacci-pizza-pp-cli address create`** - Create a new saved address
+- **`pagliacci-pizza-pp-cli address delete`** - Delete a saved address
+- **`pagliacci-pizza-pp-cli address get`** - Get a saved address by ID
+- **`pagliacci-pizza-pp-cli address get_info`** - Get address info by saved ID
+- **`pagliacci-pizza-pp-cli address list`** - List the authenticated user's saved addresses
+- **`pagliacci-pizza-pp-cli address lookup`** - Validate an address and check delivery zone (returns store ID if deliverable)
 
-### address-name
+### cart
 
-Manage address name
+Build and price an order before sending it
 
-- **`pagliacci-pizza-pp-cli address-name list-saved-addresses`** - List saved delivery addresses
+- **`pagliacci-pizza-pp-cli cart get_quote_building`** - Get the current cart/quote-building state by building ID
+- **`pagliacci-pizza-pp-cli cart price_order`** - Compute the total price for an order (cart contents, taxes, fees, delivery) before sending
+- **`pagliacci-pizza-pp-cli cart send_order`** - Submit an order. Requires payment information for guests; uses stored payment for authenticated users.
+- **`pagliacci-pizza-pp-cli cart update_quote_building`** - Update cart contents (add/remove/modify items)
+
+### credit
+
+Account credit balance and entries
+
+- **`pagliacci-pizza-pp-cli credit delete`** - Remove an account credit entry
+- **`pagliacci-pizza-pp-cli credit get`** - Get a single credit entry
+- **`pagliacci-pizza-pp-cli credit list`** - List the authenticated user's account credit entries
 
 ### customer
 
-Manage customer
+Customer profile and devices
 
-- **`pagliacci-pizza-pp-cli customer get`** - Get customer profile
+- **`pagliacci-pizza-pp-cli customer access_devices_delete`** - Revoke a device's access to the account
+- **`pagliacci-pizza-pp-cli customer access_devices_list`** - List devices that have access to this account
+- **`pagliacci-pizza-pp-cli customer get`** - Get customer profile by ID
+- **`pagliacci-pizza-pp-cli customer migrate_answer`** - Submit the answer to a migration question
+- **`pagliacci-pizza-pp-cli customer migrate_question`** - Submit a security/migration question (legacy account migration flow)
 
-### feedback
+### customer_feedback
 
-Manage feedback
+Customer feedback submissions to Pagliacci
 
-- **`pagliacci-pizza-pp-cli feedback submit`** - Submit customer feedback
+- **`pagliacci-pizza-pp-cli customer_feedback get`** - Get a feedback submission by ID
+- **`pagliacci-pizza-pp-cli customer_feedback submit`** - Submit customer feedback (guest or authenticated)
 
-### login
+### gifts
 
-Manage login
+Stored gift cards, balance lookup, and transfer
 
-- **`pagliacci-pizza-pp-cli login login`** - Log in to account
+- **`pagliacci-pizza-pp-cli gifts check`** - Check the balance of a gift card by ID and PIN (no auth required to check)
+- **`pagliacci-pizza-pp-cli gifts delete`** - Remove a stored gift card from the account
+- **`pagliacci-pizza-pp-cli gifts get`** - Get a single stored gift card by ID
+- **`pagliacci-pizza-pp-cli gifts list`** - List the authenticated user's stored gift cards
+- **`pagliacci-pizza-pp-cli gifts transfer`** - Transfer gift card balance to another account
+- **`pagliacci-pizza-pp-cli gifts value`** - Get current value/balance of a saved gift card
 
-### logout
+### menu
 
-Manage logout
+Menus, slices, and product pricing
 
-- **`pagliacci-pizza-pp-cli logout logout`** - Log out of account
+- **`pagliacci-pizza-pp-cli menu cache`** - Get the full menu (categories, products, prices, descriptions, images) for a store
+- **`pagliacci-pizza-pp-cli menu product_price`** - Calculate the price for a customized product (size, toppings, modifiers)
+- **`pagliacci-pizza-pp-cli menu slices`** - Get available slices across all stores for the current day (perishable, rotates daily)
+- **`pagliacci-pizza-pp-cli menu top`** - Get featured top-of-menu items for a store
 
-### menu-cache
+### orders
 
-Manage menu cache
+Order history and details
 
-- **`pagliacci-pizza-pp-cli menu-cache get`** - Get full cached menu
+- **`pagliacci-pizza-pp-cli orders clone`** - Get order data shaped for re-ordering (transforms a past order into a new cart)
+- **`pagliacci-pizza-pp-cli orders get`** - Get the full detail of a single past order (items, prices, store, time)
+- **`pagliacci-pizza-pp-cli orders list`** - List the authenticated user's order history (paginated)
+- **`pagliacci-pizza-pp-cli orders list_gift_cards`** - List orders that purchased gift cards
+- **`pagliacci-pizza-pp-cli orders list_pending`** - List orders that are currently in flight (placed but not yet delivered/picked up)
+- **`pagliacci-pizza-pp-cli orders suggestion`** - Get personalized order suggestions for a customer
 
-### menu-slices
+### rewards
 
-Manage menu slices
+Loyalty card, rewards history, and stored coupons
 
-- **`pagliacci-pizza-pp-cli menu-slices list`** - List available pizza slices
+- **`pagliacci-pizza-pp-cli rewards card`** - Get the authenticated user's reward card balance, points, and available rewards
+- **`pagliacci-pizza-pp-cli rewards coupon_lookup`** - Look up a coupon by its serial number (validate before applying)
+- **`pagliacci-pizza-pp-cli rewards history`** - Get reward earning/redemption history (most recent N entries)
+- **`pagliacci-pizza-pp-cli rewards stored_coupons`** - List coupons saved to the authenticated user's account
 
-### menu-top
+### scheduling
 
-Manage menu top
+Delivery and pickup time windows
 
-- **`pagliacci-pizza-pp-cli menu-top get`** - Get featured menu items
-
-### migrate-answer
-
-Manage migrate answer
-
-- **`pagliacci-pizza-pp-cli migrate-answer migrate_answer`** - Answer account migration question
-
-### migrate-question
-
-Manage migrate question
-
-- **`pagliacci-pizza-pp-cli migrate-question migrate_question`** - Get account migration question
-
-### order-list
-
-Manage order list
-
-- **`pagliacci-pizza-pp-cli order-list list-orders`** - List order history (paginated)
-
-### order-list-item
-
-Manage order list item
-
-- **`pagliacci-pizza-pp-cli order-list-item get-order-details`** - Get specific order details
-
-### order-list-pending
-
-Manage order list pending
-
-- **`pagliacci-pizza-pp-cli order-list-pending list-pending-orders`** - List active/pending orders
-
-### order-price
-
-Manage order price
-
-- **`pagliacci-pizza-pp-cli order-price price-order`** - Price an order
-- **`pagliacci-pizza-pp-cli order-price price-order-guest`** - Price an order as guest
-
-### order-send
-
-Manage order send
-
-- **`pagliacci-pizza-pp-cli order-send send-order`** - Submit an order
-- **`pagliacci-pizza-pp-cli order-send verify-order`** - Verify an order before submission
-
-### order-suggestion
-
-Manage order suggestion
-
-- **`pagliacci-pizza-pp-cli order-suggestion get`** - Get suggested orders
-
-### password-forgot
-
-Manage password forgot
-
-- **`pagliacci-pizza-pp-cli password-forgot forgot-password`** - Request password reset email
-
-### password-reset
-
-Manage password reset
-
-- **`pagliacci-pizza-pp-cli password-reset reset-password`** - Reset password
-
-### product-price
-
-Manage product price
-
-- **`pagliacci-pizza-pp-cli product-price get`** - Get product pricing
-
-### quote-building
-
-Manage quote building
-
-- **`pagliacci-pizza-pp-cli quote-building get`** - Get delivery building quote
-
-### quote-store
-
-Manage quote store
-
-- **`pagliacci-pizza-pp-cli quote-store get`** - Get store-specific pricing
-- **`pagliacci-pizza-pp-cli quote-store list`** - List store availability and pricing
-
-### register
-
-Manage register
-
-- **`pagliacci-pizza-pp-cli register register`** - Create a new account
-
-### reward-card
-
-Manage reward card
-
-- **`pagliacci-pizza-pp-cli reward-card get`** - Get loyalty rewards card
-
-### site-wide-message
-
-Manage site wide message
-
-- **`pagliacci-pizza-pp-cli site-wide-message get`** - Get system-wide message
+- **`pagliacci-pizza-pp-cli scheduling slot_list`** - List available time-window slots for a store and service type
+- **`pagliacci-pizza-pp-cli scheduling slot_list_for_date`** - List allowed slot times for a specific delivery/pickup date (YYYYMMDD)
+- **`pagliacci-pizza-pp-cli scheduling window_days`** - List available delivery or pickup days for a store. serviceType is DEL (delivery) or PICK (pickup)
 
 ### store
 
-Manage store
+Pagliacci store locations, hours, and quote info
 
-- **`pagliacci-pizza-pp-cli store list`** - List all Pagliacci Pizza stores
+- **`pagliacci-pizza-pp-cli store compute_quote`** - Compute a quote for a specific store with cart contents (returns Delivery, Drone, Pickup wait values)
+- **`pagliacci-pizza-pp-cli store get`** - Get a single store by its numeric ID
+- **`pagliacci-pizza-pp-cli store get_quote`** - Get quote-store metadata (delivery fee, drone status, pickup wait time) for a single store
+- **`pagliacci-pizza-pp-cli store list`** - List all Pagliacci store locations with addresses, hours, GPS, amenities, and available slices
+- **`pagliacci-pizza-pp-cli store list_quotes`** - List quote-store metadata (delivery fee, drone status, pickup wait) for all stores
 
-### stored-coupons
+### system
 
-Manage stored coupons
+System information and announcements
 
-- **`pagliacci-pizza-pp-cli stored-coupons list`** - List saved coupons
-
-### stored-credit
-
-Manage stored credit
-
-- **`pagliacci-pizza-pp-cli stored-credit get`** - Get account credit balance
-
-### stored-gift
-
-Manage stored gift
-
-- **`pagliacci-pizza-pp-cli stored-gift get`** - Get gift card info
-
-### time-window-days
-
-Manage time window days
-
-- **`pagliacci-pizza-pp-cli time-window-days get`** - Get available days for service
-
-### time-windows
-
-Manage time windows
-
-- **`pagliacci-pizza-pp-cli time-windows get-by-date`** - Get time slots for a specific day
-- **`pagliacci-pizza-pp-cli time-windows get-today`** - Get today's time slots
-
-### transfer-gift
-
-Manage transfer gift
-
-- **`pagliacci-pizza-pp-cli transfer-gift transfer_gift`** - Transfer a gift card
-
-### version
-
-Manage version
-
-- **`pagliacci-pizza-pp-cli version get`** - Get API version
+- **`pagliacci-pizza-pp-cli system site_wide_message`** - Get site-wide announcement banner text (closures, holiday hours, etc.)
+- **`pagliacci-pizza-pp-cli system version`** - Get the current API version
 
 
 ## Output Formats
 
 ```bash
 # Human-readable table (default in terminal, JSON when piped)
-pagliacci-pizza-pp-cli access-device list
+pagliacci-pizza-pp-cli address list
 
 # JSON for scripting and agents
-pagliacci-pizza-pp-cli access-device list --json
+pagliacci-pizza-pp-cli address list --json
 
 # Filter to specific fields
-pagliacci-pizza-pp-cli access-device list --json --select id,name,status
+pagliacci-pizza-pp-cli address list --json --select id,name,status
 
 # Dry run — show the request without sending
-pagliacci-pizza-pp-cli access-device list --dry-run
+pagliacci-pizza-pp-cli address list --dry-run
 
 # Agent mode — JSON + compact + no prompts in one flag
-pagliacci-pizza-pp-cli access-device list --agent
+pagliacci-pizza-pp-cli address list --agent
 ```
 
 ## Agent Usage
@@ -288,37 +261,65 @@ This CLI is designed for AI agent consumption:
 - **Pipeable** - `--json` output to stdout, errors to stderr
 - **Filterable** - `--select id,name` returns only fields you need
 - **Previewable** - `--dry-run` shows the request without sending
-- **Retryable** - creates return "already exists" on retry, deletes return "already deleted"
 - **Confirmable** - `--yes` for explicit confirmation of destructive actions
-- **Piped input** - `echo '{"key":"value"}' | pagliacci-pizza-pp-cli <resource> create --stdin`
-- **Cacheable** - GET responses cached for 5 minutes, bypass with `--no-cache`
+- **Piped input** - write commands can accept structured input when their help lists `--stdin`
+- **Offline-friendly** - sync/search commands can use the local SQLite store when available
 - **Agent-safe by default** - no colors or formatting unless `--human-friendly` is set
-- **Progress events** - paginated commands emit NDJSON events to stderr in default mode
 
 Exit codes: `0` success, `2` usage error, `3` not found, `4` auth error, `5` API error, `7` rate limited, `10` config error.
 
-## Cookbook
+## Freshness
 
-Common workflows and recipes:
+This CLI owns bounded freshness for registered store-backed read command paths. In `--data-source auto` mode, covered commands check the local SQLite store before serving results; stale or missing resources trigger a bounded refresh, and refresh failures fall back to the existing local data with a warning. `--data-source local` never refreshes, and `--data-source live` reads the API without mutating the local store.
+
+Set `PAGLIACCI_NO_AUTO_REFRESH=1` to disable the pre-read freshness hook while preserving the selected data source.
+
+Covered command paths:
+- `pagliacci-pizza-pp-cli address`
+- `pagliacci-pizza-pp-cli address get`
+- `pagliacci-pizza-pp-cli address list`
+- `pagliacci-pizza-pp-cli credit`
+- `pagliacci-pizza-pp-cli credit get`
+- `pagliacci-pizza-pp-cli credit list`
+- `pagliacci-pizza-pp-cli customer`
+- `pagliacci-pizza-pp-cli customer get`
+- `pagliacci-pizza-pp-cli gifts`
+- `pagliacci-pizza-pp-cli gifts get`
+- `pagliacci-pizza-pp-cli gifts list`
+- `pagliacci-pizza-pp-cli orders`
+- `pagliacci-pizza-pp-cli orders get`
+- `pagliacci-pizza-pp-cli orders list`
+- `pagliacci-pizza-pp-cli store`
+- `pagliacci-pizza-pp-cli store get`
+- `pagliacci-pizza-pp-cli store list`
+
+JSON outputs that use the generated provenance envelope include freshness metadata at `meta.freshness`. This metadata describes the freshness decision for the covered command path; it does not claim full historical backfill or API-specific enrichment.
+
+## Use as MCP Server
+
+This CLI ships a companion MCP server for use with Claude Desktop, Cursor, and other MCP-compatible tools.
+
+### Claude Code
 
 ```bash
-# List resources as JSON for scripting
-pagliacci-pizza-pp-cli access-device list --json
+# Some tools work without auth. For full access, set up auth first:
+pagliacci-pizza-pp-cli auth login --chrome
 
-# Filter to specific fields
-pagliacci-pizza-pp-cli access-device list --json --select id,name,status
+claude mcp add pagliacci pagliacci-pizza-pp-mcp
+```
 
-# Dry run to preview the request
-pagliacci-pizza-pp-cli access-device list --dry-run
+### Claude Desktop
 
-# Sync data locally for offline search
-pagliacci-pizza-pp-cli sync
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
-# Search synced data
-pagliacci-pizza-pp-cli search "query"
-
-# Export for backup
-pagliacci-pizza-pp-cli export --format jsonl > backup.jsonl
+```json
+{
+  "mcpServers": {
+    "pagliacci": {
+      "command": "pagliacci-pizza-pp-mcp"
+    }
+  }
+}
 ```
 
 ## Health Check
@@ -327,38 +328,46 @@ pagliacci-pizza-pp-cli export --format jsonl > backup.jsonl
 pagliacci-pizza-pp-cli doctor
 ```
 
-<!-- DOCTOR_OUTPUT -->
+Verifies configuration, credentials, and connectivity to the API.
 
 ## Configuration
 
-Config file: `~/.config/pagliacci-pizza-pp-cli/config.toml`
+Config file: `~/.config/pagliacci-pizza-pp-cli/config.json` (override with `--config` or `PAGLIACCI_CONFIG`).
 
 Environment variables:
-- `PAGLIACCI_PIZZA_PAGLIACCI_AUTH`
+- `PAGLIACCI_CONFIG` — alternate config file path
+- `PAGLIACCI_BASE_URL` — override the API base URL (used by mock-server tests)
+- `PAGLIACCI_NO_AUTO_REFRESH` — disable the pre-read freshness hook
 
 ## Troubleshooting
-
 **Authentication errors (exit code 4)**
 - Run `pagliacci-pizza-pp-cli doctor` to check credentials
-- Verify the environment variable is set: `echo $PAGLIACCI_PIZZA_PAGLIACCI_AUTH`
-
 **Not found errors (exit code 3)**
 - Check the resource ID is correct
 - Run the `list` command to see available items
 
-**Rate limit errors (exit code 7)**
-- The CLI auto-retries with exponential backoff
-- If persistent, wait a few minutes and try again
+### API-specific
+
+- **auth login --chrome reports 'no auth cookies found'** — Open pagliacci.com in Chrome and log in. The CLI reads customerId and authToken cookies from the cookie store; if they're missing the session has expired.
+- **401 Unauthorized on authenticated commands** — Run `pagliacci-pizza-pp-cli auth status`. If cookies are stale, log in again at pagliacci.com and re-run `auth login --chrome`.
+- **Empty MenuSlices result during the day** — Slices rotate daily and may be sold out before close. The endpoint reflects current availability at request time.
+- **store tonight returns no rows** — Stores have closed for the night. Use `store list` for the next-day delivery scope or check `scheduling window_days <storeId> DEL` for upcoming windows.
+
+## HTTP Transport
+
+This CLI uses Chrome-compatible HTTP transport for browser-facing endpoints. It does not require a resident browser process for normal API calls.
+
+## Discovery Signals
+
+This CLI was generated with browser-captured traffic analysis.
+- Target observed: https://pagliacci.com/
+- Capture coverage: 26 API entries from 26 total network entries
+- Reachability: standard_http (95% confidence)
+- Protocols: rest_json (98% confidence)
+- Auth signals: composed — headers: Authorization — cookies: customerId, authToken
+- Generation hints: requires_browser_auth, composed_auth
+- Candidate command ideas: store list — GET /Store returned full inventory of locations; menu top — GET /MenuTop/{storeId} drives the home menu UI; menu cache — GET /MenuCache/{storeId} returns the full menu; menu slices — GET /MenuSlices returns today's slices across all stores; address lookup — POST /AddressInfo validates an address and resolves a delivery store; address list — GET /AddressName returns saved addresses; orders list — GET /OrderList/{page}/{size} returns paginated history; orders get — GET /OrderListItem/{id} returns full detail
 
 ---
 
 Generated by [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press)
-
-<!-- pr-218-features -->
-## Agent workflow features
-
-This CLI was patched to add these agent-workflow capabilities (see [`printing-press patch`](https://github.com/mvanhorn/cli-printing-press/pull/221)):
-
-- **Named profiles** — save a set of flags under a name and reuse them: `pagliacci-pizza-pp-cli profile save <name> --<flag> <value>`, then `pagliacci-pizza-pp-cli --profile <name> <command>`. Flag precedence: explicit flag > env var > profile > default.
-- **`--deliver`** — route command output to a sink other than stdout. Values: `file:<path>` writes atomically via tmp+rename; `webhook:<url>` POSTs as JSON (or NDJSON with `--compact`).
-- _Note: the PR #218 `feedback` subcommand is not applied to this CLI — the spec already defines a domain-specific `feedback` command._

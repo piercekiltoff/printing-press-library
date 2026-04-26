@@ -8,17 +8,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/store"
 	"github.com/spf13/cobra"
+	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/store"
 )
 
 // isNilOrEmpty checks whether a JSON object has nil or empty values for
 // common identifier fields (title, name, identifier, id).
+// Also checks nested "document" objects for search result wrappers.
 func isNilOrEmpty(raw json.RawMessage) bool {
 	var obj map[string]interface{}
 	if err := json.Unmarshal(raw, &obj); err != nil {
 		return true
 	}
+	// Check top-level fields
 	for _, key := range []string{"title", "name", "identifier", "id"} {
 		if v, ok := obj[key]; ok {
 			if v == nil {
@@ -32,6 +34,25 @@ func isNilOrEmpty(raw json.RawMessage) bool {
 				return false
 			}
 		}
+	}
+	// Check nested "document" for search result wrappers like {score, document: {name, ...}}
+	if doc, ok := obj["document"]; ok {
+		if docMap, ok := doc.(map[string]interface{}); ok {
+			for _, key := range []string{"title", "name", "identifier", "id", "slug"} {
+				if v, ok := docMap[key]; ok && v != nil {
+					if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+						return false
+					}
+					if _, ok := v.(string); !ok {
+						return false
+					}
+				}
+			}
+		}
+	}
+	// If the object has a "score" field, it's likely a search result — keep it
+	if _, ok := obj["score"]; ok {
+		return false
 	}
 	return true
 }

@@ -237,19 +237,19 @@
       "name": "pagliacci-pizza",
       "category": "food-and-dining",
       "api": "Pagliacci Pizza",
-      "description": "Order pizza, browse menus, manage rewards, and track deliveries from Pagliacci Pizza",
+      "description": "Order Seattle's favorite pizza from the terminal \u2014 every endpoint, plus discount stacking, slice rotation across stores, and a local order history nobody else has.",
       "path": "library/food-and-dining/pagliacci-pizza",
       "mcp": {
-        "binary": "pagliacci-pizza-pp-mcp",
+        "binary": "pagliacci-pp-mcp",
         "transport": "stdio",
-        "tool_count": 38,
-        "public_tool_count": 21,
+        "tool_count": 57,
+        "public_tool_count": 0,
         "auth_type": "composed",
         "env_vars": [],
-        "mcp_ready": "partial",
-        "manifest_checksum": "sha256:a091019421be7ba98f81894faec69400b2f2caf2c5d42d1beb1f26c8750867f1",
-        "spec_format": "openapi3",
-        "manifest_url": "library/food-and-dining/pagliacci-pizza/tools-manifest.json"
+        "mcp_ready": "cli-only",
+        "manifest_url": "library/food-and-dining/pagliacci-pizza/tools-manifest.json",
+        "manifest_checksum": "sha256:6175d160c89f8d4be2c27df591bd430445375234aa739ea6dd7e7bdf78c7d474",
+        "spec_format": "internal"
       }
     },
     {

@@ -19,6 +19,7 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/store"
 )
+
 // looksLikeAuthError checks if an error message body contains auth-related keywords.
 func looksLikeAuthError(msg string) bool {
 	lower := strings.ToLower(msg)
@@ -54,274 +55,382 @@ func sanitizeErrorBody(msg string) string {
 // RegisterTools registers all API operations as MCP tools.
 func RegisterTools(s *server.MCPServer) {
 	s.AddTool(
-		mcplib.NewTool("access-device_get",
-			mcplib.WithDescription("Get device access info"),
+		mcplib.NewTool("account_confirm_email",
+			mcplib.WithDescription("Confirm a new account by clicking the email-confirmation link's token"),
 		),
-		makeAPIHandler("GET", "/AccessDevice", []string{ }),
+		makeAPIHandler("GET", "/ConfirmEmail/{token}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("address-info_lookup-address",
-			mcplib.WithDescription("Validate and look up a delivery address"),
+		mcplib.NewTool("account_create_token",
+			mcplib.WithDescription("Issue a session token (used internally by the SPA for token refresh)"),
 		),
-		makeAPIHandler("POST", "/AddressInfo", []string{ }),
+		makeAPIHandler("POST", "/CreateToken", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("address-name_list-saved-addresses",
-			mcplib.WithDescription("List saved delivery addresses"),
+		mcplib.NewTool("account_login",
+			mcplib.WithDescription("Authenticate with email/phone + password. Response sets customerId and authToken cookies."),
 		),
-		makeAPIHandler("GET", "/AddressName", []string{ }),
+		makeAPIHandler("POST", "/Login", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("account_logout",
+			mcplib.WithDescription("Invalidate the current session"),
+		),
+		makeAPIHandler("POST", "/Logout", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("account_password_forgot",
+			mcplib.WithDescription("Request a password reset email"),
+		),
+		makeAPIHandler("POST", "/PasswordForgot", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("account_password_reset",
+			mcplib.WithDescription("Reset a password using a token from PasswordForgot email"),
+		),
+		makeAPIHandler("POST", "/PasswordReset", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("account_register",
+			mcplib.WithDescription("Create a new customer account"),
+		),
+		makeAPIHandler("POST", "/Register", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("address_create",
+			mcplib.WithDescription("Create a new saved address"),
+		),
+		makeAPIHandler("POST", "/AddressName", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("address_delete",
+			mcplib.WithDescription("Delete a saved address Destructive operation."),
+		),
+		makeAPIHandler("DELETE", "/AddressName/{id}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("address_get",
+			mcplib.WithDescription("Get a saved address by ID"),
+		),
+		makeAPIHandler("GET", "/AddressName/{id}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("address_get_info",
+			mcplib.WithDescription("Get address info by saved ID"),
+		),
+		makeAPIHandler("GET", "/AddressInfo/{id}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("address_list",
+			mcplib.WithDescription("List the authenticated user's saved addresses"),
+		),
+		makeAPIHandler("GET", "/AddressName", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("address_lookup",
+			mcplib.WithDescription("Validate an address and check delivery zone (returns store ID if deliverable)"),
+		),
+		makeAPIHandler("POST", "/AddressInfo", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("cart_get_quote_building",
+			mcplib.WithDescription("Get the current cart/quote-building state by building ID"),
+		),
+		makeAPIHandler("GET", "/QuoteBuilding/{buildingId}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("cart_price_order",
+			mcplib.WithDescription("Compute the total price for an order (cart contents, taxes, fees, delivery) before sending"),
+		),
+		makeAPIHandler("POST", "/OrderPrice", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("cart_send_order",
+			mcplib.WithDescription("Submit an order. Requires payment information for guests; uses stored payment for authenticated users."),
+		),
+		makeAPIHandler("POST", "/OrderSend", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("cart_update_quote_building",
+			mcplib.WithDescription("Update cart contents (add/remove/modify items)"),
+		),
+		makeAPIHandler("POST", "/QuoteBuilding/{buildingId}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("credit_delete",
+			mcplib.WithDescription("Remove an account credit entry Destructive operation."),
+		),
+		makeAPIHandler("DELETE", "/StoredCredit/{id}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("credit_get",
+			mcplib.WithDescription("Get a single credit entry"),
+		),
+		makeAPIHandler("GET", "/StoredCredit/{id}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("credit_list",
+			mcplib.WithDescription("List the authenticated user's account credit entries"),
+		),
+		makeAPIHandler("GET", "/StoredCredit", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("customer_access_devices_delete",
+			mcplib.WithDescription("Revoke a device's access to the account Destructive operation."),
+		),
+		makeAPIHandler("DELETE", "/AccessDevice/{deviceId}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("customer_access_devices_list",
+			mcplib.WithDescription("List devices that have access to this account"),
+		),
+		makeAPIHandler("GET", "/AccessDevice", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("customer_get",
-			mcplib.WithDescription("Get customer profile"),
-			mcplib.WithString("customerId", mcplib.Required(), mcplib.Description("Customer ID")),
+			mcplib.WithDescription("Get customer profile by ID"),
 		),
-		makeAPIHandler("GET", "/Customer/{customerId}", []string{"customerId", }),
+		makeAPIHandler("GET", "/Customer/{customerId}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("feedback_submit",
-			mcplib.WithDescription("Submit customer feedback"),
+		mcplib.NewTool("customer_migrate_answer",
+			mcplib.WithDescription("Submit the answer to a migration question"),
 		),
-		makeAPIHandler("POST", "/Feedback", []string{ }),
+		makeAPIHandler("POST", "/MigrateAnswer", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("login_login",
-			mcplib.WithDescription("Log in to account"),
+		mcplib.NewTool("customer_migrate_question",
+			mcplib.WithDescription("Submit a security/migration question (legacy account migration flow)"),
 		),
-		makeAPIHandler("POST", "/Login", []string{ }),
+		makeAPIHandler("POST", "/MigrateQuestion", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("logout_logout",
-			mcplib.WithDescription("Log out of account"),
+		mcplib.NewTool("customer_feedback_get",
+			mcplib.WithDescription("Get a feedback submission by ID"),
 		),
-		makeAPIHandler("POST", "/Logout", []string{ }),
+		makeAPIHandler("GET", "/Feedback/{id}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("menu-cache_get",
-			mcplib.WithDescription("Get full cached menu"),
-			mcplib.WithString("storeId", mcplib.Required(), mcplib.Description("Store ID")),
+		mcplib.NewTool("customer_feedback_submit",
+			mcplib.WithDescription("Submit customer feedback (guest or authenticated)"),
 		),
-		makeAPIHandler("GET", "/MenuCache/{storeId}", []string{"storeId", }),
+		makeAPIHandler("POST", "/Feedback", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("menu-slices_list",
-			mcplib.WithDescription("List available pizza slices"),
+		mcplib.NewTool("gifts_check",
+			mcplib.WithDescription("Check the balance of a gift card by ID and PIN (no auth required to check)"),
 		),
-		makeAPIHandler("GET", "/MenuSlices", []string{ }),
+		makeAPIHandler("GET", "/CheckGift/{id}/{pin}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("menu-top_get",
-			mcplib.WithDescription("Get featured menu items"),
-			mcplib.WithString("storeId", mcplib.Required(), mcplib.Description("Store ID")),
+		mcplib.NewTool("gifts_delete",
+			mcplib.WithDescription("Remove a stored gift card from the account Destructive operation."),
 		),
-		makeAPIHandler("GET", "/MenuTop/{storeId}", []string{"storeId", }),
+		makeAPIHandler("DELETE", "/StoredGift/{id}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("migrate-answer_migrate_answer",
-			mcplib.WithDescription("Answer account migration question"),
+		mcplib.NewTool("gifts_get",
+			mcplib.WithDescription("Get a single stored gift card by ID"),
 		),
-		makeAPIHandler("POST", "/MigrateAnswer", []string{ }),
+		makeAPIHandler("GET", "/StoredGift/{id}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("migrate-question_migrate_question",
-			mcplib.WithDescription("Get account migration question"),
+		mcplib.NewTool("gifts_list",
+			mcplib.WithDescription("List the authenticated user's stored gift cards"),
 		),
-		makeAPIHandler("POST", "/MigrateQuestion", []string{ }),
+		makeAPIHandler("GET", "/StoredGift", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-list_list-orders",
-			mcplib.WithDescription("List order history (paginated)"),
-			mcplib.WithString("page", mcplib.Description("Page number (1-based)")),
-			mcplib.WithString("pageSize", mcplib.Description("Number of orders per page")),
+		mcplib.NewTool("gifts_transfer",
+			mcplib.WithDescription("Transfer gift card balance to another account"),
 		),
-		makeAPIHandler("GET", "/OrderList/{page}/{pageSize}", []string{ }),
+		makeAPIHandler("POST", "/TransferGift", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-list-item_get-order-details",
-			mcplib.WithDescription("Get specific order details"),
-			mcplib.WithString("orderId", mcplib.Required(), mcplib.Description("Order ID")),
+		mcplib.NewTool("gifts_value",
+			mcplib.WithDescription("Get current value/balance of a saved gift card"),
 		),
-		makeAPIHandler("GET", "/OrderListItem/{orderId}", []string{"orderId", }),
+		makeAPIHandler("GET", "/GiftValue/{id}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-list-pending_list-pending-orders",
-			mcplib.WithDescription("List active/pending orders"),
+		mcplib.NewTool("menu_cache",
+			mcplib.WithDescription("Get the full menu (categories, products, prices, descriptions, images) for a store"),
 		),
-		makeAPIHandler("GET", "/OrderListPending", []string{ }),
+		makeAPIHandler("GET", "/MenuCache/{storeId}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-price_price-order",
-			mcplib.WithDescription("Price an order"),
+		mcplib.NewTool("menu_product_price",
+			mcplib.WithDescription("Calculate the price for a customized product (size, toppings, modifiers)"),
 		),
-		makeAPIHandler("POST", "/OrderPrice", []string{ }),
+		makeAPIHandler("POST", "/ProductPrice", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-price_price-order-guest",
-			mcplib.WithDescription("Price an order as guest"),
+		mcplib.NewTool("menu_slices",
+			mcplib.WithDescription("Get available slices across all stores for the current day (perishable, rotates daily)"),
 		),
-		makeAPIHandler("POST", "/OrderPrice/guest", []string{ }),
+		makeAPIHandler("GET", "/MenuSlices", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-send_send-order",
-			mcplib.WithDescription("Submit an order"),
+		mcplib.NewTool("menu_top",
+			mcplib.WithDescription("Get featured top-of-menu items for a store"),
 		),
-		makeAPIHandler("POST", "/OrderSend", []string{ }),
+		makeAPIHandler("GET", "/MenuTop/{storeId}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-send_verify-order",
-			mcplib.WithDescription("Verify an order before submission"),
+		mcplib.NewTool("orders_clone",
+			mcplib.WithDescription("Get order data shaped for re-ordering (transforms a past order into a new cart)"),
 		),
-		makeAPIHandler("POST", "/OrderSend/verify", []string{ }),
+		makeAPIHandler("GET", "/OrderClone/{orderId}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("order-suggestion_get",
-			mcplib.WithDescription("Get suggested orders"),
+		mcplib.NewTool("orders_get",
+			mcplib.WithDescription("Get the full detail of a single past order (items, prices, store, time)"),
 		),
-		makeAPIHandler("GET", "/OrderSuggestion", []string{ }),
+		makeAPIHandler("GET", "/OrderListItem/{orderId}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("password-forgot_forgot-password",
-			mcplib.WithDescription("Request password reset email"),
+		mcplib.NewTool("orders_list",
+			mcplib.WithDescription("List the authenticated user's order history (paginated)"),
 		),
-		makeAPIHandler("POST", "/PasswordForgot", []string{ }),
+		makeAPIHandler("GET", "/OrderList/{page}/{pageSize}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("password-reset_reset-password",
-			mcplib.WithDescription("Reset password"),
+		mcplib.NewTool("orders_list_gift_cards",
+			mcplib.WithDescription("List orders that purchased gift cards"),
 		),
-		makeAPIHandler("POST", "/PasswordReset", []string{ }),
+		makeAPIHandler("GET", "/OrderListGC", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("product-price_get",
-			mcplib.WithDescription("Get product pricing"),
+		mcplib.NewTool("orders_list_pending",
+			mcplib.WithDescription("List orders that are currently in flight (placed but not yet delivered/picked up)"),
 		),
-		makeAPIHandler("GET", "/ProductPrice", []string{ }),
+		makeAPIHandler("GET", "/OrderListPending", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("quote-building_get",
-			mcplib.WithDescription("Get delivery building quote"),
-			mcplib.WithString("buildingId", mcplib.Required(), mcplib.Description("Building ID")),
+		mcplib.NewTool("orders_suggestion",
+			mcplib.WithDescription("Get personalized order suggestions for a customer"),
 		),
-		makeAPIHandler("GET", "/QuoteBuilding/{buildingId}", []string{"buildingId", }),
+		makeAPIHandler("GET", "/OrderSuggestion/{customerId}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("quote-store_get",
-			mcplib.WithDescription("Get store-specific pricing"),
-			mcplib.WithString("storeId", mcplib.Required(), mcplib.Description("Store ID")),
+		mcplib.NewTool("rewards_card",
+			mcplib.WithDescription("Get the authenticated user's reward card balance, points, and available rewards"),
 		),
-		makeAPIHandler("GET", "/QuoteStore/{storeId}", []string{"storeId", }),
+		makeAPIHandler("GET", "/RewardCard", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("quote-store_list",
-			mcplib.WithDescription("List store availability and pricing"),
+		mcplib.NewTool("rewards_coupon_lookup",
+			mcplib.WithDescription("Look up a coupon by its serial number (validate before applying)"),
 		),
-		makeAPIHandler("GET", "/QuoteStore", []string{ }),
+		makeAPIHandler("GET", "/CouponSerial/{serial}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("register_register",
-			mcplib.WithDescription("Create a new account"),
+		mcplib.NewTool("rewards_history",
+			mcplib.WithDescription("Get reward earning/redemption history (most recent N entries)"),
 		),
-		makeAPIHandler("POST", "/Register", []string{ }),
+		makeAPIHandler("GET", "/RewardHistory/{customerId}/{count}", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("reward-card_get",
-			mcplib.WithDescription("Get loyalty rewards card"),
+		mcplib.NewTool("rewards_stored_coupons",
+			mcplib.WithDescription("List coupons saved to the authenticated user's account"),
 		),
-		makeAPIHandler("GET", "/RewardCard", []string{ }),
+		makeAPIHandler("GET", "/StoredCoupons", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("site-wide-message_get",
-			mcplib.WithDescription("Get system-wide message"),
+		mcplib.NewTool("scheduling_slot_list",
+			mcplib.WithDescription("List available time-window slots for a store and service type"),
 		),
-		makeAPIHandler("GET", "/SiteWideMessage", []string{ }),
+		makeAPIHandler("GET", "/TimeWindows/{storeId}/{serviceType}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("scheduling_slot_list_for_date",
+			mcplib.WithDescription("List allowed slot times for a specific delivery/pickup date (YYYYMMDD)"),
+		),
+		makeAPIHandler("GET", "/TimeWindows/{storeId}/{serviceType}/{date}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("scheduling_window_days",
+			mcplib.WithDescription("List available delivery or pickup days for a store. serviceType is DEL (delivery) or PICK (pickup)"),
+		),
+		makeAPIHandler("GET", "/TimeWindowDays/{storeId}/{serviceType}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("store_compute_quote",
+			mcplib.WithDescription("Compute a quote for a specific store with cart contents (returns Delivery, Drone, Pickup wait values)"),
+		),
+		makeAPIHandler("POST", "/QuoteStore/{storeId}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("store_get",
+			mcplib.WithDescription("Get a single store by its numeric ID"),
+		),
+		makeAPIHandler("GET", "/Store/{storeId}", []string{}),
+	)
+	s.AddTool(
+		mcplib.NewTool("store_get_quote",
+			mcplib.WithDescription("Get quote-store metadata (delivery fee, drone status, pickup wait time) for a single store"),
+		),
+		makeAPIHandler("GET", "/QuoteStore/{storeId}", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("store_list",
-			mcplib.WithDescription("List all Pagliacci Pizza stores"),
+			mcplib.WithDescription("List all Pagliacci store locations with addresses, hours, GPS, amenities, and available slices"),
 		),
-		makeAPIHandler("GET", "/Store", []string{ }),
+		makeAPIHandler("GET", "/Store", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("stored-coupons_list",
-			mcplib.WithDescription("List saved coupons"),
+		mcplib.NewTool("store_list_quotes",
+			mcplib.WithDescription("List quote-store metadata (delivery fee, drone status, pickup wait) for all stores"),
 		),
-		makeAPIHandler("GET", "/StoredCoupons", []string{ }),
+		makeAPIHandler("GET", "/QuoteStore", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("stored-credit_get",
-			mcplib.WithDescription("Get account credit balance"),
+		mcplib.NewTool("system_site_wide_message",
+			mcplib.WithDescription("Get site-wide announcement banner text (closures, holiday hours, etc.)"),
 		),
-		makeAPIHandler("GET", "/StoredCredit", []string{ }),
+		makeAPIHandler("GET", "/SiteWideMessage", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("stored-gift_get",
-			mcplib.WithDescription("Get gift card info"),
+		mcplib.NewTool("system_version",
+			mcplib.WithDescription("Get the current API version"),
 		),
-		makeAPIHandler("GET", "/StoredGift", []string{ }),
+		makeAPIHandler("GET", "/Version", []string{}),
 	)
-	s.AddTool(
-		mcplib.NewTool("time-window-days_get",
-			mcplib.WithDescription("Get available days for service"),
-			mcplib.WithString("storeId", mcplib.Required(), mcplib.Description("Store ID")),
-			mcplib.WithString("serviceType", mcplib.Description("Service type: PICK for pickup, DEL for delivery")),
-		),
-		makeAPIHandler("GET", "/TimeWindowDays/{storeId}/{serviceType}", []string{"storeId", }),
-	)
-	s.AddTool(
-		mcplib.NewTool("time-windows_get-by-date",
-			mcplib.WithDescription("Get time slots for a specific day"),
-			mcplib.WithString("storeId", mcplib.Required(), mcplib.Description("Store ID")),
-			mcplib.WithString("serviceType", mcplib.Description("Service type: PICK for pickup, DEL for delivery")),
-			mcplib.WithString("date", mcplib.Required(), mcplib.Description("Date in YYYYMMDD format")),
-		),
-		makeAPIHandler("GET", "/TimeWindows/{storeId}/{serviceType}/{date}", []string{"storeId", }),
-	)
-	s.AddTool(
-		mcplib.NewTool("time-windows_get-today",
-			mcplib.WithDescription("Get today's time slots"),
-			mcplib.WithString("storeId", mcplib.Required(), mcplib.Description("Store ID")),
-			mcplib.WithString("serviceType", mcplib.Description("Service type: PICK for pickup, DEL for delivery")),
-		),
-		makeAPIHandler("GET", "/TimeWindows/{storeId}/{serviceType}", []string{"storeId", }),
-	)
-	s.AddTool(
-		mcplib.NewTool("transfer-gift_transfer_gift",
-			mcplib.WithDescription("Transfer a gift card"),
-		),
-		makeAPIHandler("POST", "/TransferGift", []string{ }),
-	)
-	s.AddTool(
-		mcplib.NewTool("version_get",
-			mcplib.WithDescription("Get API version"),
-		),
-		makeAPIHandler("GET", "/Version", []string{ }),
-	)
-	// Sync tool
+	// Sync tool — populates local database for offline search and sql queries
 	s.AddTool(
 		mcplib.NewTool("sync",
-			mcplib.WithDescription("Sync API data to local SQLite for offline search and analysis"),
-			mcplib.WithString("resources", mcplib.Description("Comma-separated resource types to sync")),
-			mcplib.WithString("since", mcplib.Description("Incremental sync since duration (7d, 24h, 1w)")),
+			mcplib.WithDescription("Sync API data to local SQLite database. Run this before using search or sql tools. Supports incremental sync."),
+			mcplib.WithString("resources", mcplib.Description("Comma-separated resource types to sync (omit for all)")),
+			mcplib.WithString("since", mcplib.Description("Incremental sync since duration (e.g. 7d, 24h, 1w)")),
 			mcplib.WithBoolean("full", mcplib.Description("Full resync ignoring checkpoints")),
 		),
 		handleSync,
 	)
-	// Search tool
+	// Search tool — faster than iterating list endpoints for finding specific items
 	s.AddTool(
 		mcplib.NewTool("search",
-			mcplib.WithDescription("Full-text search across synced data"),
-			mcplib.WithString("query", mcplib.Required(), mcplib.Description("Search query")),
+			mcplib.WithDescription("Full-text search across all synced data. Faster than paginating list endpoints. Requires sync first."),
+			mcplib.WithString("query", mcplib.Required(), mcplib.Description("Search query (supports FTS5 syntax: AND, OR, NOT, quotes for phrases)")),
 			mcplib.WithNumber("limit", mcplib.Description("Max results (default 25)")),
 		),
 		handleSearch,
 	)
-	// SQL tool
+	// SQL tool — ad-hoc analysis on synced data without API calls
 	s.AddTool(
 		mcplib.NewTool("sql",
-			mcplib.WithDescription("Run read-only SQL query against local database"),
-			mcplib.WithString("query", mcplib.Required(), mcplib.Description("SQL query (SELECT only)")),
+			mcplib.WithDescription("Run read-only SQL against local database. Use for ad-hoc analysis, aggregations, and joins across synced resources. Requires sync first."),
+			mcplib.WithString("query", mcplib.Required(), mcplib.Description("SQL query (SELECT only). Tables match resource names.")),
 		),
 		handleSQL,
+	)
+
+	// Context tool — front-loaded domain knowledge for agents.
+	// Call this first to understand the API taxonomy, query patterns, and capabilities.
+	s.AddTool(
+		mcplib.NewTool("context",
+			mcplib.WithDescription("Get API domain context: resource taxonomy, auth requirements, query tips, and unique capabilities. Call this first."),
+		),
+		handleContext,
 	)
 }
 
@@ -333,17 +442,22 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 			return mcplib.NewToolResultError(err.Error()), nil
 		}
 
+		// mcp-go v0.47+ made CallToolParams.Arguments an `any` to support
+		// non-map payloads; GetArguments() returns the map[string]any shape
+		// we rely on here (or an empty map when the payload is something else).
+		args := req.GetArguments()
+
 		// Build path by substituting positional params
 		path := pathTemplate
 		for _, p := range positionalParams {
-			if v, ok := req.Params.Arguments[p]; ok {
+			if v, ok := args[p]; ok {
 				path = strings.Replace(path, "{"+p+"}", fmt.Sprintf("%v", v), 1)
 			}
 		}
 
 		// Collect non-positional params as query params
 		params := make(map[string]string)
-		for k, v := range req.Params.Arguments {
+		for k, v := range args {
 			isPositional := false
 			for _, p := range positionalParams {
 				if k == p {
@@ -361,13 +475,13 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 		case "GET":
 			data, err = c.Get(path, params)
 		case "POST":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Post(path, body)
 		case "PUT":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Put(path, body)
 		case "PATCH":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Patch(path, body)
 		case "DELETE":
 			data, _, err = c.Delete(path)
@@ -383,17 +497,14 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 			case strings.Contains(msg, "HTTP 400") && looksLikeAuthError(msg):
 				return mcplib.NewToolResultError("authentication error: " + sanitizeErrorBody(msg) +
 					"\nhint: the API rejected the request — this usually means auth is missing or invalid." +
-					"\n      Set your API key: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>" +
 					"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 401"):
 				return mcplib.NewToolResultError("authentication failed: " + sanitizeErrorBody(msg) +
-					"\nhint: check your API key." +
-					"\n      Set it with: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>" +
+					"\nhint: check your API credentials." +
 					"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 403"):
 				return mcplib.NewToolResultError("permission denied: " + sanitizeErrorBody(msg) +
 					"\nhint: your credentials are valid but lack access to this resource." +
-					"\n      Set it with: export PAGLIACCI_PIZZA_PAGLIACCI_AUTH=<your-key>" +
 					"\n      Run 'pagliacci-pizza-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 404"):
 				if method == "DELETE" {
@@ -440,6 +551,7 @@ func dbPath() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "share", "pagliacci-pizza-pp-cli", "data.db")
 }
+
 // Note: MCP tools use their own dbPath() because they are in a separate package (main, not cli).
 // The CLI's defaultDBPath() in the cli package uses the same canonical path.
 
@@ -448,13 +560,14 @@ func handleSync(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallTo
 }
 
 func handleSearch(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	query, ok := req.Params.Arguments["query"].(string)
+	args := req.GetArguments()
+	query, ok := args["query"].(string)
 	if !ok || query == "" {
 		return mcplib.NewToolResultError("query is required"), nil
 	}
 
 	limit := 25
-	if v, ok := req.Params.Arguments["limit"].(float64); ok && v > 0 {
+	if v, ok := args["limit"].(float64); ok && v > 0 {
 		limit = int(v)
 	}
 
@@ -474,7 +587,8 @@ func handleSearch(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.Call
 }
 
 func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	query, ok := req.Params.Arguments["query"].(string)
+	args := req.GetArguments()
+	query, ok := args["query"].(string)
 	if !ok || query == "" {
 		return mcplib.NewToolResultError("query is required"), nil
 	}
@@ -516,5 +630,117 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 	}
 
 	data, _ := json.MarshalIndent(results, "", "  ")
+	return mcplib.NewToolResultText(string(data)), nil
+}
+
+func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	ctx := map[string]any{
+		"api":         "pagliacci",
+		"description": "CLI for the Pagliacci Pizza ordering API. Browse stores, menus, and available slices; manage your cart, place...",
+		"archetype":   "crm",
+		"tool_count":  57,
+		"auth": map[string]any{
+			"type": "composed",
+		},
+		"resources": []map[string]any{
+			{
+				"name":        "account",
+				"description": "Authentication and registration (no auth required for these endpoints)",
+				"endpoints":   []string{"confirm_email", "create_token", "login", "logout", "password_forgot", "password_reset", "register"},
+			},
+			{
+				"name":        "address",
+				"description": "Address validation and saved address book",
+				"endpoints":   []string{"create", "delete", "get", "get_info", "list", "lookup"},
+				"syncable":    true,
+			},
+			{
+				"name":        "cart",
+				"description": "Build and price an order before sending it",
+				"endpoints":   []string{"get_quote_building", "price_order", "send_order", "update_quote_building"},
+			},
+			{
+				"name":        "credit",
+				"description": "Account credit balance and entries",
+				"endpoints":   []string{"delete", "get", "list"},
+				"syncable":    true,
+			},
+			{
+				"name":        "customer",
+				"description": "Customer profile and devices",
+				"endpoints":   []string{"access_devices_delete", "access_devices_list", "get", "migrate_answer", "migrate_question"},
+				"syncable":    true,
+			},
+			{
+				"name":        "customer_feedback",
+				"description": "Customer feedback submissions to Pagliacci",
+				"endpoints":   []string{"get", "submit"},
+			},
+			{
+				"name":        "gifts",
+				"description": "Stored gift cards, balance lookup, and transfer",
+				"endpoints":   []string{"check", "delete", "get", "list", "transfer", "value"},
+				"syncable":    true,
+			},
+			{
+				"name":        "menu",
+				"description": "Menus, slices, and product pricing",
+				"endpoints":   []string{"cache", "product_price", "slices", "top"},
+			},
+			{
+				"name":        "orders",
+				"description": "Order history and details",
+				"endpoints":   []string{"clone", "get", "list", "list_gift_cards", "list_pending", "suggestion"},
+				"syncable":    true,
+			},
+			{
+				"name":        "rewards",
+				"description": "Loyalty card, rewards history, and stored coupons",
+				"endpoints":   []string{"card", "coupon_lookup", "history", "stored_coupons"},
+			},
+			{
+				"name":        "scheduling",
+				"description": "Delivery and pickup time windows",
+				"endpoints":   []string{"slot_list", "slot_list_for_date", "window_days"},
+			},
+			{
+				"name":        "store",
+				"description": "Pagliacci store locations, hours, and quote info",
+				"endpoints":   []string{"compute_quote", "get", "get_quote", "list", "list_quotes"},
+				"syncable":    true,
+			},
+			{
+				"name":        "system",
+				"description": "System information and announcements",
+				"endpoints":   []string{"site_wide_message", "version"},
+			},
+		},
+		"query_tips": []string{
+			"Pagination uses cursor-based paging. Pass after parameter for subsequent pages.",
+			"Control page size with the limit parameter (default 100).",
+			"Use the sql tool for ad-hoc analysis on synced data. Run sync first to populate the local database.",
+			"Use the search tool for full-text search across all synced resources. Faster than iterating list endpoints.",
+			"Prefer sql/search over repeated API calls when the data is already synced.",
+		},
+		"unique_capabilities": []map[string]string{
+			{"name": "Today's slices across all stores", "command": "slices today", "description": "See which Pagliacci slices are available right now at every Seattle store, sorted by proximity to your saved address.", "rationale": "Requires syncing MenuSlices for all 8+ stores into the local store and joining by location. Pagliacci's web UI shows..."},
+			{"name": "Open store tonight", "command": "store tonight", "description": "List stores that are still open and can deliver to your saved address right now, sorted by ETA.", "rationale": "Requires real-time TimeWindowDays + Store.OpenHour + delivery-zone resolution. Pagliacci's UI lists all stores..."},
+			{"name": "Stack discounts to maximize savings", "command": "rewards stack", "description": "Compute the best application of stored coupons, reward redemption, and account credit for a given order total....", "rationale": "Requires joining StoredCoupons + RewardCard + StoredCredit and applying optimal-application logic. The site applies..."},
+			{"name": "Reorder last (or by ID)", "command": "orders reorder", "description": "Re-create a past order as a fresh cart, with price revalidation since prices change. Add --send to also submit.", "rationale": "Composes OrderListItem + OrderClone + OrderPrice. The site has a one-click reorder but exposes no batch mode."},
+			{"name": "Address-aware delivery time picker", "command": "address best-time", "description": "Resolve a saved address label to the next available delivery slot in one call.", "rationale": "Joins AddressName + AddressInfo zone resolution + TimeWindows lookup."},
+			{"name": "Spend summary", "command": "orders summary", "description": "Aggregate order spend over a time range, with top items and store breakdown.", "rationale": "Aggregates OrderListItem locally. The site lets you browse history one order at a time."},
+		},
+		"playbook": []map[string]string{
+			{"topic": "Today's slices across all stores", "insight": "Requires syncing MenuSlices for all 8+ stores into the local store and joining by location. Pagliacci's web UI shows slices one store at a time."},
+			{"topic": "Open store tonight", "insight": "Requires real-time TimeWindowDays + Store.OpenHour + delivery-zone resolution. Pagliacci's UI lists all stores regardless of cutoff."},
+			{"topic": "Stack discounts to maximize savings", "insight": "Requires joining StoredCoupons + RewardCard + StoredCredit and applying optimal-application logic. The site applies coupons one at a time at checkout."},
+			{"topic": "Reorder last (or by ID)", "insight": "Composes OrderListItem + OrderClone + OrderPrice. The site has a one-click reorder but exposes no batch mode."},
+			{"topic": "Address-aware delivery time picker", "insight": "Joins AddressName + AddressInfo zone resolution + TimeWindows lookup."},
+			{"topic": "Spend summary", "insight": "Aggregates OrderListItem locally. The site lets you browse history one order at a time."},
+			{"topic": "Contact lookup", "insight": "Use search for finding contacts by name/email. List endpoints return unsorted results and require pagination for large datasets."},
+			{"topic": "Activity tracking", "insight": "When checking deal activity, sync first and query locally. CRM APIs often throttle activity-log endpoints heavily."},
+		},
+	}
+	data, _ := json.MarshalIndent(ctx, "", "  ")
 	return mcplib.NewToolResultText(string(data)), nil
 }

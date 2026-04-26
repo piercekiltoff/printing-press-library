@@ -10,9 +10,13 @@ import (
 func newCustomerCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "customer",
-		Short: "Manage customer",
+		Short: "Customer profile and devices",
 	}
 
+	cmd.AddCommand(newCustomerAccessDevicesDeleteCmd(flags))
+	cmd.AddCommand(newCustomerAccessDevicesListCmd(flags))
 	cmd.AddCommand(newCustomerGetCmd(flags))
+	cmd.AddCommand(newCustomerMigrateAnswerCmd(flags))
+	cmd.AddCommand(newCustomerMigrateQuestionCmd(flags))
 	return cmd
 }

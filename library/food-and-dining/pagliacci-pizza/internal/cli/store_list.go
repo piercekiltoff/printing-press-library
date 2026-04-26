@@ -14,8 +14,8 @@ import (
 func newStoreListCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all Pagliacci Pizza stores",
+		Use:     "list",
+		Short:   "List all Pagliacci store locations with addresses, hours, GPS, amenities, and available slices",
 		Example: "  pagliacci-pizza-pp-cli store list",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()

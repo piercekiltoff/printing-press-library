@@ -4,43 +4,46 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
 
-	"bytes"
-	"io"
-	"os"
-
+	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/config"
-	"github.com/spf13/cobra"
 )
 
-var version = "1.1.0"
+var version = "1.0.0"
 
 type rootFlags struct {
-	asJSON       bool
-	compact      bool
-	csv          bool
-	plain        bool
-	quiet        bool
-	dryRun       bool
-	noCache      bool
-	noInput      bool
-	yes          bool
-	agent        bool
-	selectFields string
-	configPath   string
-	timeout      time.Duration
-	rateLimit    float64
-	dataSource   string
-	profileName  string
-	deliverSpec  string
-	deliverBuf   *bytes.Buffer
-	deliverSink  DeliverSink
+	asJSON        bool
+	compact       bool
+	csv           bool
+	plain         bool
+	quiet         bool
+	dryRun        bool
+	noCache       bool
+	noInput       bool
+	yes           bool
+	agent         bool
+	selectFields  string
+	configPath    string
+	profileName   string
+	deliverSpec   string
+	timeout       time.Duration
+	rateLimit     float64
+	dataSource    string
+	freshnessMeta any
+
+	// deliverBuf captures command output when --deliver is set to a
+	// non-stdout sink. Flushed to the sink after Execute returns.
+	deliverBuf  *bytes.Buffer
+	deliverSink DeliverSink
 }
 
 // Execute runs the CLI in non-interactive mode: never prompts, all values via flags or stdin.
@@ -48,11 +51,23 @@ func Execute() error {
 	var flags rootFlags
 
 	rootCmd := &cobra.Command{
-		Use:           "pagliacci-pizza-pp-cli",
-		Short:         "Manage pagliacci-pizza resources via the pagliacci-pizza API",
-		SilenceUsage:  true,
-		SilenceErrors: true,
-		Version:       version,
+		Use:   "pagliacci-pizza-pp-cli",
+		Short: `Pagliacci CLI — Order Seattle's favorite pizza from the terminal — every endpoint, plus discount stacking, slice rotation across stores…`,
+		Long: `Pagliacci CLI — Order Seattle's favorite pizza from the terminal — every endpoint, plus discount stacking, slice rotation across stores…
+
+Highlights (not in the official API docs):
+  • slices today   See which Pagliacci slices are available right now at every Seattle store, sort…
+  • store tonight   List stores that are still open and can deliver to your saved address right now…
+  • rewards stack   Compute the best application of stored coupons, reward redemption, and account …
+  • orders reorder   Re-create a past order as a fresh cart, with price revalidation since prices ch…
+  • address best-time   Resolve a saved address label to the next available delivery slot in one call.
+  • orders summary   Aggregate order spend over a time range, with top items and store breakdown.
+
+Agent mode: add --agent to any command for JSON output + non-interactive mode.
+Health check: run 'pagliacci-pizza-pp-cli doctor' to verify auth and connectivity.
+See README.md or the bundled SKILL.md for recipes.`,
+		SilenceUsage: true,
+		Version:      version,
 	}
 	rootCmd.SetVersionTemplate("pagliacci-pizza-pp-cli {{ .Version }}\n")
 
@@ -72,10 +87,9 @@ func Execute() error {
 	rootCmd.PersistentFlags().BoolVar(&humanFriendly, "human-friendly", false, "Enable colored output and rich formatting")
 	rootCmd.PersistentFlags().BoolVar(&flags.agent, "agent", false, "Set all agent-friendly defaults (--json --compact --no-input --no-color --yes)")
 	rootCmd.PersistentFlags().StringVar(&flags.dataSource, "data-source", "auto", "Data source for read commands: auto (live with local fallback), live (API only), local (synced data only)")
-	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 2, "Max requests per second (0 to disable, default 2 for sniffed APIs)")
-
-	rootCmd.PersistentFlags().StringVar(&flags.profileName, "profile", "", "Apply values from a saved profile")
+	rootCmd.PersistentFlags().StringVar(&flags.profileName, "profile", "", "Apply values from a saved profile (see 'pagliacci-pizza-pp-cli profile list')")
 	rootCmd.PersistentFlags().StringVar(&flags.deliverSpec, "deliver", "", "Route output to a sink: stdout (default), file:<path>, webhook:<url>")
+	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 2, "Max requests per second (0 to disable, default 2 for sniffed APIs)")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if flags.deliverSpec != "" {
@@ -95,7 +109,11 @@ func Execute() error {
 				return err
 			}
 			if profile == nil {
-				return fmt.Errorf("profile %q not found", flags.profileName)
+				available := ListProfileNames()
+				if len(available) == 0 {
+					return fmt.Errorf("profile %q not found (no profiles saved yet; run '%s profile save <name> --<flag> <value>')", flags.profileName, cmd.Root().Name())
+				}
+				return fmt.Errorf("profile %q not found; available: %s", flags.profileName, strings.Join(available, ", "))
 			}
 			if err := ApplyProfileToFlags(cmd, profile); err != nil {
 				return err
@@ -124,44 +142,35 @@ func Execute() error {
 		default:
 			return fmt.Errorf("invalid --data-source value %q: must be auto, live, or local", flags.dataSource)
 		}
+		// Auto-refresh stale local caches before serving read commands.
+		// Looks up the current command path in readCommandResources and
+		// consults cliutil.EnsureFresh against sync_state. When stale,
+		// runs a bounded API refresh. Failures become stderr warnings;
+		// the command proceeds with the stale cache either way.
+		if resources, isRead := readCommandResources[cmd.CommandPath()]; isRead {
+			flags.freshnessMeta = autoRefreshIfStale(cmd.Context(), &flags, resources)
+		}
 		return nil
 	}
-	rootCmd.AddCommand(newAccessDeviceCmd(&flags))
-	rootCmd.AddCommand(newAddressInfoCmd(&flags))
-	rootCmd.AddCommand(newAddressNameCmd(&flags))
+	rootCmd.AddCommand(newAccountCmd(&flags))
+	rootCmd.AddCommand(newAddressCmd(&flags))
+	rootCmd.AddCommand(newCartCmd(&flags))
+	rootCmd.AddCommand(newCreditCmd(&flags))
 	rootCmd.AddCommand(newCustomerCmd(&flags))
-	rootCmd.AddCommand(newFeedbackCmd(&flags))
-	rootCmd.AddCommand(newLoginLoginCmd(&flags))
-	rootCmd.AddCommand(newLogoutLogoutCmd(&flags))
-	rootCmd.AddCommand(newMenuCacheCmd(&flags))
-	rootCmd.AddCommand(newMenuSlicesCmd(&flags))
-	rootCmd.AddCommand(newMenuTopCmd(&flags))
-	rootCmd.AddCommand(newMigrateAnswerCmd(&flags))
-	rootCmd.AddCommand(newMigrateQuestionCmd(&flags))
-	rootCmd.AddCommand(newOrderListCmd(&flags))
-	rootCmd.AddCommand(newOrderListItemCmd(&flags))
-	rootCmd.AddCommand(newOrderListPendingCmd(&flags))
-	rootCmd.AddCommand(newOrderPriceCmd(&flags))
-	rootCmd.AddCommand(newOrderSendCmd(&flags))
-	rootCmd.AddCommand(newOrderSuggestionCmd(&flags))
-	rootCmd.AddCommand(newPasswordForgotForgotPasswordCmd(&flags))
-	rootCmd.AddCommand(newPasswordResetResetPasswordCmd(&flags))
-	rootCmd.AddCommand(newProductPriceCmd(&flags))
-	rootCmd.AddCommand(newQuoteBuildingCmd(&flags))
-	rootCmd.AddCommand(newQuoteStoreCmd(&flags))
-	rootCmd.AddCommand(newRegisterRegisterCmd(&flags))
-	rootCmd.AddCommand(newRewardCardCmd(&flags))
-	rootCmd.AddCommand(newSiteWideMessageCmd(&flags))
+	rootCmd.AddCommand(newCustomerFeedbackCmd(&flags))
+	rootCmd.AddCommand(newGiftsCmd(&flags))
+	rootCmd.AddCommand(newMenuCmd(&flags))
+	rootCmd.AddCommand(newOrdersCmd(&flags))
+	rootCmd.AddCommand(newRewardsCmd(&flags))
+	rootCmd.AddCommand(newSchedulingCmd(&flags))
 	rootCmd.AddCommand(newStoreCmd(&flags))
-	rootCmd.AddCommand(newStoredCouponsCmd(&flags))
-	rootCmd.AddCommand(newStoredCreditCmd(&flags))
-	rootCmd.AddCommand(newStoredGiftCmd(&flags))
-	rootCmd.AddCommand(newTimeWindowDaysCmd(&flags))
-	rootCmd.AddCommand(newTimeWindowsCmd(&flags))
-	rootCmd.AddCommand(newTransferGiftCmd(&flags))
-	rootCmd.AddCommand(newVersionCmd(&flags))
+	rootCmd.AddCommand(newSystemCmd(&flags))
 	rootCmd.AddCommand(newDoctorCmd(&flags))
 	rootCmd.AddCommand(newAuthCmd(&flags))
+	rootCmd.AddCommand(newAgentContextCmd(rootCmd))
+	rootCmd.AddCommand(newProfileCmd(&flags))
+	rootCmd.AddCommand(newFeedbackCmd(&flags))
+	rootCmd.AddCommand(newWhichCmd(&flags))
 	rootCmd.AddCommand(newExportCmd(&flags))
 	rootCmd.AddCommand(newImportCmd(&flags))
 	rootCmd.AddCommand(newSearchCmd(&flags))
@@ -169,9 +178,8 @@ func Execute() error {
 	rootCmd.AddCommand(newTailCmd(&flags))
 	rootCmd.AddCommand(newAnalyticsCmd(&flags))
 	rootCmd.AddCommand(newWorkflowCmd(&flags))
+	rootCmd.AddCommand(newSlicesCmd(&flags))
 	rootCmd.AddCommand(newVersionCliCmd())
-
-	rootCmd.AddCommand(newProfileCmd(&flags))
 
 	err := rootCmd.Execute()
 	if err != nil && strings.Contains(err.Error(), "unknown flag") {

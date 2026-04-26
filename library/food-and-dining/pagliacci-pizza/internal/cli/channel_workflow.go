@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/store"
 	"github.com/spf13/cobra"
+	"github.com/mvanhorn/printing-press-library/library/food-and-dining/pagliacci-pizza/internal/store"
 )
 
 func newWorkflowCmd(flags *rootFlags) *cobra.Command {
@@ -55,7 +55,7 @@ and full resync. After archiving, use 'search' for instant full-text search.`,
 			}
 			defer s.Close()
 
-			resources := []string{"order-list",  }
+			resources := []string{"address", "credit", "customer", "gifts", "orders", "store"}
 			totalSynced := 0
 
 			for _, resource := range resources {
@@ -94,7 +94,9 @@ and full resync. After archiving, use 'search' for instant full-text search.`,
 						break
 					}
 					for _, item := range items {
-						var obj struct{ ID string `json:"id"` }
+						var obj struct {
+							ID string `json:"id"`
+						}
 						json.Unmarshal(item, &obj)
 						id := obj.ID
 						if id == "" {

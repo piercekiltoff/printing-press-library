@@ -26,6 +26,14 @@ func IsUUID(s string) bool {
 	return uuidPattern.MatchString(s)
 }
 
+// StoreSchemaVersion is the on-disk schema version this binary understands.
+// It is stamped into SQLite's PRAGMA user_version on fresh databases and
+// checked on every open. Bump this whenever a migration changes table
+// shape — adding columns, dropping indexes, changing FTS5 tokenizers —
+// so an older binary refuses to open a newer database rather than silently
+// producing wrong results against a schema it cannot read.
+const StoreSchemaVersion = 1
+
 type Store struct {
 	db   *sql.DB
 	path string
@@ -41,7 +49,10 @@ func Open(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
 
-	db.SetMaxOpenConns(1)
+	// WAL mode + 2 connections allows one read cursor open while a second
+	// query executes (e.g., analytics commands calling helpers during row
+	// iteration). Writes are still serialized by SQLite's WAL lock.
+	db.SetMaxOpenConns(2)
 
 	s := &Store{db: db, path: dbPath}
 	if err := s.migrate(); err != nil {
@@ -56,7 +67,133 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+// Path returns the on-disk path of the backing SQLite file.
+func (s *Store) Path() string {
+	return s.path
+}
+
+// DB exposes the underlying *sql.DB for callers that need to run ad-hoc
+// queries (e.g., doctor's cache inspection, share snapshot import).
+// Callers must not call Close on the returned handle.
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
+
+// SchemaVersion reads PRAGMA user_version, which is stamped by migrate().
+// A zero value means the database predates the schema-version gate — not
+// a bug, but the caller may want to warn.
+func (s *Store) SchemaVersion() (int, error) {
+	var v int
+	if err := s.db.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
+		return 0, fmt.Errorf("read user_version: %w", err)
+	}
+	return v, nil
+}
+
+// setSchemaVersion stamps PRAGMA user_version. The value is not parameterizable
+// in SQLite's PRAGMA syntax, so it is formatted into the statement; migrate()
+// only calls this with the compile-time StoreSchemaVersion constant, so there
+// is no untrusted input.
+func (s *Store) setSchemaVersion(version int) error {
+	stmt := fmt.Sprintf(`PRAGMA user_version = %d`, version)
+	if _, err := s.db.Exec(stmt); err != nil {
+		return fmt.Errorf("stamp user_version: %w", err)
+	}
+	return nil
+}
+
+// ensureColumn adds a column to an existing table if it isn't already
+// present. It is the upgrade-path safety valve for schema additions:
+// CREATE TABLE IF NOT EXISTS is a no-op when the table already exists, so
+// columns added by newer binaries (e.g. parent_id from the dependent-
+// resources work) never land on databases created by older binaries —
+// which then trip "no such column" when a follow-on CREATE INDEX runs.
+//
+// Skips silently if the table doesn't yet exist (fresh install — the
+// CREATE TABLE migration will create it with the column already declared)
+// or if the column already exists.
+func (s *Store) ensureColumn(table, column, decl string) error {
+	var name string
+	err := s.db.QueryRow(
+		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`, table,
+	).Scan(&name)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("checking table %s: %w", table, err)
+	}
+
+	rows, err := s.db.Query(fmt.Sprintf(`PRAGMA table_info("%s")`, table))
+	if err != nil {
+		return fmt.Errorf("table_info %s: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var n, typ string
+		var notnull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &n, &typ, &notnull, &dflt, &pk); err != nil {
+			return fmt.Errorf("scan table_info %s: %w", table, err)
+		}
+		if n == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterating table_info %s: %w", table, err)
+	}
+
+	if _, err := s.db.Exec(fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, table, column, decl)); err != nil {
+		// A concurrent Open() may have added the column between our
+		// PRAGMA check and this ALTER. SQLite returns SQLITE_ERROR with
+		// "duplicate column name", which busy_timeout does not retry.
+		// The DB is now in the desired state regardless of who won.
+		if strings.Contains(err.Error(), "duplicate column name") {
+			return nil
+		}
+		return fmt.Errorf("add column %s.%s: %w", table, column, err)
+	}
+	return nil
+}
+
+// backfillColumns adds columns that newer binaries declare but that
+// pre-existing databases (created before those columns were added) lack.
+// Must run before the migrations slice so that subsequent CREATE INDEX
+// statements referencing the column can succeed against the upgraded
+// table. Idempotent: safe to call on fresh DBs (table-not-found short-
+// circuit) and on already-current DBs (column-exists short-circuit).
+//
+// Table names are emitted bare (no safeName) — ensureColumn double-quotes
+// them at SQL emit time and uses parameter binding for the sqlite_master
+// lookup, so the values flow as Go string literals first and SQL
+// identifiers second. Wrapping with safeName here would embed literal
+// double-quote characters into the Go string and break compilation for
+// any spec whose dependent-resource snake_cased name is a SQL reserved
+// word.
+func (s *Store) backfillColumns() error {
+	for _, c := range []struct{ table, column, decl string }{} {
+		if err := s.ensureColumn(c.table, c.column, c.decl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Store) migrate() error {
+	current, err := s.SchemaVersion()
+	if err != nil {
+		return fmt.Errorf("reading schema version: %w", err)
+	}
+	if current > StoreSchemaVersion {
+		return fmt.Errorf("database schema version %d is newer than supported version %d; upgrade the CLI binary or open an older database", current, StoreSchemaVersion)
+	}
+
+	if err := s.backfillColumns(); err != nil {
+		return fmt.Errorf("backfilling columns: %w", err)
+	}
+
 	migrations := []string{
 		`CREATE TABLE IF NOT EXISTS resources (
 			id TEXT PRIMARY KEY,
@@ -76,7 +213,47 @@ func (s *Store) migrate() error {
 		`CREATE VIRTUAL TABLE IF NOT EXISTS resources_fts USING fts5(
 			id, resource_type, content, tokenize='porter unicode61'
 		)`,
-		`CREATE TABLE IF NOT EXISTS site_wide_message (
+		`CREATE TABLE IF NOT EXISTS customer (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS credit (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS gifts (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS menu (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS cart (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS orders (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS rewards (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS customer_feedback (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS system (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -86,162 +263,17 @@ func (s *Store) migrate() error {
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE TABLE IF NOT EXISTS stored_credit (
+		`CREATE TABLE IF NOT EXISTS scheduling (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE TABLE IF NOT EXISTS time_window_days (
+		`CREATE TABLE IF NOT EXISTS address (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE TABLE IF NOT EXISTS menu_cache (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS order_price (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS order_suggestion (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS password_forgot (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS time_windows (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS customer (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS logout (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS migrate_question (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS order_list_pending (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS product_price (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS transfer_gift (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS migrate_answer (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS order_list (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS quote_building (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS address_name (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS feedback (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS menu_top (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS order_list_item (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS order_send (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS reward_card (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS stored_gift (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS access_device (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS quote_store (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS stored_coupons (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS login (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS menu_slices (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS register (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS version (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS address_info (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS password_reset (
+		`CREATE TABLE IF NOT EXISTS account (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -252,6 +284,14 @@ func (s *Store) migrate() error {
 		if _, err := s.db.Exec(m); err != nil {
 			return fmt.Errorf("migration failed: %w", err)
 		}
+	}
+	// Stamp the schema version after successful migration. On a fresh DB
+	// this writes 1; on an already-stamped DB this is a no-op write of the
+	// same value. An older DB with user_version = 0 and pre-existing tables
+	// gets stamped here without any data rewrites because the migrations
+	// above are idempotent via CREATE TABLE IF NOT EXISTS.
+	if err := s.setSchemaVersion(StoreSchemaVersion); err != nil {
+		return err
 	}
 	return nil
 }
@@ -267,17 +307,18 @@ func (s *Store) upsertGenericResourceTx(tx *sql.Tx, resourceType, id string, dat
 		return err
 	}
 
-	_, err = tx.Exec(`DELETE FROM resources_fts WHERE id = ?`, id)
-	if err != nil {
+	ftsRowid := ftsRowID(id)
+	// Use explicit rowid for FTS5 compatibility with modernc.org/sqlite.
+	// Standard DELETE WHERE column=? may not work on FTS5 virtual tables.
+	if _, err = tx.Exec(`DELETE FROM resources_fts WHERE rowid = ?`, ftsRowid); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: FTS index cleanup failed: %v\n", err)
 	}
 
-	_, err = tx.Exec(
-		`INSERT INTO resources_fts (id, resource_type, content)
-		 VALUES (?, ?, ?)`,
-		id, resourceType, string(data),
-	)
-	if err != nil {
+	if _, err = tx.Exec(
+		`INSERT INTO resources_fts (rowid, id, resource_type, content)
+		 VALUES (?, ?, ?, ?)`,
+		ftsRowid, id, resourceType, string(data),
+	); err != nil {
 		// FTS insert failure is non-fatal
 		fmt.Fprintf(os.Stderr, "warning: FTS index update failed: %v\n", err)
 	}
@@ -375,6 +416,17 @@ func extractObjectID(obj map[string]any) string {
 	return ""
 }
 
+// ftsRowID derives a deterministic rowid from a string ID for use with FTS5.
+// modernc.org/sqlite's FTS5 implementation may not support DELETE WHERE column=?
+// on virtual tables, so we use explicit rowids and DELETE WHERE rowid=? instead.
+func ftsRowID(id string) int64 {
+	var h uint64
+	for _, c := range id {
+		h = h*31 + uint64(c)
+	}
+	return int64(h & 0x7FFFFFFFFFFFFFFF) // ensure positive
+}
+
 func lookupFieldValue(obj map[string]any, snakeKey string) any {
 	if v, ok := obj[snakeKey]; ok {
 		return v
@@ -394,6 +446,12 @@ func lookupFieldValue(obj map[string]any, snakeKey string) any {
 
 // UpsertBatch inserts or replaces multiple records in a single transaction.
 // This is 10-100x faster than individual Upsert calls for bulk operations.
+//
+// For resource types that have a domain-specific typed table, the per-item
+// generic insert is followed by a dispatch to the matching upsert<Pascal>Tx
+// inside the same transaction. Without that dispatch, paginated syncs would
+// only populate the generic resources table — typed tables (and indexed
+// columns like parent_id added by dependent-resource sync) would stay empty.
 func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -401,24 +459,40 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) error 
 	}
 	defer tx.Rollback()
 
+	var skippedCount int
 	for _, item := range items {
 		var obj map[string]any
 		if err := json.Unmarshal(item, &obj); err != nil {
 			continue
 		}
-		id := fmt.Sprintf("%v", lookupFieldValue(obj, "id"))
-		if id == "" || id == "<nil>" {
+		// Try common primary key field names in priority order.
+		var id string
+		for _, key := range []string{"id", "ID", "ticker", "event_ticker", "series_ticker", "key", "code", "uid", "uuid", "slug", "name"} {
+			if v := lookupFieldValue(obj, key); v != nil {
+				s := fmt.Sprintf("%v", v)
+				if s != "" && s != "<nil>" {
+					id = s
+					break
+				}
+			}
+		}
+		if id == "" {
+			skippedCount++
 			continue
 		}
 
-		_, err := tx.Exec(
-			`INSERT OR REPLACE INTO resources (id, resource_type, data, synced_at, updated_at)
-			 VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-			id, resourceType, string(item),
-		)
-		if err != nil {
+		if err := s.upsertGenericResourceTx(tx, resourceType, id, item); err != nil {
 			return fmt.Errorf("upserting %s/%s: %w", resourceType, id, err)
 		}
+
+		switch resourceType {
+		}
+	}
+
+	// Warn when most items in a batch lack an extractable ID — this likely
+	// means the API uses a primary key field we don't recognize yet.
+	if skippedCount > 0 && len(items) > 0 && skippedCount*2 > len(items) {
+		fmt.Fprintf(os.Stderr, "warning: %d/%d %s items skipped (no extractable ID field found)\n", skippedCount, len(items), resourceType)
 	}
 
 	return tx.Commit()
@@ -465,6 +539,32 @@ func (s *Store) GetSyncCursor(resourceType string) string {
 		return cursor.String
 	}
 	return ""
+}
+
+// ListIDs returns all IDs from a resource's domain table, or from the generic
+// resources table if no domain table exists. Used by dependent sync to iterate parents.
+func (s *Store) ListIDs(resourceType string) ([]string, error) {
+	// Try domain table first (tables are named after the resource type)
+	query := fmt.Sprintf("SELECT id FROM %s", resourceType)
+	rows, err := s.db.Query(query)
+	if err != nil {
+		// Fall back to generic resources table
+		rows, err = s.db.Query("SELECT id FROM resources WHERE resource_type = ?", resourceType)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }
 
 // GetLastSyncedAt returns the last sync timestamp for a resource type.
