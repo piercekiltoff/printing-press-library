@@ -383,7 +383,7 @@ def extract_recipes(skill: Path, cli_binary: str, cli_dir: Path | None = None) -
                     or re.match(r"^\d", t)
                 ):
                     break
-                if len(cmd_path) < 3 and re.match(r"^[a-z][a-z0-9-]*$", t):
+                if len(cmd_path) < 3 and re.match(r"^[a-z][a-z0-9_-]*$", t):
                     # Verify adding this token still maps to a valid command.
                     # If the extended path has no source match (e.g. the
                     # parent command's Use documents <positional> and this
@@ -539,7 +539,7 @@ def check_positional_args(cli_dir: Path, skill: Path, cli_binary: str, report: R
             fp = True
         # For single-token cmd_path where positional[0] is lowercase+alpha,
         # the parser may have under-counted cmd_path.
-        if len(cmd_path) == 1 and positional and re.match(r"^[a-z][a-z0-9-]+$", positional[0]):
+        if len(cmd_path) == 1 and positional and re.match(r"^[a-z][a-z0-9_-]+$", positional[0]):
             fp = True
 
         max_display = "∞" if max_ok == float("inf") else int(max_ok)
