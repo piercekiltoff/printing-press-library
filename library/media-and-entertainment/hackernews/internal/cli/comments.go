@@ -3,208 +3,234 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/algolia"
 )
 
 func newCommentsCmd(flags *rootFlags) *cobra.Command {
-	var flagFlat bool
-	var flagDepth int
-	var flagAuthor string
-	var flagSince string
-	var flagLimit int
+	var depth int
+	var flat bool
+	var author string
+	var match string
+	var since string
 
 	cmd := &cobra.Command{
 		Use:   "comments <id>",
-		Short: "Read comment threads with indentation, filtering, and flat mode",
-		Example: `  # Read comments on a story
+		Short: "Print a thread's comment tree using Algolia's one-shot fetch",
+		Long: `Print a Hacker News thread's full comment tree in a single Algolia call.
+
+The comment tree is fetched from Algolia's /items endpoint, which returns
+the entire thread without recursive Firebase walks. By default the tree
+is rendered as nested replies; --flat prints one comment per line.`,
+		Example: strings.Trim(`
+  # Tree view (default)
   hackernews-pp-cli comments 12345678
 
-  # Flat mode for piping
+  # Flat list, easier to grep
   hackernews-pp-cli comments 12345678 --flat
 
-  # Only 2 levels deep
+  # Cap to depth 2 for huge threads
   hackernews-pp-cli comments 12345678 --depth 2
 
-  # Filter to one author
-  hackernews-pp-cli comments 12345678 --author dang
+  # Filter by author and time
+  hackernews-pp-cli comments 12345678 --author dang --since 24h
 
-  # JSON output
-  hackernews-pp-cli comments 12345678 --json`,
-		Args: cobra.ExactArgs(1),
+  # JSON for piping into jq
+  hackernews-pp-cli comments 12345678 --json
+`, "\n"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var itemID int
-			if _, err := fmt.Sscanf(args[0], "%d", &itemID); err != nil {
-				return usageErr(fmt.Errorf("invalid item ID %q", args[0]))
+			if len(args) == 0 {
+				return cmd.Help()
 			}
-
-			// Parse since if given
-			var sinceCutoff time.Time
-			if flagSince != "" {
-				dur, err := parseDuration(flagSince)
-				if err != nil {
-					return usageErr(err)
-				}
-				sinceCutoff = time.Now().Add(-dur)
-			}
-
-			fmt.Fprintf(cmd.ErrOrStderr(), "Fetching comments...\n")
-
-			// Fetch root item
-			root, err := fetchFirebaseItem(flags, itemID)
-			if err != nil {
-				return classifyAPIError(err)
-			}
-
-			// Recursively fetch comments
-			type commentNode struct {
-				item  map[string]any
-				depth int
-			}
-
-			var allComments []commentNode
-			var fetchComments func(parentIDs []int, depth int)
-			fetchComments = func(parentIDs []int, depth int) {
-				if flagDepth > 0 && depth > flagDepth {
-					return
-				}
-				if len(allComments) >= 500 { // safety limit
-					return
-				}
-
-				items, err := fetchFirebaseItems(flags, parentIDs, len(parentIDs))
-				if err != nil {
-					return
-				}
-
-				for _, item := range items {
-					if getString(item, "type") != "comment" {
-						continue
-					}
-					if getString(item, "deleted") == "true" || getString(item, "dead") == "true" {
-						continue
-					}
-
-					// Apply author filter
-					if flagAuthor != "" && getString(item, "by") != flagAuthor {
-						// Still recurse into children in case they match
-						kids := getIntSlice(item, "kids")
-						if len(kids) > 0 {
-							fetchComments(kids, depth+1)
-						}
-						continue
-					}
-
-					// Apply since filter
-					if !sinceCutoff.IsZero() {
-						t := getInt(item, "time")
-						if t > 0 && time.Unix(int64(t), 0).Before(sinceCutoff) {
-							continue
-						}
-					}
-
-					allComments = append(allComments, commentNode{item: item, depth: depth})
-
-					kids := getIntSlice(item, "kids")
-					if len(kids) > 0 {
-						fetchComments(kids, depth+1)
-					}
-				}
-			}
-
-			kids := getIntSlice(root, "kids")
-			fetchComments(kids, 1)
-
-			// Apply limit
-			if flagLimit > 0 && len(allComments) > flagLimit {
-				allComments = allComments[:flagLimit]
-			}
-
-			fmt.Fprintf(cmd.ErrOrStderr(), "%d comments\n", len(allComments))
-
-			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
-				result := make([]map[string]any, 0, len(allComments))
-				for _, c := range allComments {
-					entry := map[string]any{
-						"id":     getInt(c.item, "id"),
-						"by":     getString(c.item, "by"),
-						"text":   stripHTML(getString(c.item, "text")),
-						"time":   getInt(c.item, "time"),
-						"depth":  c.depth,
-						"parent": getInt(c.item, "parent"),
-					}
-					result = append(result, entry)
-				}
-				data, _ := json.Marshal(result)
-				return printOutput(cmd.OutOrStdout(), json.RawMessage(data), true)
-			}
-
-			if flagFlat {
-				for _, c := range allComments {
-					text := stripHTML(getString(c.item, "text"))
-					author := getString(c.item, "by")
-					fmt.Fprintf(cmd.OutOrStdout(), "%s: %s\n", author, text)
-				}
+			if dryRunOK(flags) {
 				return nil
 			}
+			id := args[0]
+			ac := algolia.New(flags.timeout)
+			node, err := ac.Item(id)
+			if err != nil {
+				return apiErr(err)
+			}
 
-			// Threaded display
-			for _, c := range allComments {
-				indent := strings.Repeat("  ", c.depth-1)
-				author := getString(c.item, "by")
-				text := stripHTML(getString(c.item, "text"))
-				t := getInt(c.item, "time")
-				age := ""
-				if t > 0 {
-					age = timeAgo(time.Unix(int64(t), 0))
+			var sinceCutoff int64
+			if since != "" {
+				ts, parseErr := parseSinceDuration(since)
+				if parseErr != nil {
+					return usageErr(fmt.Errorf("invalid --since: %w", parseErr))
 				}
+				sinceCutoff = ts.Unix()
+			}
+			var matchRE *regexp.Regexp
+			if match != "" {
+				re, reErr := regexp.Compile(match)
+				if reErr != nil {
+					return usageErr(fmt.Errorf("invalid --match regex: %w", reErr))
+				}
+				matchRE = re
+			}
 
-				fmt.Fprintf(cmd.OutOrStdout(), "%s%s %s\n", indent, bold(author), age)
-				// Word-wrap text at ~80 chars minus indent
-				maxWidth := 80 - len(indent) - 2
-				if maxWidth < 40 {
-					maxWidth = 40
-				}
-				wrapped := wordWrap(text, maxWidth)
-				for _, line := range strings.Split(wrapped, "\n") {
-					fmt.Fprintf(cmd.OutOrStdout(), "%s  %s\n", indent, line)
-				}
-				fmt.Fprintln(cmd.OutOrStdout())
+			// Filter the tree according to flags.
+			filterNode(node, depth, 0, author, matchRE, sinceCutoff)
+
+			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
+				out, _ := json.MarshalIndent(node, "", "  ")
+				return printOutput(cmd.OutOrStdout(), out, true)
+			}
+
+			if flat {
+				renderFlat(cmd.OutOrStdout(), node, 0)
+			} else {
+				renderTree(cmd.OutOrStdout(), node, 0, "")
 			}
 			return nil
 		},
 	}
-
-	cmd.Flags().BoolVar(&flagFlat, "flat", false, "Flatten output (one comment per line, no indentation)")
-	cmd.Flags().IntVar(&flagDepth, "depth", 0, "Max nesting level (0 = unlimited)")
-	cmd.Flags().StringVar(&flagAuthor, "author", "", "Filter to comments by this author")
-	cmd.Flags().StringVar(&flagSince, "since", "", "Only comments newer than (e.g., 1h, 24h, 7d)")
-	cmd.Flags().IntVar(&flagLimit, "limit", 0, "Maximum comments to show (0 = unlimited)")
-
+	cmd.Flags().IntVar(&depth, "depth", 0, "Maximum depth of replies to include (0 = no limit)")
+	cmd.Flags().BoolVar(&flat, "flat", false, "Render comments as a flat list instead of a tree")
+	cmd.Flags().StringVar(&author, "author", "", "Only include comments by this username")
+	cmd.Flags().StringVar(&match, "match", "", "Only include comments whose text matches this regex")
+	cmd.Flags().StringVar(&since, "since", "", "Only include comments newer than this duration (e.g., 24h, 7d)")
 	return cmd
 }
 
-// wordWrap breaks text into lines of at most maxWidth characters.
-func wordWrap(text string, maxWidth int) string {
-	if maxWidth <= 0 {
-		return text
+// filterNode prunes the tree under node. Children whose subtree has no
+// matching comment are dropped; matching nodes survive even if their
+// children don't, and intermediate non-matching nodes survive as frames
+// when their subtree contains matches. The root (story) is never pruned.
+// Depth is the cap (0 = no cap); cur is the depth of node itself.
+//
+// Filters only apply when at least one is set. With no filters, the whole
+// tree under the depth cap is returned.
+func filterNode(node *algolia.ItemNode, depth, cur int, author string, matchRE *regexp.Regexp, sinceCutoff int64) {
+	if node == nil {
+		return
 	}
-	words := strings.Fields(text)
-	if len(words) == 0 {
-		return ""
+	if depth > 0 && cur >= depth {
+		node.Children = nil
+		return
 	}
-	var lines []string
-	currentLine := words[0]
-	for _, word := range words[1:] {
-		if len(currentLine)+1+len(word) > maxWidth {
-			lines = append(lines, currentLine)
-			currentLine = word
-		} else {
-			currentLine += " " + word
+	hasFilters := author != "" || matchRE != nil || sinceCutoff > 0
+	if !hasFilters {
+		for i := range node.Children {
+			filterNode(&node.Children[i], depth, cur+1, author, matchRE, sinceCutoff)
+		}
+		return
+	}
+	kept := node.Children[:0]
+	for i := range node.Children {
+		filterNode(&node.Children[i], depth, cur+1, author, matchRE, sinceCutoff)
+		if commentMatches(&node.Children[i], author, matchRE, sinceCutoff) || len(node.Children[i].Children) > 0 {
+			kept = append(kept, node.Children[i])
 		}
 	}
-	lines = append(lines, currentLine)
-	return strings.Join(lines, "\n")
+	node.Children = kept
+}
+
+func commentMatches(n *algolia.ItemNode, author string, matchRE *regexp.Regexp, sinceCutoff int64) bool {
+	if author != "" && !strings.EqualFold(n.Author, author) {
+		return false
+	}
+	if matchRE != nil && !matchRE.MatchString(n.Text) {
+		return false
+	}
+	if sinceCutoff > 0 && n.CreatedAtI < sinceCutoff {
+		return false
+	}
+	return true
+}
+
+func renderTree(w io.Writer, node *algolia.ItemNode, depth int, prefix string) {
+	if node == nil {
+		return
+	}
+	indent := strings.Repeat("  ", depth)
+	header := node.Author
+	if header == "" {
+		header = "(unknown)"
+	}
+	when := relativeTimeFromUnix(node.CreatedAtI)
+	if node.Title != "" {
+		fmt.Fprintf(w, "%s%s [%d points] by %s — %s\n", indent, node.Title, node.Points, header, when)
+	} else {
+		fmt.Fprintf(w, "%s%s — %s\n", indent, header, when)
+	}
+	body := stripHTML(node.Text)
+	if body != "" {
+		for _, line := range strings.Split(body, "\n") {
+			fmt.Fprintf(w, "%s    %s\n", indent, line)
+		}
+	}
+	for i := range node.Children {
+		renderTree(w, &node.Children[i], depth+1, prefix)
+	}
+}
+
+func renderFlat(w io.Writer, node *algolia.ItemNode, depth int) {
+	if node == nil {
+		return
+	}
+	when := relativeTimeFromUnix(node.CreatedAtI)
+	if node.Title != "" {
+		fmt.Fprintf(w, "[story] %s by %s — %s\n", node.Title, node.Author, when)
+	} else {
+		body := stripHTML(node.Text)
+		body = strings.ReplaceAll(body, "\n", " ")
+		if len(body) > 240 {
+			body = body[:240] + "..."
+		}
+		fmt.Fprintf(w, "%s — %s: %s\n", node.Author, when, body)
+	}
+	for i := range node.Children {
+		renderFlat(w, &node.Children[i], depth+1)
+	}
+}
+
+func relativeTimeFromUnix(ts int64) string {
+	if ts <= 0 {
+		return "?"
+	}
+	d := time.Since(time.Unix(ts, 0))
+	switch {
+	case d < time.Minute:
+		return fmt.Sprintf("%ds ago", int(d.Seconds()))
+	case d < time.Hour:
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	case d < 30*24*time.Hour:
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+	default:
+		return fmt.Sprintf("%dmo ago", int(d.Hours()/24/30))
+	}
+}
+
+var htmlTagRE = regexp.MustCompile(`<[^>]+>`)
+var htmlEntityRE = map[string]string{
+	"&amp;":  "&",
+	"&lt;":   "<",
+	"&gt;":   ">",
+	"&quot;": "\"",
+	"&#39;":  "'",
+	"&#x27;": "'",
+	"&#x2F;": "/",
+	"&nbsp;": " ",
+}
+
+// stripHTML removes Algolia-encoded HTML tags and decodes the common
+// entities Algolia emits. It does not pull in golang.org/x/net/html;
+// the Algolia text fields are simple — <p>, <a>, <i>, occasional <pre>.
+func stripHTML(s string) string {
+	if s == "" {
+		return ""
+	}
+	out := htmlTagRE.ReplaceAllString(s, "")
+	for k, v := range htmlEntityRE {
+		out = strings.ReplaceAll(out, k, v)
+	}
+	return strings.TrimSpace(out)
 }

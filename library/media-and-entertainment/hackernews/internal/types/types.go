@@ -13,22 +13,23 @@ type Item struct {
 	Score       int    `json:"score"`
 	Descendants int    `json:"descendants"`
 	Text        string `json:"text"`
+	Parent      int    `json:"parent"`
+	Dead        bool   `json:"dead"`
+	Deleted     bool   `json:"deleted"`
 	Kids        string `json:"kids"`
 }
 
-type SearchHit struct {
-	ObjectID    string `json:"objectID"`
-	Title       string `json:"title"`
-	Url         string `json:"url"`
-	Author      string `json:"author"`
-	Points      int    `json:"points"`
-	NumComments int    `json:"num_comments"`
-	CreatedAt   string `json:"created_at"`
-	StoryText   string `json:"story_text"`
+type MaxItem struct {
+	Id int `json:"id"`
 }
 
 type StoryID struct {
 	Id int `json:"id"`
+}
+
+type Updates struct {
+	Items    string `json:"items"`
+	Profiles string `json:"profiles"`
 }
 
 type User struct {

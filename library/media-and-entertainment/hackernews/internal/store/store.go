@@ -26,6 +26,14 @@ func IsUUID(s string) bool {
 	return uuidPattern.MatchString(s)
 }
 
+// StoreSchemaVersion is the on-disk schema version this binary understands.
+// It is stamped into SQLite's PRAGMA user_version on fresh databases and
+// checked on every open. Bump this whenever a migration changes table
+// shape — adding columns, dropping indexes, changing FTS5 tokenizers —
+// so an older binary refuses to open a newer database rather than silently
+// producing wrong results against a schema it cannot read.
+const StoreSchemaVersion = 1
+
 type Store struct {
 	db   *sql.DB
 	path string
@@ -41,7 +49,10 @@ func Open(dbPath string) (*Store, error) {
 		return nil, fmt.Errorf("opening database: %w", err)
 	}
 
-	db.SetMaxOpenConns(1)
+	// WAL mode + 2 connections allows one read cursor open while a second
+	// query executes (e.g., analytics commands calling helpers during row
+	// iteration). Writes are still serialized by SQLite's WAL lock.
+	db.SetMaxOpenConns(2)
 
 	s := &Store{db: db, path: dbPath}
 	if err := s.migrate(); err != nil {
@@ -56,7 +67,139 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
+// Path returns the on-disk path of the backing SQLite file.
+func (s *Store) Path() string {
+	return s.path
+}
+
+// DB exposes the underlying *sql.DB for callers that need to run ad-hoc
+// queries (e.g., doctor's cache inspection, share snapshot import).
+// Callers must not call Close on the returned handle.
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
+
+// SchemaVersion reads PRAGMA user_version, which is stamped by migrate().
+// A zero value means the database predates the schema-version gate — not
+// a bug, but the caller may want to warn.
+func (s *Store) SchemaVersion() (int, error) {
+	var v int
+	if err := s.db.QueryRow(`PRAGMA user_version`).Scan(&v); err != nil {
+		return 0, fmt.Errorf("read user_version: %w", err)
+	}
+	return v, nil
+}
+
+// setSchemaVersion stamps PRAGMA user_version. The value is not parameterizable
+// in SQLite's PRAGMA syntax, so it is formatted into the statement; migrate()
+// only calls this with the compile-time StoreSchemaVersion constant, so there
+// is no untrusted input.
+func (s *Store) setSchemaVersion(version int) error {
+	stmt := fmt.Sprintf(`PRAGMA user_version = %d`, version)
+	if _, err := s.db.Exec(stmt); err != nil {
+		return fmt.Errorf("stamp user_version: %w", err)
+	}
+	return nil
+}
+
+// ensureColumn adds a column to an existing table if it isn't already
+// present. It is the upgrade-path safety valve for schema additions:
+// CREATE TABLE IF NOT EXISTS is a no-op when the table already exists, so
+// columns added by newer binaries (e.g. parent_id from the dependent-
+// resources work) never land on databases created by older binaries —
+// which then trip "no such column" when a follow-on CREATE INDEX runs.
+//
+// Skips silently if the table doesn't yet exist (fresh install — the
+// CREATE TABLE migration will create it with the column already declared)
+// or if the column already exists.
+func (s *Store) ensureColumn(table, column, decl string) error {
+	var name string
+	err := s.db.QueryRow(
+		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`, table,
+	).Scan(&name)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("checking table %s: %w", table, err)
+	}
+
+	rows, err := s.db.Query(fmt.Sprintf(`PRAGMA table_info("%s")`, table))
+	if err != nil {
+		return fmt.Errorf("table_info %s: %w", table, err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cid int
+		var n, typ string
+		var notnull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &n, &typ, &notnull, &dflt, &pk); err != nil {
+			return fmt.Errorf("scan table_info %s: %w", table, err)
+		}
+		if n == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterating table_info %s: %w", table, err)
+	}
+
+	if _, err := s.db.Exec(fmt.Sprintf(`ALTER TABLE "%s" ADD COLUMN "%s" %s`, table, column, decl)); err != nil {
+		// A concurrent Open() may have added the column between our
+		// PRAGMA check and this ALTER. SQLite returns SQLITE_ERROR with
+		// "duplicate column name", which busy_timeout does not retry.
+		// The DB is now in the desired state regardless of who won.
+		if strings.Contains(err.Error(), "duplicate column name") {
+			return nil
+		}
+		return fmt.Errorf("add column %s.%s: %w", table, column, err)
+	}
+	return nil
+}
+
+// backfillColumns adds columns that newer binaries declare but that
+// pre-existing databases (created before those columns were added) lack.
+// Must run before the migrations slice so that subsequent CREATE INDEX
+// statements referencing the column can succeed against the upgraded
+// table. Idempotent: safe to call on fresh DBs (table-not-found short-
+// circuit) and on already-current DBs (column-exists short-circuit).
+//
+// Table names are emitted bare (no safeName) — ensureColumn double-quotes
+// them at SQL emit time and uses parameter binding for the sqlite_master
+// lookup, so the values flow as Go string literals first and SQL
+// identifiers second. Wrapping with safeName here would embed literal
+// double-quote characters into the Go string and break compilation for
+// any spec whose dependent-resource snake_cased name is a SQL reserved
+// word.
+func (s *Store) backfillColumns() error {
+	for _, c := range []struct{ table, column, decl string }{
+		{table: "stories", column: "limit", decl: "INTEGER"},
+		{table: "stories", column: "item_id", decl: "TEXT"},
+		{table: "sync_state", column: "last_cursor", decl: "TEXT"},
+		{table: "sync_state", column: "last_synced_at", decl: "DATETIME"},
+		{table: "sync_state", column: "total_count", decl: "INTEGER DEFAULT 0"},
+	} {
+		if err := s.ensureColumn(c.table, c.column, c.decl); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Store) migrate() error {
+	current, err := s.SchemaVersion()
+	if err != nil {
+		return fmt.Errorf("reading schema version: %w", err)
+	}
+	if current > StoreSchemaVersion {
+		return fmt.Errorf("database schema version %d is newer than supported version %d; upgrade the CLI binary or open an older database", current, StoreSchemaVersion)
+	}
+
+	if err := s.backfillColumns(); err != nil {
+		return fmt.Errorf("backfilling columns: %w", err)
+	}
+
 	migrations := []string{
 		`CREATE TABLE IF NOT EXISTS resources (
 			id TEXT PRIMARY KEY,
@@ -76,6 +219,33 @@ func (s *Store) migrate() error {
 		`CREATE VIRTUAL TABLE IF NOT EXISTS resources_fts USING fts5(
 			id, resource_type, content, tokenize='porter unicode61'
 		)`,
+		`CREATE TABLE IF NOT EXISTS users (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS updates (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS maxitem (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS stories (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			"limit" INTEGER,
+			item_id TEXT
+		)`,
+		`CREATE TABLE IF NOT EXISTS ask (
+			id TEXT PRIMARY KEY,
+			data JSON NOT NULL,
+			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE TABLE IF NOT EXISTS show (
 			id TEXT PRIMARY KEY,
 			data JSON NOT NULL,
@@ -86,39 +256,20 @@ func (s *Store) migrate() error {
 			data JSON NOT NULL,
 			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE TABLE IF NOT EXISTS users (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS search (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			query TEXT,
-			tags TEXT,
-			numeric_filters TEXT,
-			page INTEGER,
-			hits_per_page INTEGER
-		)`,
-		`CREATE TABLE IF NOT EXISTS stories (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			"limit" INTEGER,
-			story_id TEXT
-		)`,
-		`CREATE TABLE IF NOT EXISTS ask (
-			id TEXT PRIMARY KEY,
-			data JSON NOT NULL,
-			synced_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
 	}
 
 	for _, m := range migrations {
 		if _, err := s.db.Exec(m); err != nil {
 			return fmt.Errorf("migration failed: %w", err)
 		}
+	}
+	// Stamp the schema version after successful migration. On a fresh DB
+	// this writes 1; on an already-stamped DB this is a no-op write of the
+	// same value. An older DB with user_version = 0 and pre-existing tables
+	// gets stamped here without any data rewrites because the migrations
+	// above are idempotent via CREATE TABLE IF NOT EXISTS.
+	if err := s.setSchemaVersion(StoreSchemaVersion); err != nil {
+		return err
 	}
 	return nil
 }
@@ -271,46 +422,26 @@ func lookupFieldValue(obj map[string]any, snakeKey string) any {
 	return nil
 }
 
-// UpsertSearch inserts or updates a search record with domain-specific columns.
-func (s *Store) UpsertSearch(data json.RawMessage) error {
-	var obj map[string]any
-	if err := json.Unmarshal(data, &obj); err != nil {
-		return fmt.Errorf("unmarshaling search: %w", err)
-	}
-
-	id := extractObjectID(obj)
-	if id == "" {
-		return fmt.Errorf("missing id for search")
-	}
-
-	tx, err := s.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if err := s.upsertGenericResourceTx(tx, "search", id, data); err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(
-		`INSERT INTO search (id, data, synced_at, query, tags, numeric_filters, page, hits_per_page)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-		 ON CONFLICT(id) DO UPDATE SET data = excluded.data, synced_at = excluded.synced_at, query = excluded.query, tags = excluded.tags, numeric_filters = excluded.numeric_filters, page = excluded.page, hits_per_page = excluded.hits_per_page`,
+// upsertStoriesTx writes the typed-table portion of a stories upsert
+// inside an existing transaction. The caller is responsible for the generic
+// resources insert (via upsertGenericResourceTx) and for committing the tx.
+// Splitting this out lets UpsertBatch dispatch typed inserts per item without
+// opening a per-item transaction.
+func (s *Store) upsertStoriesTx(tx *sql.Tx, id string, obj map[string]any, data json.RawMessage) error {
+	if _, err := tx.Exec(
+		`INSERT INTO stories (id, data, synced_at, "limit", item_id)
+		 VALUES (?, ?, ?, ?, ?)
+		 ON CONFLICT(id) DO UPDATE SET data = excluded.data, synced_at = excluded.synced_at, "limit" = excluded."limit", item_id = excluded.item_id`,
 		id,
 		string(data),
 		time.Now(),
-		lookupFieldValue(obj, "query"),
-		lookupFieldValue(obj, "tags"),
-		lookupFieldValue(obj, "numeric_filters"),
-		lookupFieldValue(obj, "page"),
-		lookupFieldValue(obj, "hits_per_page"),
-	)
-	if err != nil {
-		return err
+		lookupFieldValue(obj, "limit"),
+		lookupFieldValue(obj, "item_id"),
+	); err != nil {
+		return fmt.Errorf("insert into stories: %w", err)
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 // UpsertStories inserts or updates a stories record with domain-specific columns.
@@ -334,18 +465,7 @@ func (s *Store) UpsertStories(data json.RawMessage) error {
 	if err := s.upsertGenericResourceTx(tx, "stories", id, data); err != nil {
 		return err
 	}
-
-	_, err = tx.Exec(
-		`INSERT INTO stories (id, data, synced_at, "limit", story_id)
-		 VALUES (?, ?, ?, ?, ?)
-		 ON CONFLICT(id) DO UPDATE SET data = excluded.data, synced_at = excluded.synced_at, "limit" = excluded."limit", story_id = excluded.story_id`,
-		id,
-		string(data),
-		time.Now(),
-		lookupFieldValue(obj, "limit"),
-		lookupFieldValue(obj, "story_id"),
-	)
-	if err != nil {
+	if err := s.upsertStoriesTx(tx, id, obj, data); err != nil {
 		return err
 	}
 
@@ -354,6 +474,12 @@ func (s *Store) UpsertStories(data json.RawMessage) error {
 
 // UpsertBatch inserts or replaces multiple records in a single transaction.
 // This is 10-100x faster than individual Upsert calls for bulk operations.
+//
+// For resource types that have a domain-specific typed table, the per-item
+// generic insert is followed by a dispatch to the matching upsert<Pascal>Tx
+// inside the same transaction. Without that dispatch, paginated syncs would
+// only populate the generic resources table — typed tables (and indexed
+// columns like parent_id added by dependent-resource sync) would stay empty.
 func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) error {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -383,26 +509,15 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) error 
 			continue
 		}
 
-		_, err := tx.Exec(
-			`INSERT OR REPLACE INTO resources (id, resource_type, data, synced_at, updated_at)
-			 VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-			id, resourceType, string(item),
-		)
-		if err != nil {
+		if err := s.upsertGenericResourceTx(tx, resourceType, id, item); err != nil {
 			return fmt.Errorf("upserting %s/%s: %w", resourceType, id, err)
 		}
 
-		// Update FTS index (non-fatal — matches upsertGenericResourceTx pattern).
-		// Use explicit rowid for FTS5 compatibility with modernc.org/sqlite.
-		ftsRowid := ftsRowID(id)
-		if _, ftsErr := tx.Exec(`DELETE FROM resources_fts WHERE rowid = ?`, ftsRowid); ftsErr != nil {
-			fmt.Fprintf(os.Stderr, "warning: FTS index cleanup failed for %s/%s: %v\n", resourceType, id, ftsErr)
-		}
-		if _, ftsErr := tx.Exec(
-			`INSERT INTO resources_fts (rowid, id, resource_type, content) VALUES (?, ?, ?, ?)`,
-			ftsRowid, id, resourceType, string(item),
-		); ftsErr != nil {
-			fmt.Fprintf(os.Stderr, "warning: FTS index update failed for %s/%s: %v\n", resourceType, id, ftsErr)
+		switch resourceType {
+		case "stories":
+			if err := s.upsertStoriesTx(tx, id, obj, item); err != nil {
+				return fmt.Errorf("typed upsert for %s/%s: %w", resourceType, id, err)
+			}
 		}
 	}
 
@@ -456,6 +571,32 @@ func (s *Store) GetSyncCursor(resourceType string) string {
 		return cursor.String
 	}
 	return ""
+}
+
+// ListIDs returns all IDs from a resource's domain table, or from the generic
+// resources table if no domain table exists. Used by dependent sync to iterate parents.
+func (s *Store) ListIDs(resourceType string) ([]string, error) {
+	// Try domain table first (tables are named after the resource type)
+	query := fmt.Sprintf("SELECT id FROM %s", resourceType)
+	rows, err := s.db.Query(query)
+	if err != nil {
+		// Fall back to generic resources table
+		rows, err = s.db.Query("SELECT id FROM resources WHERE resource_type = ?", resourceType)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	return ids, rows.Err()
 }
 
 // GetLastSyncedAt returns the last sync timestamp for a resource type.

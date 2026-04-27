@@ -29,24 +29,26 @@ func newStoriesNewCmd(flags *rootFlags) *cobra.Command {
 			if flagLimit != 0 {
 				params["limit"] = fmt.Sprintf("%v", flagLimit)
 			}
-			data, prov, err := resolveRead(c, flags, "stories", false, path, params)
+			data, prov, err := resolveRead(c, flags, "stories", false, path, params, nil)
 			if err != nil {
 				return classifyAPIError(err)
 			}
+			data = truncateJSONArray(data, flagLimit)
 			// Print provenance to stderr for human-facing output
 			{
 				var countItems []json.RawMessage
 				_ = json.Unmarshal(data, &countItems)
 				printProvenance(cmd, len(countItems), prov)
 			}
-			// For JSON output, wrap with provenance envelope before passing through flags
+			// For JSON output, wrap with provenance envelope before passing through flags.
+			// --select wins over --compact when both are set; --compact only runs when
+			// no explicit fields were requested.
 			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
 				filtered := data
-				if flags.compact {
-					filtered = compactFields(filtered)
-				}
 				if flags.selectFields != "" {
 					filtered = filterFields(filtered, flags.selectFields)
+				} else if flags.compact {
+					filtered = compactFields(filtered)
 				}
 				wrapped, wrapErr := wrapWithProvenance(filtered, prov)
 				if wrapErr != nil {
@@ -70,7 +72,7 @@ func newStoriesNewCmd(flags *rootFlags) *cobra.Command {
 			return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
 		},
 	}
-	cmd.Flags().IntVar(&flagLimit, "limit", 30, "Maximum number of stories to return")
+	cmd.Flags().IntVar(&flagLimit, "limit", 30, "Maximum number of story IDs to return (max 500)")
 
 	return cmd
 }

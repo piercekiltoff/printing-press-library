@@ -11,26 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newStoriesPromotedCmd(flags *rootFlags) *cobra.Command {
-	var flagLimit int
+func newMaxitemPromotedCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:     "stories",
-		Short:   "Get the highest-voted stories on Hacker News",
-		Long:    "Shortcut for 'stories best'. Get the highest-voted stories on Hacker News",
-		Example: "  hackernews-pp-cli stories",
+		Use:     "maxitem",
+		Short:   "Returns the largest item ID currently assigned by Hacker News",
+		Long:    "Shortcut for 'maxitem get'. Returns the largest item ID currently assigned by Hacker News",
+		Example: "  hackernews-pp-cli maxitem",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := flags.newClient()
 			if err != nil {
 				return err
 			}
 
-			path := "/beststories.json"
+			path := "/maxitem.json"
 			params := map[string]string{}
-			if flagLimit != 0 {
-				params["limit"] = fmt.Sprintf("%v", flagLimit)
-			}
-			data, prov, err := resolveRead(c, flags, "stories", false, path, params)
+			data, prov, err := resolveRead(c, flags, "maxitem", false, path, params, nil)
 			if err != nil {
 				return classifyAPIError(err)
 			}
@@ -51,14 +47,15 @@ func newStoriesPromotedCmd(flags *rootFlags) *cobra.Command {
 			if flags.csv {
 				return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
 			}
-			// For JSON output, wrap with provenance envelope
+			// For JSON output, wrap with provenance envelope. --select wins over
+			// --compact when both are set; --compact only runs when no explicit
+			// fields were requested.
 			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
 				filtered := data
-				if flags.compact {
-					filtered = compactFields(filtered)
-				}
 				if flags.selectFields != "" {
 					filtered = filterFields(filtered, flags.selectFields)
+				} else if flags.compact {
+					filtered = compactFields(filtered)
 				}
 				wrapped, wrapErr := wrapWithProvenance(filtered, prov)
 				if wrapErr != nil {
@@ -81,12 +78,8 @@ func newStoriesPromotedCmd(flags *rootFlags) *cobra.Command {
 			return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
 		},
 	}
-	cmd.Flags().IntVar(&flagLimit, "limit", 30, "Maximum number of stories to return")
 
 	// Wire sibling endpoints and sub-resources as subcommands
-	cmd.AddCommand(newStoriesGetCmd(flags))
-	cmd.AddCommand(newStoriesNewCmd(flags))
-	cmd.AddCommand(newStoriesTopCmd(flags))
 
 	return cmd
 }

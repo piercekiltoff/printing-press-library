@@ -1,0 +1,151 @@
+{
+  "api_name": "hackernews",
+  "base_url": "https://hacker-news.firebaseio.com/v0",
+  "description": "Hacker News from your terminal — with a local store, full-text search, and agent-native output no other HN tool has",
+  "mcp_ready": "full",
+  "http_transport": "standard",
+  "auth": {
+    "type": "none"
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "ask_list",
+      "description": "Get the latest Ask HN posts",
+      "method": "GET",
+      "path": "/askstories.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum number of story IDs to return (max 200)"
+        }
+      ]
+    },
+    {
+      "name": "jobs_list",
+      "description": "Get the latest Hacker News job postings",
+      "method": "GET",
+      "path": "/jobstories.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum number of story IDs to return (max 200)"
+        }
+      ]
+    },
+    {
+      "name": "maxitem_get",
+      "description": "Returns the largest item ID currently assigned by Hacker News",
+      "method": "GET",
+      "path": "/maxitem.json",
+      "no_auth": true,
+      "params": []
+    },
+    {
+      "name": "show_list",
+      "description": "Get the latest Show HN posts",
+      "method": "GET",
+      "path": "/showstories.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum number of story IDs to return (max 200)"
+        }
+      ]
+    },
+    {
+      "name": "stories_best",
+      "description": "Get the highest-voted stories on Hacker News",
+      "method": "GET",
+      "path": "/beststories.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum number of story IDs to return (max 200)"
+        }
+      ]
+    },
+    {
+      "name": "stories_get",
+      "description": "Get details for a specific story, comment, job, or poll",
+      "method": "GET",
+      "path": "/item/{itemId}.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "itemId",
+          "type": "string",
+          "location": "path",
+          "description": "Hacker News item ID (e.g., 12345678)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "stories_new",
+      "description": "Get the newest stories on Hacker News",
+      "method": "GET",
+      "path": "/newstories.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum number of story IDs to return (max 500)"
+        }
+      ]
+    },
+    {
+      "name": "stories_top",
+      "description": "Get the current top stories on Hacker News",
+      "method": "GET",
+      "path": "/topstories.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "limit",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum number of story IDs to return (max 500)"
+        }
+      ]
+    },
+    {
+      "name": "updates_list",
+      "description": "Items and user profiles that have changed recently",
+      "method": "GET",
+      "path": "/updates.json",
+      "no_auth": true,
+      "params": []
+    },
+    {
+      "name": "users_get",
+      "description": "Get a user's profile including karma and submission history",
+      "method": "GET",
+      "path": "/user/{userId}.json",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "userId",
+          "type": "string",
+          "location": "path",
+          "description": "Hacker News username (case-sensitive, e.g., 'pg' or 'dang')",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

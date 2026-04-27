@@ -24,78 +24,68 @@ func RegisterTools(s *server.MCPServer) {
 	s.AddTool(
 		mcplib.NewTool("ask_list",
 			mcplib.WithDescription("Get the latest Ask HN posts Returns array of StoryID."),
-			mcplib.WithString("limit", mcplib.Description("Maximum number to return")),
+			mcplib.WithString("limit", mcplib.Description("Maximum number of story IDs to return (max 200)")),
 		),
 		makeAPIHandler("GET", "/askstories.json", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("jobs_list",
-			mcplib.WithDescription("Get the latest job postings on Hacker News Returns array of StoryID."),
-			mcplib.WithString("limit", mcplib.Description("Maximum number to return")),
+			mcplib.WithDescription("Get the latest Hacker News job postings Returns array of StoryID."),
+			mcplib.WithString("limit", mcplib.Description("Maximum number of story IDs to return (max 200)")),
 		),
 		makeAPIHandler("GET", "/jobstories.json", []string{}),
 	)
 	s.AddTool(
-		mcplib.NewTool("search_by-date",
-			mcplib.WithDescription("Search Hacker News sorted by date (most recent first) Returns array of SearchHit."),
-			mcplib.WithString("query", mcplib.Required(), mcplib.Description("Search query")),
-			mcplib.WithString("tags", mcplib.Description("Filter by type: story, comment, ask_hn, show_hn, job")),
-			mcplib.WithString("numericFilters", mcplib.Description("Numeric filters")),
-			mcplib.WithString("page", mcplib.Description("Page number")),
-			mcplib.WithString("hitsPerPage", mcplib.Description("Results per page")),
+		mcplib.NewTool("maxitem_get",
+			mcplib.WithDescription("Returns the largest item ID currently assigned by Hacker News Returns MaxItem."),
 		),
-		makeAPIHandler("GET", "/search_by_date", []string{"query"}),
-	)
-	s.AddTool(
-		mcplib.NewTool("search_query",
-			mcplib.WithDescription("Search Hacker News stories and comments by keyword Returns array of SearchHit."),
-			mcplib.WithString("query", mcplib.Required(), mcplib.Description("Search query")),
-			mcplib.WithString("tags", mcplib.Description("Filter by type: story, comment, ask_hn, show_hn, job, poll, author_USERNAME")),
-			mcplib.WithString("numericFilters", mcplib.Description("Numeric filters like created_at_i>TIMESTAMP, points>N, num_comments>N")),
-			mcplib.WithString("page", mcplib.Description("Page number (0-indexed)")),
-			mcplib.WithString("hitsPerPage", mcplib.Description("Results per page (default 20, max 100)")),
-		),
-		makeAPIHandler("GET", "/search", []string{"query"}),
+		makeAPIHandler("GET", "/maxitem.json", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("show_list",
 			mcplib.WithDescription("Get the latest Show HN posts Returns array of StoryID."),
-			mcplib.WithString("limit", mcplib.Description("Maximum number to return")),
+			mcplib.WithString("limit", mcplib.Description("Maximum number of story IDs to return (max 200)")),
 		),
 		makeAPIHandler("GET", "/showstories.json", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("stories_best",
 			mcplib.WithDescription("Get the highest-voted stories on Hacker News Returns array of StoryID."),
-			mcplib.WithString("limit", mcplib.Description("Maximum number of stories to return")),
+			mcplib.WithString("limit", mcplib.Description("Maximum number of story IDs to return (max 200)")),
 		),
 		makeAPIHandler("GET", "/beststories.json", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("stories_get",
-			mcplib.WithDescription("Get details for a specific story, comment, or item Returns Item."),
-			mcplib.WithString("storyId", mcplib.Required(), mcplib.Description("HN item ID")),
+			mcplib.WithDescription("Get details for a specific story, comment, job, or poll Returns Item."),
+			mcplib.WithString("itemId", mcplib.Required(), mcplib.Description("Hacker News item ID (e.g., 12345678)")),
 		),
-		makeAPIHandler("GET", "/item/{storyId}.json", []string{"storyId"}),
+		makeAPIHandler("GET", "/item/{itemId}.json", []string{"itemId"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("stories_new",
 			mcplib.WithDescription("Get the newest stories on Hacker News Returns array of StoryID."),
-			mcplib.WithString("limit", mcplib.Description("Maximum number of stories to return")),
+			mcplib.WithString("limit", mcplib.Description("Maximum number of story IDs to return (max 500)")),
 		),
 		makeAPIHandler("GET", "/newstories.json", []string{}),
 	)
 	s.AddTool(
 		mcplib.NewTool("stories_top",
 			mcplib.WithDescription("Get the current top stories on Hacker News Returns array of StoryID."),
-			mcplib.WithString("limit", mcplib.Description("Maximum number of stories to return (default 30)")),
+			mcplib.WithString("limit", mcplib.Description("Maximum number of story IDs to return (max 500)")),
 		),
 		makeAPIHandler("GET", "/topstories.json", []string{}),
 	)
 	s.AddTool(
+		mcplib.NewTool("updates_list",
+			mcplib.WithDescription("Items and user profiles that have changed recently Returns Updates."),
+		),
+		makeAPIHandler("GET", "/updates.json", []string{}),
+	)
+	s.AddTool(
 		mcplib.NewTool("users_get",
 			mcplib.WithDescription("Get a user's profile including karma and submission history Returns User."),
-			mcplib.WithString("userId", mcplib.Required(), mcplib.Description("HN username")),
+			mcplib.WithString("userId", mcplib.Required(), mcplib.Description("Hacker News username (case-sensitive, e.g., 'pg' or 'dang')")),
 		),
 		makeAPIHandler("GET", "/user/{userId}.json", []string{"userId"}),
 	)
@@ -145,17 +135,22 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 			return mcplib.NewToolResultError(err.Error()), nil
 		}
 
+		// mcp-go v0.47+ made CallToolParams.Arguments an `any` to support
+		// non-map payloads; GetArguments() returns the map[string]any shape
+		// we rely on here (or an empty map when the payload is something else).
+		args := req.GetArguments()
+
 		// Build path by substituting positional params
 		path := pathTemplate
 		for _, p := range positionalParams {
-			if v, ok := req.Params.Arguments[p]; ok {
+			if v, ok := args[p]; ok {
 				path = strings.Replace(path, "{"+p+"}", fmt.Sprintf("%v", v), 1)
 			}
 		}
 
 		// Collect non-positional params as query params
 		params := make(map[string]string)
-		for k, v := range req.Params.Arguments {
+		for k, v := range args {
 			isPositional := false
 			for _, p := range positionalParams {
 				if k == p {
@@ -173,13 +168,13 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 		case "GET":
 			data, err = c.Get(path, params)
 		case "POST":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Post(path, body)
 		case "PUT":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Put(path, body)
 		case "PATCH":
-			body, _ := json.Marshal(req.Params.Arguments)
+			body, _ := json.Marshal(args)
 			data, _, err = c.Patch(path, body)
 		case "DELETE":
 			data, _, err = c.Delete(path)
@@ -254,13 +249,14 @@ func handleSync(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallTo
 }
 
 func handleSearch(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	query, ok := req.Params.Arguments["query"].(string)
+	args := req.GetArguments()
+	query, ok := args["query"].(string)
 	if !ok || query == "" {
 		return mcplib.NewToolResultError("query is required"), nil
 	}
 
 	limit := 25
-	if v, ok := req.Params.Arguments["limit"].(float64); ok && v > 0 {
+	if v, ok := args["limit"].(float64); ok && v > 0 {
 		limit = int(v)
 	}
 
@@ -280,7 +276,8 @@ func handleSearch(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.Call
 }
 
 func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	query, ok := req.Params.Arguments["query"].(string)
+	args := req.GetArguments()
+	query, ok := args["query"].(string)
 	if !ok || query == "" {
 		return mcplib.NewToolResultError("query is required"), nil
 	}
@@ -328,28 +325,26 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ctx := map[string]any{
 		"api":         "hackernews",
-		"description": "Hacker News from your terminal — browse, search, and analyze developer news with multi-source ratings and...",
+		"description": "Hacker News from your terminal — with a local store, full-text search, and agent-native output no other HN tool has",
 		"archetype":   "generic",
 		"tool_count":  10,
 		"resources": []map[string]any{
 			{
 				"name":        "ask",
-				"description": "Browse Ask HN discussions",
+				"description": "Browse Ask HN questions",
 				"endpoints":   []string{"list"},
 				"syncable":    true,
 			},
 			{
 				"name":        "jobs",
-				"description": "Browse HN job postings",
+				"description": "Browse Hacker News job postings",
 				"endpoints":   []string{"list"},
 				"syncable":    true,
 			},
 			{
-				"name":        "search",
-				"description": "Search HN stories and comments via Algolia",
-				"endpoints":   []string{"by-date", "query"},
-				"syncable":    true,
-				"searchable":  true,
+				"name":        "maxitem",
+				"description": "Current maximum item ID",
+				"endpoints":   []string{"get"},
 			},
 			{
 				"name":        "show",
@@ -359,14 +354,20 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 			},
 			{
 				"name":        "stories",
-				"description": "Browse and search HN stories",
+				"description": "Browse top, new, and best Hacker News stories",
 				"endpoints":   []string{"best", "get", "new", "top"},
 				"syncable":    true,
 				"searchable":  true,
 			},
 			{
+				"name":        "updates",
+				"description": "Recently changed items and profiles",
+				"endpoints":   []string{"list"},
+				"syncable":    true,
+			},
+			{
 				"name":        "users",
-				"description": "Look up HN user profiles",
+				"description": "Look up Hacker News user profiles",
 				"endpoints":   []string{"get"},
 				"searchable":  true,
 			},
@@ -379,18 +380,28 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 			"Prefer sql/search over repeated API calls when the data is already synced.",
 		},
 		"unique_capabilities": []map[string]string{
-			{"name": "Front Page Diff", "command": "diff", "description": "See what changed on the front page since you last checked — new stories, disappeared stories, and rank movers", "rationale": "Requires local snapshot of previous front page state that no API provides"},
-			{"name": "Thread Summarizer", "command": "tldr", "description": "Condense a massive comment thread into key arguments, consensus, and dissenting views", "rationale": "Requires fetching and analyzing the full comment tree locally"},
-			{"name": "Topic Pulse", "command": "pulse", "description": "See what HN is saying about any topic this week — frequency, points, and velocity", "rationale": "Requires Algolia date-range search with local aggregation across multiple result pages"},
-			{"name": "Who's Hiring Analytics", "command": "hiring-stats", "description": "See the most requested languages, remote %, and salary mentions across months of Who's Hiring threads", "rationale": "Requires syncing and parsing multiple monthly hiring threads — no single API call provides this"},
-			{"name": "Submission Tracker", "command": "my", "description": "Track your submissions — which got traction, which died, your average score, and best posting time", "rationale": "Requires syncing a user's full submission history and computing statistics locally"},
+			{"name": "Front-page diff", "command": "since", "description": "Show what changed on the front page since last check — stories that appeared, disappeared, or moved.", "rationale": "Requires SQLite snapshots of prior front-page state. Live API has no concept of 'change'."},
+			{"name": "Topic pulse", "command": "pulse", "description": "What HN is saying about a topic this week — score, comment, frequency by day.", "rationale": "Aggregates Algolia date+tag results into a velocity table; the API returns hits, not aggregations."},
+			{"name": "Submission tracker", "command": "my", "description": "Track a user's submissions with score buckets, traction rate, and best posting time hints.", "rationale": "Joins user.submitted IDs with Algolia hit metadata; not a single endpoint."},
+			{"name": "Hiring stats", "command": "hiring-stats", "description": "Aggregate Who's Hiring across recent months: languages, remote ratio, top companies.", "rationale": "Requires fetching multiple monthly threads and parsing free-form posts. No single endpoint."},
+			{"name": "Controversial", "command": "controversial", "description": "Find stories with the highest comment-to-point ratio — the polarizing discussions.", "rationale": "Pure local SQL ranking from synced stories; no live equivalent."},
+			{"name": "Repost finder", "command": "repost", "description": "Has this URL been posted on HN before? Lists prior submissions with scores and dates.", "rationale": "Algolia URL search composed with a per-hit score lookup."},
+			{"name": "Story velocity", "command": "velocity", "description": "Show a story's rank trajectory from local snapshots (climb, fall, stalled).", "rationale": "Requires multiple sync snapshots; no live API surface for rank-over-time."},
+			{"name": "Thread tldr (structured)", "command": "tldr", "description": "Deterministic thread digest: top authors by reply count, root vs reply ratio, comment heat metric.", "rationale": "One-shot Algolia /items/{id} fetch + structured aggregation. No AI placeholder; computed metrics only."},
+			{"name": "Local FTS search", "command": "local-search", "description": "Offline FTS5 search across every story and comment you've touched.", "rationale": "Reads from SQLite store populated by sync + write-through cache. Algolia drops history."},
+			{"name": "Sync foundation", "command": "sync", "description": "Pull top/best/new lists into local SQLite for offline use and snapshot history.", "rationale": "Foundation enabling since/controversial/local-search/velocity. No competing CLI persists state."},
 		},
 		"playbook": []map[string]string{
-			{"topic": "Front Page Diff", "insight": "Requires local snapshot of previous front page state that no API provides"},
-			{"topic": "Thread Summarizer", "insight": "Requires fetching and analyzing the full comment tree locally"},
-			{"topic": "Topic Pulse", "insight": "Requires Algolia date-range search with local aggregation across multiple result pages"},
-			{"topic": "Who's Hiring Analytics", "insight": "Requires syncing and parsing multiple monthly hiring threads — no single API call provides this"},
-			{"topic": "Submission Tracker", "insight": "Requires syncing a user's full submission history and computing statistics locally"},
+			{"topic": "Front-page diff", "insight": "Requires SQLite snapshots of prior front-page state. Live API has no concept of 'change'."},
+			{"topic": "Topic pulse", "insight": "Aggregates Algolia date+tag results into a velocity table; the API returns hits, not aggregations."},
+			{"topic": "Submission tracker", "insight": "Joins user.submitted IDs with Algolia hit metadata; not a single endpoint."},
+			{"topic": "Hiring stats", "insight": "Requires fetching multiple monthly threads and parsing free-form posts. No single endpoint."},
+			{"topic": "Controversial", "insight": "Pure local SQL ranking from synced stories; no live equivalent."},
+			{"topic": "Repost finder", "insight": "Algolia URL search composed with a per-hit score lookup."},
+			{"topic": "Story velocity", "insight": "Requires multiple sync snapshots; no live API surface for rank-over-time."},
+			{"topic": "Thread tldr (structured)", "insight": "One-shot Algolia /items/{id} fetch + structured aggregation. No AI placeholder; computed metrics only."},
+			{"topic": "Local FTS search", "insight": "Reads from SQLite store populated by sync + write-through cache. Algolia drops history."},
+			{"topic": "Sync foundation", "insight": "Foundation enabling since/controversial/local-search/velocity. No competing CLI persists state."},
 		},
 	}
 	data, _ := json.MarshalIndent(ctx, "", "  ")

@@ -11,58 +11,44 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func newSearchQueryCmd(flags *rootFlags) *cobra.Command {
-	var flagTags string
-	var flagNumericFilters string
-	var flagPage int
-	var flagHitsPerPage int
+func newStoriesBestCmd(flags *rootFlags) *cobra.Command {
+	var flagLimit int
 
 	cmd := &cobra.Command{
-		Use:     "query <query>",
-		Short:   "Search Hacker News stories and comments by keyword",
-		Example: "  hackernews-pp-cli search query example-value",
+		Use:     "best",
+		Short:   "Get the highest-voted stories on Hacker News",
+		Example: "  hackernews-pp-cli stories best",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) == 0 {
-				return cmd.Help()
-			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
 			}
 
-			path := "/search"
+			path := "/beststories.json"
 			params := map[string]string{}
-			params["query"] = args[0]
-			if flagTags != "" {
-				params["tags"] = fmt.Sprintf("%v", flagTags)
+			if flagLimit != 0 {
+				params["limit"] = fmt.Sprintf("%v", flagLimit)
 			}
-			if flagNumericFilters != "" {
-				params["numericFilters"] = fmt.Sprintf("%v", flagNumericFilters)
-			}
-			if flagPage != 0 {
-				params["page"] = fmt.Sprintf("%v", flagPage)
-			}
-			if flagHitsPerPage != 0 {
-				params["hitsPerPage"] = fmt.Sprintf("%v", flagHitsPerPage)
-			}
-			data, prov, err := resolveRead(c, flags, "search", false, path, params)
+			data, prov, err := resolveRead(c, flags, "stories", false, path, params, nil)
 			if err != nil {
 				return classifyAPIError(err)
 			}
+			data = truncateJSONArray(data, flagLimit)
 			// Print provenance to stderr for human-facing output
 			{
 				var countItems []json.RawMessage
 				_ = json.Unmarshal(data, &countItems)
 				printProvenance(cmd, len(countItems), prov)
 			}
-			// For JSON output, wrap with provenance envelope before passing through flags
+			// For JSON output, wrap with provenance envelope before passing through flags.
+			// --select wins over --compact when both are set; --compact only runs when
+			// no explicit fields were requested.
 			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
 				filtered := data
-				if flags.compact {
-					filtered = compactFields(filtered)
-				}
 				if flags.selectFields != "" {
 					filtered = filterFields(filtered, flags.selectFields)
+				} else if flags.compact {
+					filtered = compactFields(filtered)
 				}
 				wrapped, wrapErr := wrapWithProvenance(filtered, prov)
 				if wrapErr != nil {
@@ -86,10 +72,7 @@ func newSearchQueryCmd(flags *rootFlags) *cobra.Command {
 			return printOutputWithFlags(cmd.OutOrStdout(), data, flags)
 		},
 	}
-	cmd.Flags().StringVar(&flagTags, "tags", "", "Filter by type: story, comment, ask_hn, show_hn, job, poll, author_USERNAME")
-	cmd.Flags().StringVar(&flagNumericFilters, "numeric-filters", "", "Numeric filters like created_at_i>TIMESTAMP, points>N, num_comments>N")
-	cmd.Flags().IntVar(&flagPage, "page", 0, "Page number (0-indexed)")
-	cmd.Flags().IntVar(&flagHitsPerPage, "hits-per-page", 20, "Results per page (default 20, max 100)")
+	cmd.Flags().IntVar(&flagLimit, "limit", 30, "Maximum number of story IDs to return (max 200)")
 
 	return cmd
 }

@@ -1,6 +1,8 @@
 # Hacker News CLI
 
-Hacker News from your terminal — browse, search, and analyze stories with pipe-friendly output
+**Hacker News from your terminal — with a local store, full-text search, and agent-native output no other HN tool has.**
+
+Combines the Firebase real-time API and the Algolia search API in one CLI. Sync once and run searches, diffs, and topic pulses against a local SQLite store — offline, scriptable, and agent-friendly. Every command supports --json and --select; mutations don't apply because Hacker News is read-only.
 
 Learn more at [Hacker News](https://news.ycombinator.com).
 
@@ -16,128 +18,206 @@ go install github.com/mvanhorn/printing-press-library/library/media-and-entertai
 
 Download from [Releases](https://github.com/mvanhorn/printing-press-library/releases).
 
+## Authentication
+
+No authentication needed — both the Firebase and Algolia APIs are free and public.
+
 ## Quick Start
 
 ```bash
-# Check that everything works
-hackernews-pp-cli doctor
-
-# What's on the front page right now
-hackernews-pp-cli stories
-
-# What hit HN while you were away
-hackernews-pp-cli since 8h
-
-# Sync stories locally for fast search
+# Pull current top/best/new stories into the local store
 hackernews-pp-cli sync
 
-# Search synced data
-hackernews-pp-cli search "rust"
+
+# Browse the freshest top stories
+hackernews-pp-cli stories top --limit 10
+
+
+# See HN's recent take on a topic, computed locally
+hackernews-pp-cli pulse rust --days 7 --agent
+
+
+# Diff against last sync — only what changed
+hackernews-pp-cli since --json
+
 ```
 
 ## Unique Features
 
 These capabilities aren't available in any other tool for this API.
 
-- **`tldr`** — Condense a massive comment thread into key arguments, consensus, and dissenting views
-- **`pulse`** — See what HN is saying about any topic this week — frequency, points, and velocity
-- **`hiring-stats`** — See the most requested languages, remote %, and salary mentions across months of Who's Hiring threads
-- **`my`** — Track your submissions — which got traction, which died, your average score, and best posting time
+### Local state that compounds
+- **`since`** — Show what changed on the front page since last check — stories that appeared, disappeared, or moved.
+
+  _Agents tracking HN signal need delta-mode, not full re-fetch._
+
+  ```bash
+  hackernews-pp-cli since --json
+  ```
+- **`controversial`** — Find stories with the highest comment-to-point ratio — the polarizing discussions.
+
+  _Surfaces dissent, not just consensus, which the homepage hides._
+
+  ```bash
+  hackernews-pp-cli controversial --limit 10 --json
+  ```
+- **`velocity`** — Show a story's rank trajectory from local snapshots (climb, fall, stalled).
+
+  _Agents asking 'is this gaining traction' get a trend, not a moment-in-time score._
+
+  ```bash
+  hackernews-pp-cli velocity 12345678 --json
+  ```
+- **`local-search`** — Offline FTS5 search across every story and comment you've touched.
+
+  _Agents replaying past investigations don't re-hit Algolia._
+
+  ```bash
+  hackernews-pp-cli local-search "open source ai" --select title,url,score
+  ```
+- **`sync`** — Pull top/best/new lists into local SQLite for offline use and snapshot history.
+
+  _First run makes the rest cheap; agents call once and read locally._
+
+  ```bash
+  hackernews-pp-cli sync --full
+  ```
+
+### Compound queries
+- **`pulse`** — What HN is saying about a topic this week — score, comment, frequency by day.
+
+  _One call replaces N Algolia paginations and the math an agent would otherwise do._
+
+  ```bash
+  hackernews-pp-cli pulse rust --days 7 --agent
+  ```
+- **`my`** — Track a user's submissions with score buckets, traction rate, and best posting time hints.
+
+  _Replaces manual per-id fetches when an agent profiles a contributor._
+
+  ```bash
+  hackernews-pp-cli my pg --agent
+  ```
+- **`hiring-stats`** — Aggregate Who's Hiring across recent months: languages, remote ratio, top companies.
+
+  _Agents matching jobs to a profile get the breakdown without scraping the threads themselves._
+
+  ```bash
+  hackernews-pp-cli hiring-stats --months 3 --agent --select languages
+  ```
+- **`repost`** — Has this URL been posted on HN before? Lists prior submissions with scores and dates.
+
+  _Pre-flight check before posting; avoids dupe submissions._
+
+  ```bash
+  hackernews-pp-cli repost https://example.com/article
+  ```
+
+### Agent-native plumbing
+- **`tldr`** — Deterministic thread digest: top authors by reply count, root vs reply ratio, comment heat metric.
+
+  _Agents skimming a 500-comment thread get measurable signals, not opinion._
+
+  ```bash
+  hackernews-pp-cli tldr 12345678 --agent
+  ```
+
+## Usage
+
+Run `hackernews-pp-cli --help` for the full command reference and flag list.
 
 ## Commands
 
-### Browsing
+### Story lists
 
-| Command | Description |
-|---------|-------------|
-| `stories` | Top and best stories on Hacker News |
-| `stories top` | Current top stories |
-| `stories new` | Newest stories |
-| `stories get <id>` | Details for a specific item |
-| `ask` | Latest Ask HN posts |
-| `show` | Latest Show HN posts |
-| `jobs` | Latest job postings |
-| `comments <id>` | Read comment threads with indentation and filtering |
-
-### Discovery
-
-| Command | Description |
-|---------|-------------|
-| `since <duration>` | Stories from the last N hours/days (e.g., `2h`, `7d`) |
-| `controversial` | Stories with high comment-to-point ratios |
-| `pulse <topic>` | Activity timeline and stats for a topic |
-| `repost <url>` | Check if a URL has been posted before |
-| `hiring` | Filter the latest Who is Hiring thread |
-
-### Analysis
-
-| Command | Description |
-|---------|-------------|
-| `tldr <id>` | Thread digest — key takes, active commenters, controversy score |
-| `hiring-stats` | Aggregate hiring trends across Who's Hiring threads |
-| `my <username>` | Track a user's submissions and posting stats |
+- **`hackernews-pp-cli stories top [--limit N]`** - Current top stories
+- **`hackernews-pp-cli stories new [--limit N]`** - Newest stories
+- **`hackernews-pp-cli stories best [--limit N]`** - Highest-voted stories
+- **`hackernews-pp-cli stories get <id>`** - Item details (story, comment, job, or poll)
+- **`hackernews-pp-cli ask [--limit N]`** - Latest Ask HN posts
+- **`hackernews-pp-cli show [--limit N]`** - Latest Show HN posts
+- **`hackernews-pp-cli jobs [--limit N]`** - Latest job postings
+- **`hackernews-pp-cli updates`** - Recently changed items and profiles
+- **`hackernews-pp-cli maxitem`** - Largest item ID currently assigned
+- **`hackernews-pp-cli users <username>`** - User profile (karma, about, submission history)
 
 ### Search
 
-| Command | Description |
-|---------|-------------|
-| `search <query>` | Full-text search across synced data or live API |
-| `search query <query>` | Search via Algolia ranked by relevance |
-| `search by-date <query>` | Search via Algolia sorted by date |
+- **`hackernews-pp-cli search <query>`** - FTS5 against the local store, with live fallback in `auto` mode
+- **`hackernews-pp-cli live-search <query>`** - Algolia live search (relevance or `--by-date`)
+- **`hackernews-pp-cli local-search <query>`** - Offline-only FTS5 search
+- **`hackernews-pp-cli comments <id>`** - Comment tree via Algolia's `/items` endpoint
 
-### Data & Utilities
+### Hand-built
 
-| Command | Description |
-|---------|-------------|
-| `sync` | Sync data to local SQLite for offline search |
-| `export` | Export data to JSONL or JSON |
-| `import` | Import data from JSONL file |
-| `users <username>` | Look up a user's profile and karma |
-| `api` | Browse all raw API endpoints |
-| `auth` | Manage authentication tokens |
-| `doctor` | Check CLI health |
-| `workflow archive` | Sync all resources for offline access |
-| `workflow status` | Show local sync state |
+- **`hackernews-pp-cli sync [--full]`** - Pull top/best/new lists into the local SQLite store
+- **`hackernews-pp-cli since [--list top|best|new]`** - Diff the front page against the last snapshot
+- **`hackernews-pp-cli pulse <topic> [--days N]`** - Per-day score and comment volume for a topic
+- **`hackernews-pp-cli my <username> [--limit N]`** - Submission history with score buckets and best posting hour
+- **`hackernews-pp-cli hiring [regex]`** - Filter the latest Who's Hiring thread
+- **`hackernews-pp-cli freelance [regex]`** - Filter the latest Freelancer thread
+- **`hackernews-pp-cli hiring-stats [--months N]`** - Cross-month aggregate: languages, remote ratio, top companies
+- **`hackernews-pp-cli controversial [--limit N]`** - Top stories by comment-to-point ratio
+- **`hackernews-pp-cli velocity <id>`** - Rank trajectory across local snapshots
+- **`hackernews-pp-cli repost <url>`** - Has this URL been posted on HN before?
+- **`hackernews-pp-cli tldr <id>`** - Deterministic thread digest (top authors, depth histogram, heat metric)
+- **`hackernews-pp-cli open <id> [--launch] [--hn]`** - Print or launch a story URL or HN thread
+- **`hackernews-pp-cli bookmark add|list|rm`** - Local-only bookmarks
+- **`hackernews-pp-cli doctor`** - Self-diagnostic (config, API reachability, store)
+
 
 ## Output Formats
 
 ```bash
 # Human-readable table (default in terminal, JSON when piped)
-hackernews-pp-cli stories
+hackernews-pp-cli ask
 
 # JSON for scripting and agents
-hackernews-pp-cli stories --json
+hackernews-pp-cli ask --json
 
-# Filter to specific fields
-hackernews-pp-cli stories --json --select title,url,score
-
-# CSV for spreadsheets
-hackernews-pp-cli stories --csv
-
-# Compact mode for minimal token usage
-hackernews-pp-cli stories --compact
+# Filter to specific fields (HN items use id, title, by, score, url, time, descendants)
+hackernews-pp-cli stories top --json --select id,title,url,score
 
 # Dry run — show the request without sending
-hackernews-pp-cli stories --dry-run
+hackernews-pp-cli ask --dry-run
 
 # Agent mode — JSON + compact + no prompts in one flag
-hackernews-pp-cli stories --agent
+hackernews-pp-cli ask --agent
 ```
 
 ## Agent Usage
 
 This CLI is designed for AI agent consumption:
 
-- **Non-interactive** — never prompts, every input is a flag
-- **Pipeable** — `--json` output to stdout, errors to stderr
-- **Filterable** — `--select title,url,score` returns only fields you need
-- **Previewable** — `--dry-run` shows the request without sending
-- **Confirmable** — `--yes` for explicit confirmation of destructive actions
-- **Cacheable** — GET responses cached for 5 minutes, bypass with `--no-cache`
-- **Agent-safe by default** — no colors or formatting unless `--human-friendly` is set
-- **Progress events** — paginated commands emit NDJSON events to stderr in default mode
+- **Non-interactive** - never prompts, every input is a flag
+- **Pipeable** - `--json` output to stdout, errors to stderr
+- **Filterable** - `--select id,name` returns only fields you need
+- **Previewable** - `--dry-run` shows the request without sending
+- **Read-only by default** - this CLI does not create, update, delete, publish, send, or mutate remote resources
+- **Offline-friendly** - sync/search commands can use the local SQLite store when available
+- **Agent-safe by default** - no colors or formatting unless `--human-friendly` is set
 
-Exit codes: `0` success, `2` usage error, `3` not found, `4` auth error, `5` API error, `7` rate limited, `10` config error.
+Exit codes: `0` success, `2` usage error, `3` not found, `5` API error, `7` rate limited, `10` config error.
+
+## Freshness
+
+This CLI owns bounded freshness for registered store-backed read command paths. In `--data-source auto` mode, covered commands check the local SQLite store before serving results; stale or missing resources trigger a bounded refresh, and refresh failures fall back to the existing local data with a warning. `--data-source local` never refreshes, and `--data-source live` reads the API without mutating the local store.
+
+Set `HACKERNEWS_NO_AUTO_REFRESH=1` to disable the pre-read freshness hook while preserving the selected data source.
+
+Covered command paths:
+- `hackernews-pp-cli ask`
+- `hackernews-pp-cli jobs`
+- `hackernews-pp-cli show`
+- `hackernews-pp-cli stories`
+- `hackernews-pp-cli stories top`
+- `hackernews-pp-cli stories new`
+- `hackernews-pp-cli stories best`
+- `hackernews-pp-cli stories get <id>`
+- `hackernews-pp-cli updates`
+- `hackernews-pp-cli search <query>`
+
+JSON outputs that use the generated provenance envelope include freshness metadata at `meta.freshness`. This metadata describes the freshness decision for the covered command path; it does not claim full historical backfill or API-specific enrichment.
 
 ## Use as MCP Server
 
@@ -163,94 +243,28 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-## Cookbook
-
-```bash
-# What's trending right now — top 10 stories
-hackernews-pp-cli stories --limit 10
-
-# Stories from the last 2 hours sorted by velocity
-hackernews-pp-cli since 2h --sort velocity
-
-# High-signal stories from the last week
-hackernews-pp-cli since 7d --min-points 200 --limit 20
-
-# Most controversial discussions today
-hackernews-pp-cli controversial --since 24h --min-comments 50
-
-# Search HN by date for recent Go articles
-hackernews-pp-cli search by-date "golang" --tags story
-
-# Who's hiring — filter for remote Rust jobs
-hackernews-pp-cli hiring --pattern "rust" --remote
-
-# Hiring trends across months
-hackernews-pp-cli hiring-stats --months 6
-
-# Thread digest for a big discussion
-hackernews-pp-cli tldr 12345678
-
-# Topic activity over the past week
-hackernews-pp-cli pulse "AI agents"
-
-# Check if your blog post was already shared
-hackernews-pp-cli repost "https://example.com/my-post"
-
-# Your posting stats
-hackernews-pp-cli my dang
-
-# Sync and search offline
-hackernews-pp-cli sync && hackernews-pp-cli search "database"
-
-# Export stories for analysis
-hackernews-pp-cli export --format jsonl > hn-stories.jsonl
-
-# Pipe to jq for custom filtering
-hackernews-pp-cli stories --json | jq '.results[] | select(.score > 100)'
-```
-
 ## Health Check
 
 ```bash
 hackernews-pp-cli doctor
 ```
 
-```
-  OK Config: ok
-  WARN Auth: not required
-  OK API: reachable
-  config_path: /Users/you/.config/hackernews-pp-cli/config.toml
-  base_url: https://hacker-news.firebaseio.com/v0
-  version: 1.0.0
-```
+Verifies configuration and connectivity to the API.
 
 ## Configuration
 
 Config file: `~/.config/hackernews-pp-cli/config.toml`
 
-Environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `HACKERNEWS_CONFIG` | Override config file path |
-| `HACKERNEWS_BASE_URL` | Override API base URL (default: `https://hacker-news.firebaseio.com/v0`) |
-
 ## Troubleshooting
-
-**Authentication errors (exit code 4)**
-- Run `hackernews-pp-cli doctor` to check credentials
-
 **Not found errors (exit code 3)**
 - Check the resource ID is correct
-- Run `stories` or `search` to find valid item IDs
+- Run the `list` command to see available items
 
-**Rate limit errors (exit code 7)**
-- The CLI auto-retries with exponential backoff
-- If persistent, wait a few minutes and try again
+### API-specific
 
-**API errors (exit code 5)**
-- Check `hackernews-pp-cli doctor` for connectivity
-- Use `--data-source local` to fall back to synced data
+- **Empty results after sync** — Confirm both APIs respond: hackernews-pp-cli doctor
+- **search returns no recent items** — Algolia indexes lag a few minutes; use stories top for the freshest list
+- **comments command timing out on huge threads** — Use --depth 2 to cap the tree, or --flat for a linear view
 
 ---
 
@@ -260,16 +274,8 @@ This CLI was built by studying these projects and resources:
 
 - [**circumflex**](https://github.com/bensadeh/circumflex) — Go
 - [**haxor-news**](https://github.com/donnemartin/haxor-news) — Python
-- [**mcp-hacker-news**](https://github.com/paabloLC/mcp-hacker-news) — TypeScript
-- [**hackernews-mcp**](https://github.com/Malayke/hackernews-mcp) — Python
+- [**hnterminal**](https://github.com/poseidon-code/hnterminal) — Python
+- [**mcp-hacker-news**](https://github.com/erithwik/mcp-hn) — TypeScript
+- [**hackernews-mcp**](https://github.com/punkpeye/hackernews-mcp) — Python
 
 Generated by [CLI Printing Press](https://github.com/mvanhorn/cli-printing-press)
-
-<!-- pr-218-features -->
-## Agent workflow features
-
-This CLI was patched to add these agent-workflow capabilities (see [`printing-press patch`](https://github.com/mvanhorn/cli-printing-press/pull/221)):
-
-- **Named profiles** — save a set of flags under a name and reuse them: `hackernews-pp-cli profile save <name> --<flag> <value>`, then `hackernews-pp-cli --profile <name> <command>`. Flag precedence: explicit flag > env var > profile > default.
-- **`--deliver`** — route command output to a sink other than stdout. Values: `file:<path>` writes atomically via tmp+rename; `webhook:<url>` POSTs as JSON (or NDJSON with `--compact`).
-- **`feedback`** — record in-band feedback about the CLI. Entries append as JSON lines to `~/.hackernews-pp-cli/feedback.jsonl`. When `HACKERNEWS_FEEDBACK_ENDPOINT` is set and either `--send` is passed or `HACKERNEWS_FEEDBACK_AUTO_SEND=true`, the entry is also POSTed upstream.

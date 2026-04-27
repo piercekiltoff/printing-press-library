@@ -177,7 +177,7 @@
       "name": "hackernews",
       "category": "media-and-entertainment",
       "api": "Hacker News",
-      "description": "Browse, search, and analyze Hacker News \u2014 front page, Show HN, Ask HN, Who is Hiring, topic pulse, and pipe-friendly output",
+      "description": "Hacker News from your terminal \u2014 with a local store, full-text search, and agent-native output no other HN tool has",
       "path": "library/media-and-entertainment/hackernews",
       "mcp": {
         "binary": "hackernews-pp-mcp",
@@ -185,8 +185,11 @@
         "tool_count": 10,
         "public_tool_count": 10,
         "auth_type": "none",
+        "env_vars": [],
         "mcp_ready": "full",
-        "spec_format": "internal"
+        "manifest_checksum": "sha256:9f97d59d6e2eda3c5cd3672fb7b0d682e3e4a14cc6cd9b0959c2b7831996b22e",
+        "spec_format": "internal",
+        "manifest_url": "library/media-and-entertainment/hackernews/tools-manifest.json"
       }
     },
     {

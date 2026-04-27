@@ -4,246 +4,141 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"time"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/algolia"
 )
+
+// `tldr` produces a deterministic structured digest of a thread:
+// top authors by reply count, root vs reply ratio, comment heat
+// metric. We avoid AI summaries deliberately — the goal is
+// reproducible, scriptable signal, not opinion.
+
+// tldrAuthor reports per-author signal in a thread digest. We do NOT
+// emit a total_points field — Algolia's /items endpoint exposes
+// per-comment Points only as a possibly-null integer that's effectively
+// always zero for HN comments (HN doesn't expose comment scores via the
+// public API). Reporting "total_points: 0" everywhere would mislead
+// agents.
+type tldrAuthor struct {
+	Author       string `json:"author"`
+	CommentCount int    `json:"comment_count"`
+}
+
+type tldrResult struct {
+	ID             string         `json:"id"`
+	Title          string         `json:"title"`
+	URL            string         `json:"url"`
+	StoryAuthor    string         `json:"story_author"`
+	StoryPoints    int            `json:"story_points"`
+	TotalComments  int            `json:"total_comments"`
+	UniqueAuthors  int            `json:"unique_authors"`
+	RootComments   int            `json:"root_comments"`
+	ReplyComments  int            `json:"reply_comments"`
+	HeatMetric     float64        `json:"heat_metric"` // comments per point — higher = hotter
+	TopAuthors     []tldrAuthor   `json:"top_authors"`
+	DepthHistogram map[string]int `json:"depth_histogram"`
+}
 
 func newTldrCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tldr <id>",
-		Short: "Mechanical thread digest — key takes, active commenters, controversy score",
-		Long: `Generate a quick digest of an HN thread without AI summarization.
-Shows comment stats, top-level replies by score, most active commenters,
-and a controversy score. Pipe-friendly output for piping to claude.`,
-		Example: `  # Digest a thread
+		Short: "Print a deterministic thread digest (top authors, reply ratio, heat metric)",
+		Long: `Walk a thread's full comment tree and emit measurable signals.
+
+No prose summarization — the digest contains structured fields:
+top authors by comment count, root vs reply split, depth histogram,
+and a comments-per-point heat metric.`,
+		Example: strings.Trim(`
   hackernews-pp-cli tldr 12345678
-
-  # Pipe to claude for AI summary
-  hackernews-pp-cli tldr 12345678 | claude "summarize the key arguments"
-
-  # JSON output
-  hackernews-pp-cli tldr 12345678 --json`,
-		Args: cobra.ExactArgs(1),
+  hackernews-pp-cli tldr 12345678 --json --select heat_metric,top_authors
+`, "\n"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var itemID int
-			if _, err := fmt.Sscanf(args[0], "%d", &itemID); err != nil {
-				return usageErr(fmt.Errorf("invalid item ID %q", args[0]))
+			if len(args) == 0 {
+				return cmd.Help()
 			}
-
-			fmt.Fprintf(cmd.ErrOrStderr(), "Fetching thread...\n")
-
-			// Fetch root item
-			root, err := fetchFirebaseItem(flags, itemID)
-			if err != nil {
-				return classifyAPIError(err)
-			}
-
-			title := getString(root, "title")
-			points := getInt(root, "score")
-			totalComments := getInt(root, "descendants")
-			rootTime := getInt(root, "time")
-
-			// Fetch top-level replies
-			kidIDs := getIntSlice(root, "kids")
-			if len(kidIDs) == 0 {
-				fmt.Fprintf(cmd.ErrOrStderr(), "No comments on this thread\n")
+			if dryRunOK(flags) {
 				return nil
 			}
-
-			topLevel, err := fetchFirebaseItems(flags, kidIDs, len(kidIDs))
+			id := args[0]
+			ac := algolia.New(flags.timeout)
+			node, err := ac.Item(id)
 			if err != nil {
-				return apiErr(fmt.Errorf("fetching comments: %w", err))
+				return apiErr(err)
 			}
 
-			// Filter dead/deleted
-			var validTopLevel []map[string]any
-			for _, c := range topLevel {
-				if getString(c, "deleted") != "true" && getString(c, "dead") != "true" {
-					validTopLevel = append(validTopLevel, c)
-				}
+			result := tldrResult{
+				ID:             fmt.Sprintf("%d", node.ID),
+				Title:          node.Title,
+				URL:            node.URL,
+				StoryAuthor:    node.Author,
+				StoryPoints:    node.Points,
+				DepthHistogram: map[string]int{},
+			}
+			if result.URL == "" {
+				result.URL = fmt.Sprintf("https://news.ycombinator.com/item?id=%s", result.ID)
 			}
 
-			// Recursively collect all comments for stats
-			type commentInfo struct {
-				author string
-				time   int
-			}
-			var allComments []commentInfo
-			var collectAll func(parentIDs []int, depth int)
-			collectAll = func(parentIDs []int, depth int) {
-				if depth > 10 || len(allComments) > 1000 {
-					return
-				}
-				items, err := fetchFirebaseItems(flags, parentIDs, len(parentIDs))
-				if err != nil {
-					return
-				}
-				for _, item := range items {
-					if getString(item, "deleted") == "true" || getString(item, "dead") == "true" {
-						continue
+			authorStats := map[string]*tldrAuthor{}
+			var visit func(n *algolia.ItemNode, depth int)
+			visit = func(n *algolia.ItemNode, depth int) {
+				for _, c := range n.Children {
+					if c.Type == "comment" {
+						result.TotalComments++
+						if depth == 0 {
+							result.RootComments++
+						} else {
+							result.ReplyComments++
+						}
+						result.DepthHistogram[fmt.Sprintf("%d", depth)]++
+						a, ok := authorStats[c.Author]
+						if !ok {
+							a = &tldrAuthor{Author: c.Author}
+							authorStats[c.Author] = a
+						}
+						a.CommentCount++
 					}
-					allComments = append(allComments, commentInfo{
-						author: getString(item, "by"),
-						time:   getInt(item, "time"),
-					})
-					kids := getIntSlice(item, "kids")
-					if len(kids) > 0 {
-						collectAll(kids, depth+1)
-					}
+					visit(&c, depth+1)
 				}
 			}
-			// Add top-level first
-			for _, c := range validTopLevel {
-				allComments = append(allComments, commentInfo{
-					author: getString(c, "by"),
-					time:   getInt(c, "time"),
-				})
-				kids := getIntSlice(c, "kids")
-				if len(kids) > 0 {
-					collectAll(kids, 2)
-				}
+			visit(node, 0)
+
+			result.UniqueAuthors = len(authorStats)
+			if result.StoryPoints > 0 {
+				result.HeatMetric = float64(result.TotalComments) / float64(result.StoryPoints)
 			}
 
-			// Unique authors
-			authorCounts := map[string]int{}
-			var earliestComment, latestComment int
-			for _, c := range allComments {
-				authorCounts[c.author]++
-				if earliestComment == 0 || c.time < earliestComment {
-					earliestComment = c.time
-				}
-				if c.time > latestComment {
-					latestComment = c.time
-				}
+			authors := make([]tldrAuthor, 0, len(authorStats))
+			for _, a := range authorStats {
+				authors = append(authors, *a)
 			}
-
-			// Sort top-level by thread size (number of kids)
-			sort.Slice(validTopLevel, func(i, j int) bool {
-				iKids := len(getIntSlice(validTopLevel[i], "kids"))
-				jKids := len(getIntSlice(validTopLevel[j], "kids"))
-				return iKids > jKids
+			sort.Slice(authors, func(i, j int) bool {
+				if authors[i].CommentCount != authors[j].CommentCount {
+					return authors[i].CommentCount > authors[j].CommentCount
+				}
+				return authors[i].Author < authors[j].Author
 			})
-
-			// Most active commenters
-			type authorStat struct {
-				name  string
-				count int
-			}
-			var activeAuthors []authorStat
-			for name, count := range authorCounts {
-				activeAuthors = append(activeAuthors, authorStat{name: name, count: count})
-			}
-			sort.Slice(activeAuthors, func(i, j int) bool {
-				return activeAuthors[i].count > activeAuthors[j].count
-			})
-
-			// Controversy score: comments/points ratio
-			controversyScore := float64(0)
-			if points > 0 {
-				controversyScore = float64(totalComments) / float64(points)
-			}
-
-			// Time span
-			timeSpan := ""
-			if earliestComment > 0 && latestComment > 0 {
-				span := time.Unix(int64(latestComment), 0).Sub(time.Unix(int64(earliestComment), 0))
-				if span.Hours() < 1 {
-					timeSpan = fmt.Sprintf("%.0f minutes", span.Minutes())
-				} else if span.Hours() < 24 {
-					timeSpan = fmt.Sprintf("%.0f hours", span.Hours())
-				} else {
-					timeSpan = fmt.Sprintf("%.0f days", span.Hours()/24)
-				}
+			if len(authors) > 5 {
+				result.TopAuthors = authors[:5]
+			} else {
+				result.TopAuthors = authors
 			}
 
 			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
-				topReplies := validTopLevel
-				if len(topReplies) > 10 {
-					topReplies = topReplies[:10]
-				}
-				topRepliesOut := make([]map[string]any, 0, len(topReplies))
-				for _, c := range topReplies {
-					topRepliesOut = append(topRepliesOut, map[string]any{
-						"by":      getString(c, "by"),
-						"text":    truncate(stripHTML(getString(c, "text")), 200),
-						"replies": len(getIntSlice(c, "kids")),
-					})
-				}
-				top5Authors := activeAuthors
-				if len(top5Authors) > 5 {
-					top5Authors = top5Authors[:5]
-				}
-				authorsOut := make([]map[string]any, 0, len(top5Authors))
-				for _, a := range top5Authors {
-					authorsOut = append(authorsOut, map[string]any{
-						"author":   a.name,
-						"comments": a.count,
-					})
-				}
-				result := map[string]any{
-					"title":             title,
-					"points":            points,
-					"total_comments":    totalComments,
-					"fetched_comments":  len(allComments),
-					"unique_authors":    len(authorCounts),
-					"time_span":         timeSpan,
-					"controversy_score": controversyScore,
-					"top_replies":       topRepliesOut,
-					"active_authors":    authorsOut,
-				}
-				data, _ := json.Marshal(result)
-				return printOutput(cmd.OutOrStdout(), json.RawMessage(data), true)
+				j, _ := json.MarshalIndent(result, "", "  ")
+				return printOutput(cmd.OutOrStdout(), j, true)
 			}
 
-			// Human output
-			fmt.Fprintf(cmd.OutOrStdout(), "\n%s\n", bold(title))
-			fmt.Fprintf(cmd.OutOrStdout(), "%d points | %d comments | %d unique authors | span: %s\n",
-				points, totalComments, len(authorCounts), timeSpan)
-			if rootTime > 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "Posted %s\n", timeAgo(time.Unix(int64(rootTime), 0)))
+			fmt.Fprintf(cmd.OutOrStdout(), "%s\n  by %s — %d points — %d comments — heat %.2f\n",
+				truncateAtRune(result.Title, 80), result.StoryAuthor, result.StoryPoints, result.TotalComments, result.HeatMetric)
+			fmt.Fprintf(cmd.OutOrStdout(), "  unique authors: %d, root: %d, replies: %d\n", result.UniqueAuthors, result.RootComments, result.ReplyComments)
+			fmt.Fprintln(cmd.OutOrStdout(), "\nTop authors by comments:")
+			for _, a := range result.TopAuthors {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %-20s %d comments\n", a.Author, a.CommentCount)
 			}
-
-			// Controversy
-			controversyLabel := "low"
-			if controversyScore > 2 {
-				controversyLabel = "moderate"
-			}
-			if controversyScore > 5 {
-				controversyLabel = "high"
-			}
-			if controversyScore > 10 {
-				controversyLabel = "very high"
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Controversy: %.1f (%s)\n", controversyScore, controversyLabel)
-
-			// Key takes (top-level replies by thread size)
-			keyTakes := validTopLevel
-			if len(keyTakes) > 7 {
-				keyTakes = keyTakes[:7]
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "\n%s\n", bold("Key Takes (top replies by thread activity)"))
-			for i, c := range keyTakes {
-				author := getString(c, "by")
-				text := truncate(stripHTML(getString(c, "text")), 120)
-				replies := len(getIntSlice(c, "kids"))
-				fmt.Fprintf(cmd.OutOrStdout(), "  %d. [%s] (%d replies) %s\n", i+1, author, replies, text)
-			}
-
-			// Most active
-			top5 := activeAuthors
-			if len(top5) > 5 {
-				top5 = top5[:5]
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "\n%s\n", bold("Most Active Commenters"))
-			for _, a := range top5 {
-				fmt.Fprintf(cmd.OutOrStdout(), "  %s: %d comments\n", a.name, a.count)
-			}
-			fmt.Fprintln(cmd.OutOrStdout())
-
 			return nil
 		},
 	}
-
 	return cmd
 }

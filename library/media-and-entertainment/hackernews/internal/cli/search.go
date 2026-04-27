@@ -110,27 +110,12 @@ In local mode: searches locally synced data only.`,
 				return cmd.Help()
 			}
 			query := args[0]
-			// This API has a search endpoint: GET /search
-			if flags.dataSource != "local" {
-				c, err := flags.newClient()
-				if err != nil {
-					return err
-				}
-				data, getErr := c.Get("/search", map[string]string{
-					"query": query,
-				})
-				if getErr == nil {
-					// Live search succeeded
-					results := extractSearchResults(data)
-					prov := DataProvenance{Source: "live"}
-					return outputSearchResults(cmd, flags, results, limit, prov)
-				}
-				// Check if it's a network error for auto-mode fallback
-				if flags.dataSource == "live" || !isNetworkError(getErr) {
-					return classifyAPIError(getErr)
-				}
-				// auto mode + network error: fall through to local FTS
-				fmt.Fprintf(cmd.ErrOrStderr(), "API unreachable, falling back to local search.\n")
+			// This API has no search endpoint.
+			if flags.dataSource == "live" {
+				return fmt.Errorf("this API has no search endpoint. Use --data-source local or --data-source auto to search locally synced data")
+			}
+			if flags.dataSource == "auto" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "This API has no search endpoint. Searching local data.\n")
 			}
 
 			// Local FTS search
@@ -159,8 +144,8 @@ In local mode: searches locally synced data only.`,
 			}
 
 			reason := "user_requested"
-			if flags.dataSource == "auto" {
-				reason = "api_unreachable"
+			if flags.dataSource != "local" {
+				reason = "no_search_endpoint"
 			}
 			prov := localProvenance(db, "search", reason)
 
@@ -171,9 +156,6 @@ In local mode: searches locally synced data only.`,
 	cmd.Flags().StringVar(&resourceType, "type", "", "Filter by resource type")
 	cmd.Flags().IntVar(&limit, "limit", 50, "Maximum results to return")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/hackernews-pp-cli/data.db)")
-
-	cmd.AddCommand(newSearchByDateCmd(flags))
-	cmd.AddCommand(newSearchQueryCmd(flags))
 
 	return cmd
 }

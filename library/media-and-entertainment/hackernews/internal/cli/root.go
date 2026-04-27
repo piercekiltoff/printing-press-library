@@ -4,43 +4,46 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
 
-	"bytes"
-	"io"
-	"os"
-
+	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/config"
-	"github.com/spf13/cobra"
 )
 
 var version = "1.0.0"
 
 type rootFlags struct {
-	asJSON       bool
-	compact      bool
-	csv          bool
-	plain        bool
-	quiet        bool
-	dryRun       bool
-	noCache      bool
-	noInput      bool
-	yes          bool
-	agent        bool
-	selectFields string
-	configPath   string
-	timeout      time.Duration
-	rateLimit    float64
-	dataSource   string
-	profileName  string
-	deliverSpec  string
-	deliverBuf   *bytes.Buffer
-	deliverSink  DeliverSink
+	asJSON        bool
+	compact       bool
+	csv           bool
+	plain         bool
+	quiet         bool
+	dryRun        bool
+	noCache       bool
+	noInput       bool
+	yes           bool
+	agent         bool
+	selectFields  string
+	configPath    string
+	profileName   string
+	deliverSpec   string
+	timeout       time.Duration
+	rateLimit     float64
+	dataSource    string
+	freshnessMeta any
+
+	// deliverBuf captures command output when --deliver is set to a
+	// non-stdout sink. Flushed to the sink after Execute returns.
+	deliverBuf  *bytes.Buffer
+	deliverSink DeliverSink
 }
 
 // Execute runs the CLI in non-interactive mode: never prompts, all values via flags or stdin.
@@ -48,8 +51,25 @@ func Execute() error {
 	var flags rootFlags
 
 	rootCmd := &cobra.Command{
-		Use:          "hackernews-pp-cli",
-		Short:        "Hacker News from your terminal — browse, search, and analyze stories with pipe-friendly output",
+		Use:   "hackernews-pp-cli",
+		Short: `Read, search, and analyze Hacker News with a local SQLite store, offline full-text search, and agent-native output`,
+		Long: `Read, search, and analyze Hacker News with a local SQLite store, offline full-text search, and agent-native output
+
+Highlights (not in the official API docs):
+  • since   Show what changed on the front page since last check — stories that appeared, d…
+  • pulse   What HN is saying about a topic this week — score, comment, frequency by day.
+  • my   Track a user's submissions with score buckets, traction rate, and best posting …
+  • hiring-stats   Aggregate Who's Hiring across recent months: languages, remote ratio, top compa…
+  • controversial   Find stories with the highest comment-to-point ratio — the polarizing discussio…
+  • repost   Has this URL been posted on HN before? Lists prior submissions with scores and …
+  • velocity   Show a story's rank trajectory from local snapshots (climb, fall, stalled).
+  • tldr   Deterministic thread digest: top authors by reply count, root vs reply ratio, c…
+  • local-search   Offline FTS5 search across every story and comment you've touched.
+  • sync   Pull top/best/new lists into local SQLite for offline use and snapshot history.
+
+Agent mode: add --agent to any command for JSON output + non-interactive mode.
+Health check: run 'hackernews-pp-cli doctor' to verify auth and connectivity.
+See README.md or the bundled SKILL.md for recipes.`,
 		SilenceUsage: true,
 		Version:      version,
 	}
@@ -71,10 +91,9 @@ func Execute() error {
 	rootCmd.PersistentFlags().BoolVar(&humanFriendly, "human-friendly", false, "Enable colored output and rich formatting")
 	rootCmd.PersistentFlags().BoolVar(&flags.agent, "agent", false, "Set all agent-friendly defaults (--json --compact --no-input --no-color --yes)")
 	rootCmd.PersistentFlags().StringVar(&flags.dataSource, "data-source", "auto", "Data source for read commands: auto (live with local fallback), live (API only), local (synced data only)")
-	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 0, "Max requests per second (0 to disable)")
-
-	rootCmd.PersistentFlags().StringVar(&flags.profileName, "profile", "", "Apply values from a saved profile")
+	rootCmd.PersistentFlags().StringVar(&flags.profileName, "profile", "", "Apply values from a saved profile (see 'hackernews-pp-cli profile list')")
 	rootCmd.PersistentFlags().StringVar(&flags.deliverSpec, "deliver", "", "Route output to a sink: stdout (default), file:<path>, webhook:<url>")
+	rootCmd.PersistentFlags().Float64Var(&flags.rateLimit, "rate-limit", 0, "Max requests per second (0 to disable)")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if flags.deliverSpec != "" {
@@ -94,7 +113,11 @@ func Execute() error {
 				return err
 			}
 			if profile == nil {
-				return fmt.Errorf("profile %q not found", flags.profileName)
+				available := ListProfileNames()
+				if len(available) == 0 {
+					return fmt.Errorf("profile %q not found (no profiles saved yet; run '%s profile save <name> --<flag> <value>')", flags.profileName, cmd.Root().Name())
+				}
+				return fmt.Errorf("profile %q not found; available: %s", flags.profileName, strings.Join(available, ", "))
 			}
 			if err := ApplyProfileToFlags(cmd, profile); err != nil {
 				return err
@@ -123,42 +146,52 @@ func Execute() error {
 		default:
 			return fmt.Errorf("invalid --data-source value %q: must be auto, live, or local", flags.dataSource)
 		}
+		// Auto-refresh stale local caches before serving read commands.
+		// Looks up the current command path in readCommandResources and
+		// consults cliutil.EnsureFresh against sync_state. When stale,
+		// runs a bounded API refresh. Failures become stderr warnings;
+		// the command proceeds with the stale cache either way.
+		if resources, isRead := readCommandResources[cmd.CommandPath()]; isRead {
+			flags.freshnessMeta = autoRefreshIfStale(cmd.Context(), &flags, resources)
+		}
 		return nil
 	}
+	rootCmd.AddCommand(newStoriesCmd(&flags))
 	rootCmd.AddCommand(newDoctorCmd(&flags))
-	rootCmd.AddCommand(newAuthCmd(&flags))
+	rootCmd.AddCommand(newAgentContextCmd(rootCmd))
+	rootCmd.AddCommand(newProfileCmd(&flags))
+	rootCmd.AddCommand(newFeedbackCmd(&flags))
+	rootCmd.AddCommand(newWhichCmd(&flags))
 	rootCmd.AddCommand(newExportCmd(&flags))
 	rootCmd.AddCommand(newImportCmd(&flags))
 	rootCmd.AddCommand(newSearchCmd(&flags))
 	rootCmd.AddCommand(newSyncCmd(&flags))
 	rootCmd.AddCommand(newWorkflowCmd(&flags))
 	rootCmd.AddCommand(newAPICmd(&flags))
-
-	showCmd := newShowPromotedCmd(&flags)
-	addShowEnhancedFlags(showCmd, &flags)
-	rootCmd.AddCommand(showCmd)
-
+	rootCmd.AddCommand(newAskPromotedCmd(&flags))
 	rootCmd.AddCommand(newJobsPromotedCmd(&flags))
+	rootCmd.AddCommand(newMaxitemPromotedCmd(&flags))
+	rootCmd.AddCommand(newShowPromotedCmd(&flags))
+	rootCmd.AddCommand(newUpdatesPromotedCmd(&flags))
 	rootCmd.AddCommand(newUsersPromotedCmd(&flags))
-	rootCmd.AddCommand(newStoriesPromotedCmd(&flags))
-
-	askCmd := newAskPromotedCmd(&flags)
-	addAskEnhancedFlags(askCmd, &flags)
-	rootCmd.AddCommand(askCmd)
-
-	rootCmd.AddCommand(newSinceCmd(&flags))
-	rootCmd.AddCommand(newHiringCmd(&flags))
-	rootCmd.AddCommand(newHiringStatsCmd(&flags))
-	rootCmd.AddCommand(newMyCmd(&flags))
-	rootCmd.AddCommand(newCommentsCmd(&flags))
-	rootCmd.AddCommand(newTldrCmd(&flags))
-	rootCmd.AddCommand(newPulseCmd(&flags))
-	rootCmd.AddCommand(newControversialCmd(&flags))
-	rootCmd.AddCommand(newRepostCmd(&flags))
 	rootCmd.AddCommand(newVersionCliCmd())
 
-	rootCmd.AddCommand(newProfileCmd(&flags))
-	rootCmd.AddCommand(newFeedbackCmd(&flags))
+	// Hand-built novel commands.
+	rootCmd.AddCommand(newCommentsCmd(&flags))
+	rootCmd.AddCommand(newLiveSearchCmd(&flags))
+	rootCmd.AddCommand(newLocalSearchCmd(&flags))
+	rootCmd.AddCommand(newSinceCmd(&flags))
+	rootCmd.AddCommand(newPulseCmd(&flags))
+	rootCmd.AddCommand(newRepostCmd(&flags))
+	rootCmd.AddCommand(newMyCmd(&flags))
+	rootCmd.AddCommand(newHiringCmd(&flags))
+	rootCmd.AddCommand(newFreelanceCmd(&flags))
+	rootCmd.AddCommand(newHiringStatsCmd(&flags))
+	rootCmd.AddCommand(newControversialCmd(&flags))
+	rootCmd.AddCommand(newVelocityCmd(&flags))
+	rootCmd.AddCommand(newTldrCmd(&flags))
+	rootCmd.AddCommand(newOpenCmd(&flags))
+	rootCmd.AddCommand(newBookmarkCmd(&flags))
 
 	err := rootCmd.Execute()
 	if err != nil && strings.Contains(err.Error(), "unknown flag") {

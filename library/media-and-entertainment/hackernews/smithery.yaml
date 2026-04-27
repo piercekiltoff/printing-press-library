@@ -1,4 +1,4 @@
 name: hackernews-pp-mcp
-description: hackernews-pp-cli API
+description: hackernews API
 startCommand:
     command: go run ./cmd/hackernews-pp-mcp

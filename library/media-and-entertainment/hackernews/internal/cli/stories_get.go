@@ -14,8 +14,8 @@ import (
 func newStoriesGetCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:     "get <storyId>",
-		Short:   "Get details for a specific story, comment, or item",
+		Use:     "get <itemId>",
+		Short:   "Get details for a specific story, comment, job, or poll",
 		Example: "  hackernews-pp-cli stories get example-value",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
@@ -26,10 +26,10 @@ func newStoriesGetCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			path := "/item/{storyId}.json"
-			path = replacePathParam(path, "storyId", args[0])
+			path := "/item/{itemId}.json"
+			path = replacePathParam(path, "itemId", args[0])
 			params := map[string]string{}
-			data, prov, err := resolveRead(c, flags, "stories", false, path, params)
+			data, prov, err := resolveRead(c, flags, "stories", false, path, params, nil)
 			if err != nil {
 				return classifyAPIError(err)
 			}
@@ -39,14 +39,15 @@ func newStoriesGetCmd(flags *rootFlags) *cobra.Command {
 				_ = json.Unmarshal(data, &countItems)
 				printProvenance(cmd, len(countItems), prov)
 			}
-			// For JSON output, wrap with provenance envelope before passing through flags
+			// For JSON output, wrap with provenance envelope before passing through flags.
+			// --select wins over --compact when both are set; --compact only runs when
+			// no explicit fields were requested.
 			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
 				filtered := data
-				if flags.compact {
-					filtered = compactFields(filtered)
-				}
 				if flags.selectFields != "" {
 					filtered = filterFields(filtered, flags.selectFields)
+				} else if flags.compact {
+					filtered = compactFields(filtered)
 				}
 				wrapped, wrapErr := wrapWithProvenance(filtered, prov)
 				if wrapErr != nil {

@@ -1,12 +1,68 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-04-11T22:04:55.967993Z",
-  "printing_press_version": "1.3.3-0.20260411195201-68bc76f3ade6+dirty",
+  "generated_at": "2026-04-27T20:02:54.501183Z",
+  "printing_press_version": "2.3.9",
   "api_name": "hackernews",
   "cli_name": "hackernews-pp-cli",
+  "spec_path": "/Users/tmchow/printing-press/.runstate/idempotent-giggling-fairy-4f395726/runs/20260427-120911/research/hackernews-spec.yaml",
+  "spec_format": "internal",
+  "spec_checksum": "sha256:9e9065c7f4b6860ad448e09c65c0512257a680b18a9ade4ef4fb61170e868021",
+  "run_id": "20260427-120911",
   "mcp_binary": "hackernews-pp-mcp",
   "mcp_tool_count": 10,
   "mcp_public_tool_count": 10,
   "mcp_ready": "full",
-  "auth_type": "none"
+  "auth_type": "none",
+  "novel_features": [
+    {
+      "name": "Front-page diff",
+      "command": "since",
+      "description": "Show what changed on the front page since last check — stories that appeared, disappeared, or moved."
+    },
+    {
+      "name": "Topic pulse",
+      "command": "pulse",
+      "description": "What HN is saying about a topic this week — score, comment, frequency by day."
+    },
+    {
+      "name": "Submission tracker",
+      "command": "my",
+      "description": "Track a user's submissions with score buckets, traction rate, and best posting time hints."
+    },
+    {
+      "name": "Hiring stats",
+      "command": "hiring-stats",
+      "description": "Aggregate Who's Hiring across recent months: languages, remote ratio, top companies."
+    },
+    {
+      "name": "Controversial",
+      "command": "controversial",
+      "description": "Find stories with the highest comment-to-point ratio — the polarizing discussions."
+    },
+    {
+      "name": "Repost finder",
+      "command": "repost",
+      "description": "Has this URL been posted on HN before? Lists prior submissions with scores and dates."
+    },
+    {
+      "name": "Story velocity",
+      "command": "velocity",
+      "description": "Show a story's rank trajectory from local snapshots (climb, fall, stalled)."
+    },
+    {
+      "name": "Thread tldr (structured)",
+      "command": "tldr",
+      "description": "Deterministic thread digest: top authors by reply count, root vs reply ratio, comment heat metric."
+    },
+    {
+      "name": "Local FTS search",
+      "command": "local-search",
+      "description": "Offline FTS5 search across every story and comment you've touched."
+    },
+    {
+      "name": "Sync foundation",
+      "command": "sync",
+      "description": "Pull top/best/new lists into local SQLite for offline use and snapshot history."
+    }
+  ]
 }

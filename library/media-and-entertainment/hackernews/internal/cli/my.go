@@ -4,209 +4,212 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/mvanhorn/printing-press-library/library/media-and-entertainment/hackernews/internal/algolia"
 )
 
-func newMyCmd(flags *rootFlags) *cobra.Command {
-	var flagSince string
-	var flagLimit int
+type submissionsRow struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	URL       string `json:"url"`
+	Points    int    `json:"points"`
+	Comments  int    `json:"num_comments"`
+	CreatedAt string `json:"created_at"`
+}
 
+type submissionsResult struct {
+	User        string           `json:"user"`
+	Total       int              `json:"total"`
+	HighScore   int              `json:"high_score"`
+	MedianScore int              `json:"median_score"`
+	Buckets     map[string]int   `json:"score_buckets"`
+	Best        []submissionsRow `json:"best"`
+	Recent      []submissionsRow `json:"recent"`
+	HourHisto   map[int]int      `json:"hour_of_day_histogram"`
+	BestHour    int              `json:"best_hour_utc"`
+}
+
+func newMyCmd(flags *rootFlags) *cobra.Command {
+	var limit int
 	cmd := &cobra.Command{
 		Use:   "my <username>",
-		Short: "Track a user's HN submissions — stats, top posts, best times to post",
-		Example: `  # Your submission stats
-  hackernews-pp-cli my dang
+		Short: "Track a user's submission history with score buckets, traction rate, and best posting time",
+		Long: `Pull a user's recent submissions from Algolia and compute structured stats.
 
-  # Last 7 days only
-  hackernews-pp-cli my pg --since 7d
-
-  # JSON output
-  hackernews-pp-cli my tptacek --json`,
-		Args: cobra.ExactArgs(1),
+This is read-only — works against any HN username, no auth needed.
+Useful for profiling contributors or checking your own posting timing.`,
+		Example: strings.Trim(`
+  hackernews-pp-cli my pg
+  hackernews-pp-cli my dang --limit 200 --json
+`, "\n"),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			username := args[0]
-
-			// Fetch user profile from Firebase
-			c, err := flags.newClient()
-			if err != nil {
-				return err
+			if len(args) == 0 {
+				return cmd.Help()
 			}
-
-			userData, err := c.Get(fmt.Sprintf("/user/%s.json", username), nil)
-			if err != nil {
-				return classifyAPIError(err)
-			}
-
-			var user map[string]any
-			if err := json.Unmarshal(userData, &user); err != nil {
-				return apiErr(fmt.Errorf("parsing user data: %w", err))
-			}
-
-			submitted := getIntSlice(user, "submitted")
-			if len(submitted) == 0 {
-				fmt.Fprintf(cmd.ErrOrStderr(), "User %s has no submissions\n", username)
+			if dryRunOK(flags) {
 				return nil
 			}
-
-			// Limit to last N items
-			fetchCount := 100
-			if flagLimit > 0 && flagLimit < fetchCount {
-				fetchCount = flagLimit
+			user := args[0]
+			if limit <= 0 {
+				limit = 50
 			}
-			if len(submitted) > fetchCount {
-				submitted = submitted[:fetchCount]
+			if limit > 1000 {
+				limit = 1000
 			}
-
-			fmt.Fprintf(cmd.ErrOrStderr(), "Fetching %d submissions for %s...\n", len(submitted), username)
-
-			items, err := fetchFirebaseItems(flags, submitted, fetchCount)
-			if err != nil {
-				return apiErr(fmt.Errorf("fetching submissions: %w", err))
-			}
-
-			// Filter by time window if --since specified
-			if flagSince != "" {
-				dur, err := parseDuration(flagSince)
-				if err != nil {
-					return usageErr(err)
-				}
-				cutoff := time.Now().Add(-dur)
-				var filtered []map[string]any
-				for _, item := range items {
-					t := getInt(item, "time")
-					if t > 0 && time.Unix(int64(t), 0).After(cutoff) {
-						filtered = append(filtered, item)
-					}
-				}
-				items = filtered
-			}
-
-			// Separate stories from comments
-			var stories []map[string]any
-			var comments []map[string]any
-			for _, item := range items {
-				switch getString(item, "type") {
-				case "story":
-					stories = append(stories, item)
-				case "comment":
-					comments = append(comments, item)
-				}
-			}
-
-			// Compute stats for stories
-			totalScore := 0
-			var topStories []map[string]any
-			zeroPosts := 0
-			dayBuckets := make(map[string]int) // day of week
-			hourBuckets := make(map[int]int)   // hour of day
-
-			for _, s := range stories {
-				score := getInt(s, "score")
-				totalScore += score
-				if score == 0 {
-					zeroPosts++
-				}
-				topStories = append(topStories, s)
-
-				t := getInt(s, "time")
-				if t > 0 {
-					ts := time.Unix(int64(t), 0)
-					dayBuckets[ts.Weekday().String()]++
-					hourBuckets[ts.Hour()]++
-				}
-			}
-
-			// Sort by score
-			sort.Slice(topStories, func(i, j int) bool {
-				return getInt(topStories[i], "score") > getInt(topStories[j], "score")
+			ac := algolia.New(flags.timeout)
+			resp, err := ac.Search("", algolia.SearchOpts{
+				Tags:        "story,author_" + user,
+				ByDate:      true,
+				HitsPerPage: limit,
 			})
-
-			avgScore := float64(0)
-			if len(stories) > 0 {
-				avgScore = float64(totalScore) / float64(len(stories))
+			if err != nil {
+				return apiErr(err)
 			}
 
-			// Find best posting time
-			bestDay := ""
-			bestDayCount := 0
-			for day, count := range dayBuckets {
-				if count > bestDayCount {
-					bestDay = day
-					bestDayCount = count
+			rows := make([]submissionsRow, 0, len(resp.Hits))
+			scores := make([]int, 0, len(resp.Hits))
+			hourHist := map[int]int{}
+			best := submissionsRow{}
+			for _, h := range resp.Hits {
+				r := submissionsRow{
+					ID:        h.ObjectID,
+					Title:     h.Title,
+					URL:       h.URL,
+					Points:    h.Points,
+					Comments:  h.NumComments,
+					CreatedAt: h.CreatedAt,
+				}
+				rows = append(rows, r)
+				scores = append(scores, h.Points)
+				hour := time.Unix(h.CreatedAtI, 0).UTC().Hour()
+				hourHist[hour]++
+				if h.Points > best.Points {
+					best = r
 				}
 			}
-			bestHour := 0
-			bestHourCount := 0
-			for hour, count := range hourBuckets {
-				if count > bestHourCount {
-					bestHour = hour
-					bestHourCount = count
+
+			buckets := map[string]int{
+				"0-1":     0,
+				"2-9":     0,
+				"10-29":   0,
+				"30-99":   0,
+				"100-499": 0,
+				"500+":    0,
+			}
+			for _, s := range scores {
+				switch {
+				case s < 2:
+					buckets["0-1"]++
+				case s < 10:
+					buckets["2-9"]++
+				case s < 30:
+					buckets["10-29"]++
+				case s < 100:
+					buckets["30-99"]++
+				case s < 500:
+					buckets["100-499"]++
+				default:
+					buckets["500+"]++
 				}
+			}
+
+			med := median(scores)
+			result := submissionsResult{
+				User:        user,
+				Total:       len(rows),
+				HighScore:   best.Points,
+				MedianScore: med,
+				Buckets:     buckets,
+				Best:        []submissionsRow{best},
+				HourHisto:   hourHist,
+				BestHour:    bestHour(hourHist, scores, resp.Hits),
+			}
+			// Recent (top 5 by date).
+			sort.Slice(rows, func(i, j int) bool { return rows[i].CreatedAt > rows[j].CreatedAt })
+			if len(rows) > 5 {
+				result.Recent = rows[:5]
+			} else {
+				result.Recent = rows
 			}
 
 			if flags.asJSON || !isTerminal(cmd.OutOrStdout()) {
-				top5 := topStories
-				if len(top5) > 5 {
-					top5 = top5[:5]
-				}
-				result := map[string]any{
-					"username":          username,
-					"karma":             getInt(user, "karma"),
-					"total_submissions": len(items),
-					"stories":           len(stories),
-					"comments":          len(comments),
-					"average_score":     avgScore,
-					"zero_point_posts":  zeroPosts,
-					"best_day":          bestDay,
-					"best_hour":         bestHour,
-					"top_stories":       top5,
-				}
-				data, _ := json.Marshal(result)
-				return printOutput(cmd.OutOrStdout(), json.RawMessage(data), true)
+				j, _ := json.MarshalIndent(result, "", "  ")
+				return printOutput(cmd.OutOrStdout(), j, true)
 			}
-
-			// Human output
-			fmt.Fprintf(cmd.OutOrStdout(), "\n%s %s (karma: %d)\n\n",
-				bold("User:"), username, getInt(user, "karma"))
-
-			fmt.Fprintf(cmd.OutOrStdout(), "  Submissions fetched:  %d\n", len(items))
-			fmt.Fprintf(cmd.OutOrStdout(), "  Stories:              %d\n", len(stories))
-			fmt.Fprintf(cmd.OutOrStdout(), "  Comments:             %d\n", len(comments))
-			fmt.Fprintf(cmd.OutOrStdout(), "  Average story score:  %.1f\n", avgScore)
-			fmt.Fprintf(cmd.OutOrStdout(), "  Zero-point stories:   %d\n", zeroPosts)
-			if bestDay != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "  Best posting day:     %s\n", bestDay)
-				fmt.Fprintf(cmd.OutOrStdout(), "  Best posting hour:    %d:00 UTC\n", bestHour)
+			fmt.Fprintf(cmd.OutOrStdout(), "%s — %d recent submissions, median %d, top %d\n", user, result.Total, result.MedianScore, result.HighScore)
+			fmt.Fprintln(cmd.OutOrStdout(), "\nScore buckets:")
+			for _, k := range []string{"0-1", "2-9", "10-29", "30-99", "100-499", "500+"} {
+				fmt.Fprintf(cmd.OutOrStdout(), "  %-9s %d\n", k, buckets[k])
 			}
-
-			// Top 5 stories
-			top5 := topStories
-			if len(top5) > 5 {
-				top5 = top5[:5]
+			if best.ID != "" {
+				fmt.Fprintf(cmd.OutOrStdout(), "\nBest submission: [%d] %s\n  https://news.ycombinator.com/item?id=%s\n", best.Points, truncateAtRune(best.Title, 80), best.ID)
 			}
-			if len(top5) > 0 {
-				fmt.Fprintf(cmd.OutOrStdout(), "\n%s\n", bold("Top Stories"))
-				rows := make([][]string, 0, len(top5))
-				for i, s := range top5 {
-					rows = append(rows, []string{
-						fmt.Sprintf("%d", i+1),
-						truncate(getString(s, "title"), 55),
-						fmt.Sprintf("%d", getInt(s, "score")),
-						fmt.Sprintf("%d", getInt(s, "descendants")),
-					})
-				}
-				if err := flags.printTable(cmd, []string{"#", "TITLE", "PTS", "CMTS"}, rows); err != nil {
-					return err
-				}
-			}
+			fmt.Fprintf(cmd.OutOrStdout(), "\nBest hour of day to post (UTC, weighted by points): %02d:00\n", result.BestHour)
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVar(&flagSince, "since", "", "Time window (e.g., 7d, 30d)")
-	cmd.Flags().IntVar(&flagLimit, "limit", 100, "Maximum submissions to fetch")
-
+	cmd.Flags().IntVar(&limit, "limit", 50, "Max submissions to consider (capped at 1000)")
 	return cmd
 }
+
+func median(xs []int) int {
+	if len(xs) == 0 {
+		return 0
+	}
+	cp := append([]int(nil), xs...)
+	sort.Ints(cp)
+	if len(cp)%2 == 0 {
+		return (cp[len(cp)/2-1] + cp[len(cp)/2]) / 2
+	}
+	return cp[len(cp)/2]
+}
+
+// bestHour weighs hour buckets by total points scored in that hour.
+// Empty hours never win. If everything is zero-points, it falls back to
+// the most-frequently-posted hour.
+func bestHour(hist map[int]int, scores []int, hits []algolia.SearchHit) int {
+	weighted := map[int]int{}
+	for i, h := range hits {
+		if i >= len(scores) {
+			break
+		}
+		hour := time.Unix(h.CreatedAtI, 0).UTC().Hour()
+		weighted[hour] += scores[i]
+	}
+	bestH := 0
+	bestW := -1
+	for h, w := range weighted {
+		if w > bestW {
+			bestW = w
+			bestH = h
+		}
+	}
+	if bestW <= 0 {
+		bestF := 0
+		bestC := -1
+		for h, c := range hist {
+			if c > bestC {
+				bestC = c
+				bestF = h
+			}
+		}
+		return bestF
+	}
+	return bestH
+}
+
+// formatSubmissionDate keeps the YYYY-MM-DD slice from Algolia's
+// stringified timestamp; the rest is unhelpful for human display.
+func formatSubmissionDate(s string) string {
+	if i := strings.Index(s, "T"); i > 0 {
+		return s[:i]
+	}
+	return s
+}
+
+var _ = formatSubmissionDate // currently unused; kept for future detail-table rendering
+var _ = strconv.Itoa         // strconv used only in error-handling callers; reserved for table extension

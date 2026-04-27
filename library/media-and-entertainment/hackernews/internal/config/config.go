@@ -55,7 +55,6 @@ func Load(configPath string) (*Config, error) {
 	if v := os.Getenv("HACKERNEWS_BASE_URL"); v != "" {
 		cfg.BaseURL = v
 	}
-
 	return cfg, nil
 }
 
