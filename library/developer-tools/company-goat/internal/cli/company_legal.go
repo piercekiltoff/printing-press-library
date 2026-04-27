@@ -47,7 +47,7 @@ func newLegalCmd(flags *rootFlags) *cobra.Command {
 	var region string
 
 	cmd := &cobra.Command{
-		Use:   "legal <co>",
+		Use:   "legal [co]",
 		Short: "Legal entity lookup. UK via Companies House (optional COMPANIES_HOUSE_API_KEY); US via SEC EDGAR Form D issuer fields.",
 		Long: `legal returns the structured legal-entity record for a company.
 
@@ -165,7 +165,8 @@ Register at https://developer.companieshouse.gov.uk (free), create a REST applic
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	cmd.Flags().StringVar(&region, "region", "auto", "Region: uk, us, or auto")
 	return cmd
 }

@@ -31,7 +31,7 @@ func newLaunchesCmd(flags *rootFlags) *cobra.Command {
 	var minPoints int
 
 	cmd := &cobra.Command{
-		Use:   "launches <co>",
+		Use:   "launches [co]",
 		Short: "Show HN posts mentioning the company, sorted by points. Includes year hints to spot dead vs. active launches.",
 		Long: `launches searches the Hacker News Algolia index for "Show HN" posts where the title or content mentions the resolved company. Results are sorted by points descending.
 
@@ -117,7 +117,8 @@ Use this to gauge launch story strength, find the canonical Show HN post for a p
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	cmd.Flags().IntVar(&maxHits, "max", 20, "Maximum hits to return")
 	cmd.Flags().IntVar(&minPoints, "min-points", 0, "Filter to posts with at least this many points")
 	return cmd
@@ -128,7 +129,7 @@ func newMentionsCmd(flags *rootFlags) *cobra.Command {
 	var maxHits int
 
 	cmd := &cobra.Command{
-		Use:   "mentions <co>",
+		Use:   "mentions [co]",
 		Short: "Hacker News mention timeline: monthly histogram of mentions over time via Algolia full-text search.",
 		Long: `mentions searches HN's full-text Algolia index for any story containing the resolved company name. Results are bucketed by year-month for a quick "is this still talked about?" view.
 
@@ -211,7 +212,8 @@ With --json, returns the raw histogram as a sorted array of {month, count} pairs
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	cmd.Flags().IntVar(&maxHits, "max", 100, "Maximum hits to sample for the timeline (max 1000)")
 	return cmd
 }

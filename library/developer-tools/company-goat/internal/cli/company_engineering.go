@@ -41,7 +41,7 @@ func newEngineeringCmd(flags *rootFlags) *cobra.Command {
 	var t targetFlags
 
 	cmd := &cobra.Command{
-		Use:   "engineering <co>",
+		Use:   "engineering [co]",
 		Short: "GitHub org metadata: repo count, contributor count, commit cadence, top languages.",
 		Long: `engineering surfaces a GitHub org's public footprint: number of public repos, top repos by recent activity, language mix, and how many repos have seen commits in the last 90 days.
 
@@ -135,7 +135,8 @@ Without GITHUB_TOKEN, rate-limited to 60 req/hr. Set GITHUB_TOKEN or run 'gh aut
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	return cmd
 }
 

@@ -45,7 +45,7 @@ func newFundingCmd(flags *rootFlags) *cobra.Command {
 	var sinceYear int
 
 	cmd := &cobra.Command{
-		Use:   "funding <co>",
+		Use:   "funding [co]",
 		Short: "SEC EDGAR Form D filings + YC batch lookup. The killer feature for US private fundraising.",
 		Long: `funding fetches every Form D filing the SEC has for a company name, parses the structured XML, and reports offering amount, filing date, exemption claimed, and related persons.
 
@@ -120,7 +120,8 @@ Exit codes:
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	cmd.Flags().StringVar(&who, "who", "", "Show all Form D filings naming this person (e.g. \"Patrick Collison\")")
 	cmd.Flags().IntVar(&maxFilings, "max", 5, "Maximum filings to fetch and parse")
 	cmd.Flags().IntVar(&sinceYear, "since", 0, "Filter to filings on or after this year")
@@ -288,7 +289,7 @@ func newFundingTrendCmd(flags *rootFlags) *cobra.Command {
 	var maxFilings int
 
 	cmd := &cobra.Command{
-		Use:   "funding-trend <co>",
+		Use:   "funding-trend [co]",
 		Short: "Time series of Form D filings showing fundraising cadence over years.",
 		Long: `funding-trend renders a year-by-year count of Form D filings for a company. Useful for spotting fundraising gaps or a startup that quietly stopped raising.
 
@@ -384,7 +385,8 @@ Output bins by filing year and shows offering amount totals per year.`,
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	cmd.Flags().IntVar(&sinceYear, "since", 0, "Only include filings on or after this year")
 	cmd.Flags().IntVar(&maxFilings, "max", 25, "Maximum filings to fetch")
 	return cmd

@@ -19,7 +19,7 @@ func newYCCmd(flags *rootFlags) *cobra.Command {
 	var t targetFlags
 
 	cmd := &cobra.Command{
-		Use:   "yc <co>",
+		Use:   "yc [co]",
 		Short: "Y Combinator directory entry if backed: batch, status, location, description.",
 		Long: `yc looks up the resolved company in the Y Combinator directory snapshot. Returns batch, status (Active/Acquired/Public/Inactive), location, team size, and the YC one-liner description.
 
@@ -90,7 +90,8 @@ Source: yc-oss/api daily snapshot of YC's Algolia index.`,
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	return cmd
 }
 
@@ -98,7 +99,7 @@ func newWikiCmd(flags *rootFlags) *cobra.Command {
 	var t targetFlags
 
 	cmd := &cobra.Command{
-		Use:   "wiki <co>",
+		Use:   "wiki [co]",
 		Short: "Wikidata company facts: founded date, founders, HQ, industry, key people.",
 		Long: `wiki looks up the resolved company on Wikidata via its official-website (P856) property. Returns structured facts: founded date, headquarters location, country, industry, founders.
 
@@ -166,7 +167,8 @@ Wikidata coverage of early-stage startups is sparse; established companies are w
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	return cmd
 }
 
@@ -174,7 +176,7 @@ func newDomainCmd(flags *rootFlags) *cobra.Command {
 	var t targetFlags
 
 	cmd := &cobra.Command{
-		Use:   "domain <co>",
+		Use:   "domain [co]",
 		Short: "Domain age via RDAP/WHOIS, DNS records, and CNAME-based hosting hint.",
 		Long: `domain returns RDAP registration data (age, registrar, status) plus DNS records (CNAME, A, NS) and a hosting hint derived from the CNAME (Vercel/Netlify/Heroku/Cloudflare Pages/AWS/GCP/etc.).
 
@@ -238,6 +240,7 @@ Useful for "is this a modern startup stack" signals — a Vercel/Cloudflare CNAM
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	return cmd
 }

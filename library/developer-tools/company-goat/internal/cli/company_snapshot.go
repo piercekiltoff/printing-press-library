@@ -46,7 +46,7 @@ func newSnapshotCmd(flags *rootFlags) *cobra.Command {
 	var skipSources []string
 
 	cmd := &cobra.Command{
-		Use:   "snapshot <co>",
+		Use:   "snapshot [co]",
 		Short: "Fan out across all 7 sources in parallel and render a unified summary. The headline command.",
 		Long: `snapshot is the headline command. It runs every source query in parallel via cliutil.FanoutRun and renders a unified per-section summary.
 
@@ -124,7 +124,8 @@ omitted (honesty contract).`,
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	cmd.Flags().StringSliceVar(&skipSources, "skip", nil, "Skip these sources (comma-separated): funding,legal,engineering,launches,mentions,yc,wiki,domain")
 	return cmd
 }
@@ -548,7 +549,7 @@ func newSignalCmd(flags *rootFlags) *cobra.Command {
 	var t targetFlags
 
 	cmd := &cobra.Command{
-		Use:   "signal <co>",
+		Use:   "signal [co]",
 		Short: "Cross-source consistency check. Flags suspicious patterns like 'raised in 2024 but no GitHub commits since 2022'.",
 		Long: `signal runs the same fanout as snapshot, then computes simple cross-source consistency checks. Each check is a heuristic — false positives are expected; the goal is to surface things worth investigating.
 
@@ -615,7 +616,8 @@ Checks:
 			return nil
 		},
 	}
-	addTargetFlags(cmd, &t)
+	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
+	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
 	return cmd
 }
 

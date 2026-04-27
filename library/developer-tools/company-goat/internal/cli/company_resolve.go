@@ -24,10 +24,12 @@ type targetFlags struct {
 	Pick   int    // 1-indexed; pick from the last cached candidate list
 }
 
-func addTargetFlags(cmd *cobra.Command, t *targetFlags) {
-	cmd.Flags().StringVar(&t.Domain, "domain", "", "Skip name resolution and use this domain (e.g. stripe.com)")
-	cmd.Flags().IntVar(&t.Pick, "pick", 0, "Pick candidate N (1-indexed) from a previous ambiguous resolve")
-}
+// Per-command --domain and --pick declarations are inlined in each command
+// file rather than wrapped in a shared helper. This is intentional: the
+// verify-skill check greps each command's source file for the literal
+// `cmd.Flags().StringVar(..., "domain", ...)` declaration and would
+// otherwise report false-positive "declared elsewhere but not on <command>"
+// errors when the flag is added through indirection.
 
 // resolveTarget runs the multi-source resolver and returns either a
 // canonical domain or an error indicating disambiguation needed (exit 2)
