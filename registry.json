@@ -136,6 +136,25 @@
       }
     },
     {
+      "name": "food52",
+      "category": "food-and-dining",
+      "api": "Food52",
+      "description": "Search, browse, and read Food52 from your terminal \u2014 with offline FTS, pantry matching, recipe scaling, and the editorial signals other tools throw away.",
+      "path": "library/food-and-dining/food52",
+      "mcp": {
+        "binary": "food52-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 4,
+        "public_tool_count": 4,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "manifest_checksum": "sha256:0aac560f4b5fdefe708cab36ed80612a83f168af3f5903946b6e03963df288e4",
+        "spec_format": "internal",
+        "manifest_url": "library/food-and-dining/food52/tools-manifest.json"
+      }
+    },
+    {
       "name": "hackernews",
       "category": "media-and-entertainment",
       "api": "Hacker News",
