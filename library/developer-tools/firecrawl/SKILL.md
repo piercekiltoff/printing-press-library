@@ -47,11 +47,11 @@ API for interacting with Firecrawl services to perform web scraping and crawling
 
 **scrape** — Manage scrape
 
-- `firecrawl-pp-cli scrape and-extract-from-url` — Scrape a single URL and optionally extract information using an LLM
+- `firecrawl-pp-cli scrape` — Scrape a single URL and optionally extract information using an LLM
 
 **search** — Manage search
 
-- `firecrawl-pp-cli search and-scrape` — Search and optionally scrape search results
+- `firecrawl-pp-cli search <query>` — Search and optionally scrape search results
 
 **team** — Manage team
 
