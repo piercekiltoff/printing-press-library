@@ -289,10 +289,10 @@
         "binary": "pagliacci-pp-mcp",
         "transport": "stdio",
         "tool_count": 57,
-        "public_tool_count": 0,
+        "public_tool_count": 19,
         "auth_type": "composed",
         "env_vars": [],
-        "mcp_ready": "cli-only",
+        "mcp_ready": "partial",
         "spec_format": "internal"
       }
     },
