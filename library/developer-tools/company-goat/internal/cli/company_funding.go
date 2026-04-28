@@ -258,6 +258,7 @@ func searchMentionsForPerson(ctx context.Context, secCli *sec.Client, person str
 	if sinceYear > 0 {
 		prefix = fmt.Sprintf("%04d", sinceYear)
 	}
+	seen := map[string]bool{}
 	for _, hit := range resp.Hits {
 		if strings.EqualFold(hit.Form, "D") {
 			continue
@@ -274,6 +275,12 @@ func searchMentionsForPerson(ctx context.Context, secCli *sec.Client, person str
 			Filer:        filer,
 			FileDate:     hit.FileDate,
 			AccessionURL: accessionURL(hit),
+		}
+		if row.AccessionURL != "" {
+			if seen[row.AccessionURL] {
+				continue
+			}
+			seen[row.AccessionURL] = true
 		}
 		switch binMention(hit, person) {
 		case "subsidiary":
@@ -494,12 +501,22 @@ func searchMentions(ctx context.Context, secCli *sec.Client, variants []string) 
 		return nil
 	}
 	out := &fundingMentions{}
+	seen := map[string]bool{}
 	for _, hit := range resp.Hits {
 		row := mentionRow{
 			Form:         hit.Form,
 			Filer:        firstDisplayName(hit.DisplayNames),
 			FileDate:     hit.FileDate,
 			AccessionURL: accessionURL(hit),
+		}
+		// EFTS returns one hit per matched document/exhibit, so the same
+		// underlying filing can show up several times across exhibits.
+		// Dedupe by accession URL so the user sees each filing once.
+		if row.AccessionURL != "" {
+			if seen[row.AccessionURL] {
+				continue
+			}
+			seen[row.AccessionURL] = true
 		}
 		switch binMention(hit, query) {
 		case "subsidiary":

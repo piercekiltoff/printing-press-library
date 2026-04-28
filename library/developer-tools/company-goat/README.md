@@ -32,6 +32,23 @@ After one `snapshot`, you know whether they raised (Form D), are shipping code (
 
 Form D is **US-only**. Non-US companies (Monzo, Klarna, etc.) won't appear in `funding` — use `legal --region uk` for UK entities. Pre-priced-round US startups (typically pre-Series A SAFE / convertible note) also won't appear, since SAFEs aren't covered by Reg D. The CLI prints a `coverage_note` whenever this is the likely reason for an empty result.
 
+### When Form D is empty: broader EDGAR fallback
+
+A company that raised only via SAFE or convertible notes, or that has been acquired, won't have Form D filings under its own name. But it may still appear extensively in EDGAR under other forms. Examples:
+
+- **Acquired startup**: appears in the parent's 10-K Item 21 / EX-21 subsidiary list (e.g. June Life Inc. shows up across Weber Inc.'s post-acquisition 10-K filings).
+- **Venture-debt portfolio company**: appears in venture-debt holders' 10-Q / 10-K filings (e.g. Venture Lending and Leasing VII / VIII portfolio reports).
+- **Acquisition announcement**: appears in the parent's 8-K with the deal disclosure.
+
+When all stem variants come back empty on Form D, `funding` automatically falls back to a broader EDGAR full-text search and bins the hits by signal class (`subsidiary`, `debt`, `acquisition`, `other`). Form D stays the headline; the broader fallback is what lights up companies that the killer feature alone would miss.
+
+```bash
+company-goat-pp-cli funding --domain junelife.com --json
+# Form D: 0 filings
+# Subsidiary signal: Weber Inc. 10-K (2021-12-14, EX-21)
+# Debt signal: Venture Lending and Leasing VII, Inc. 10-Q (2019-08-14)
+```
+
 ## Install
 
 ### Go
