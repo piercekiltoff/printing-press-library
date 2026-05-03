@@ -265,7 +265,7 @@
       "mcp": {
         "binary": "fedex-pp-mcp",
         "transport": "stdio",
-        "tool_count": 19,
+        "tool_count": 48,
         "public_tool_count": 0,
         "auth_type": "bearer_token",
         "env_vars": [
