@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-27T11:04:01.033035Z",
+  "printing_press_version": "2.3.9",
+  "api_name": "paperclip",
+  "cli_name": "paperclip-pp-cli",
+  "spec_format": "openapi3",
+  "spec_checksum": "sha256:ecf113066b2f91449bf9bb67f229f4a999bae92b695800cac4c767dd2654fc2e",
+  "category": "project-management",
+  "description": "Complete control-plane CLI for Paperclip \u2014 fleet status, approvals, costs, and issue management in one fast binary.",
+  "mcp_binary": "paperclip-pp-mcp",
+  "mcp_tool_count": 319,
+  "mcp_public_tool_count": 15,
+  "mcp_ready": "full",
+  "api_version": "1.0.0",
+  "auth_type": "api_key",
+  "auth_env_vars": [
+    "PAPERCLIP_BOARD_SESSION_AUTH"
+  ],
+  "novel_features": [
+    {
+      "name": "Agent fleet dashboard",
+      "command": "fleet",
+      "description": "Aggregates live status, costs, active issues, and idle time across all agents in a company in a single view \u2014 no single API call provides this."
+    },
+    {
+      "name": "Cost anomaly detection",
+      "command": "costs anomalies",
+      "description": "Flags agents whose current spending deviates significantly from their rolling 7/30-day average using locally-cached cost history."
+    },
+    {
+      "name": "Pending approval queue",
+      "command": "approvals queue",
+      "description": "Shows pending approvals cross-joined with their linked issues, waiting agents, and time-in-queue \u2014 not exposed in any single endpoint."
+    },
+    {
+      "name": "Agent activity timeline",
+      "command": "agents timeline",
+      "description": "Reconstructs an agent's run history from heartbeat-runs, task-sessions, and comments into a chronological human-readable stream."
+    },
+    {
+      "name": "Stale issue finder",
+      "command": "issues stale",
+      "description": "Finds in-progress issues with no agent activity in N days by cross-filtering runs and comments by timestamp."
+    },
+    {
+      "name": "Cost drilldown by issue",
+      "command": "costs drilldown",
+      "description": "Correlates cost events with heartbeat runs linked to a specific issue \u2014 a multi-step join no single endpoint exposes."
+    },
+    {
+      "name": "Routine health monitor",
+      "command": "routines health",
+      "description": "Cross-checks all routine runs for consecutive failures, overdue schedules, and high error rates."
+    }
+  ]
+}
