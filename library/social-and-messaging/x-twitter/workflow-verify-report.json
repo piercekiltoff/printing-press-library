@@ -1,0 +1,8 @@
+{
+  "dir": "/Users/dinakar/printing-press/.runstate/printing_press-a381d6ab/runs/20260503-014536/working/x-twitter-pp-cli",
+  "workflows": null,
+  "verdict": "workflow-pass",
+  "issues": [
+    "no workflow manifest found, skipping"
+  ]
+}

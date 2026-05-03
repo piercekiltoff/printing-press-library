@@ -1,0 +1,1407 @@
+{
+  "api_name": "twitter",
+  "base_url": "https://x.com/i/api",
+  "description": "Twitter OpenAPI(Swagger) specification",
+  "mcp_ready": "full",
+  "http_transport": "standard",
+  "auth": {
+    "type": "api_key",
+    "header": "Accept",
+    "in": "header",
+    "env_vars": [
+      "TWITTER_ACCEPT"
+    ]
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "1-1_get-friends-following-list",
+      "description": "get friends following list. Required: include_profile_interstitial_type (default: 1), include_blocking (default: 1), include_blocked_by (default: 1), include_followed_by (default: 1), include_want_retweets (default: 1), include_mute_edge (default: 1), include_can_dm (default: 1), include_can_media_tag (default: 1), include_ext_has_nft_avatar (default: 1), include_ext_is_blue_verified (default: 1), include_ext_verified_type (default: 1), include_ext_profile_image_shape (default: 1), skip_status (default: 1), cursor (default: -1), user_id (default: 44196397), count (default: 3), with_total_count (default: true).",
+      "method": "GET",
+      "path": "/1.1/friends/following/list.json",
+      "params": [
+        {
+          "name": "include_profile_interstitial_type",
+          "type": "int",
+          "location": "query",
+          "description": "Include profile interstitial type",
+          "required": true
+        },
+        {
+          "name": "include_blocking",
+          "type": "int",
+          "location": "query",
+          "description": "Include blocking",
+          "required": true
+        },
+        {
+          "name": "include_blocked_by",
+          "type": "int",
+          "location": "query",
+          "description": "Include blocked by",
+          "required": true
+        },
+        {
+          "name": "include_followed_by",
+          "type": "int",
+          "location": "query",
+          "description": "Include followed by",
+          "required": true
+        },
+        {
+          "name": "include_want_retweets",
+          "type": "int",
+          "location": "query",
+          "description": "Include want retweets",
+          "required": true
+        },
+        {
+          "name": "include_mute_edge",
+          "type": "int",
+          "location": "query",
+          "description": "Include mute edge",
+          "required": true
+        },
+        {
+          "name": "include_can_dm",
+          "type": "int",
+          "location": "query",
+          "description": "Include can dm",
+          "required": true
+        },
+        {
+          "name": "include_can_media_tag",
+          "type": "int",
+          "location": "query",
+          "description": "Include can media tag",
+          "required": true
+        },
+        {
+          "name": "include_ext_has_nft_avatar",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext has nft avatar",
+          "required": true
+        },
+        {
+          "name": "include_ext_is_blue_verified",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext is blue verified",
+          "required": true
+        },
+        {
+          "name": "include_ext_verified_type",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext verified type",
+          "required": true
+        },
+        {
+          "name": "include_ext_profile_image_shape",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext profile image shape",
+          "required": true
+        },
+        {
+          "name": "skip_status",
+          "type": "int",
+          "location": "query",
+          "description": "Skip status",
+          "required": true
+        },
+        {
+          "name": "cursor",
+          "type": "int",
+          "location": "query",
+          "description": "Cursor",
+          "required": true
+        },
+        {
+          "name": "user_id",
+          "type": "string",
+          "location": "query",
+          "description": "User id",
+          "required": true
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "location": "query",
+          "description": "Count",
+          "required": true
+        },
+        {
+          "name": "with_total_count",
+          "type": "bool",
+          "location": "query",
+          "description": "With total count",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "1-1_get-search-typeahead",
+      "description": "get search typeahead. Required: include_ext_is_blue_verified (default: 1), include_ext_verified_type (default: 1), include_ext_profile_image_shape (default: 1), q (default: test), src (default: search_box), result_type (default: events,users,topics).",
+      "method": "GET",
+      "path": "/1.1/search/typeahead.json",
+      "params": [
+        {
+          "name": "include_ext_is_blue_verified",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext is blue verified",
+          "required": true
+        },
+        {
+          "name": "include_ext_verified_type",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext verified type",
+          "required": true
+        },
+        {
+          "name": "include_ext_profile_image_shape",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext profile image shape",
+          "required": true
+        },
+        {
+          "name": "q",
+          "type": "string",
+          "location": "query",
+          "description": "Q",
+          "required": true
+        },
+        {
+          "name": "src",
+          "type": "string",
+          "location": "query",
+          "description": "Src",
+          "required": true
+        },
+        {
+          "name": "result_type",
+          "type": "string",
+          "location": "query",
+          "description": "Result type",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "1-1_post-create-friendships",
+      "description": "post create friendships. Required: include_blocked_by (default: 1), include_blocking (default: 1), include_can_dm (default: 1), include_can_media_tag (default: 1), include_ext_has_nft_avatar (default: 1), include_ext_is_blue_verified (default: 1), include_ext_profile_image_shape (default: 1), include_ext_verified_type (default: 1), include_followed_by (default: 1), include_mute_edge (default: 1), include_profile_interstitial_type (default: 1), include_want_retweets (default: 1), skip_status (default: 1), user_id (default: 44196397).",
+      "method": "POST",
+      "path": "/1.1/friendships/create.json",
+      "params": [
+        {
+          "name": "include_blocked_by",
+          "type": "int",
+          "location": "body",
+          "description": "Include blocked by",
+          "required": true
+        },
+        {
+          "name": "include_blocking",
+          "type": "int",
+          "location": "body",
+          "description": "Include blocking",
+          "required": true
+        },
+        {
+          "name": "include_can_dm",
+          "type": "int",
+          "location": "body",
+          "description": "Include can dm",
+          "required": true
+        },
+        {
+          "name": "include_can_media_tag",
+          "type": "int",
+          "location": "body",
+          "description": "Include can media tag",
+          "required": true
+        },
+        {
+          "name": "include_ext_has_nft_avatar",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext has nft avatar",
+          "required": true
+        },
+        {
+          "name": "include_ext_is_blue_verified",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext is blue verified",
+          "required": true
+        },
+        {
+          "name": "include_ext_profile_image_shape",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext profile image shape",
+          "required": true
+        },
+        {
+          "name": "include_ext_verified_type",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext verified type",
+          "required": true
+        },
+        {
+          "name": "include_followed_by",
+          "type": "int",
+          "location": "body",
+          "description": "Include followed by",
+          "required": true
+        },
+        {
+          "name": "include_mute_edge",
+          "type": "int",
+          "location": "body",
+          "description": "Include mute edge",
+          "required": true
+        },
+        {
+          "name": "include_profile_interstitial_type",
+          "type": "int",
+          "location": "body",
+          "description": "Include profile interstitial type",
+          "required": true
+        },
+        {
+          "name": "include_want_retweets",
+          "type": "int",
+          "location": "body",
+          "description": "Include want retweets",
+          "required": true
+        },
+        {
+          "name": "skip_status",
+          "type": "int",
+          "location": "body",
+          "description": "Skip status",
+          "required": true
+        },
+        {
+          "name": "user_id",
+          "type": "string",
+          "location": "body",
+          "description": "User id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "1-1_post-destroy-friendships",
+      "description": "post destroy friendships. Required: include_blocked_by (default: 1), include_blocking (default: 1), include_can_dm (default: 1), include_can_media_tag (default: 1), include_ext_has_nft_avatar (default: 1), include_ext_is_blue_verified (default: 1), include_ext_profile_image_shape (default: 1), include_ext_verified_type (default: 1), include_followed_by (default: 1), include_mute_edge (default: 1), include_profile_interstitial_type (default: 1), include_want_retweets (default: 1), skip_status (default: 1), user_id (default: 44196397).",
+      "method": "POST",
+      "path": "/1.1/friendships/destroy.json",
+      "params": [
+        {
+          "name": "include_blocked_by",
+          "type": "int",
+          "location": "body",
+          "description": "Include blocked by",
+          "required": true
+        },
+        {
+          "name": "include_blocking",
+          "type": "int",
+          "location": "body",
+          "description": "Include blocking",
+          "required": true
+        },
+        {
+          "name": "include_can_dm",
+          "type": "int",
+          "location": "body",
+          "description": "Include can dm",
+          "required": true
+        },
+        {
+          "name": "include_can_media_tag",
+          "type": "int",
+          "location": "body",
+          "description": "Include can media tag",
+          "required": true
+        },
+        {
+          "name": "include_ext_has_nft_avatar",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext has nft avatar",
+          "required": true
+        },
+        {
+          "name": "include_ext_is_blue_verified",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext is blue verified",
+          "required": true
+        },
+        {
+          "name": "include_ext_profile_image_shape",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext profile image shape",
+          "required": true
+        },
+        {
+          "name": "include_ext_verified_type",
+          "type": "int",
+          "location": "body",
+          "description": "Include ext verified type",
+          "required": true
+        },
+        {
+          "name": "include_followed_by",
+          "type": "int",
+          "location": "body",
+          "description": "Include followed by",
+          "required": true
+        },
+        {
+          "name": "include_mute_edge",
+          "type": "int",
+          "location": "body",
+          "description": "Include mute edge",
+          "required": true
+        },
+        {
+          "name": "include_profile_interstitial_type",
+          "type": "int",
+          "location": "body",
+          "description": "Include profile interstitial type",
+          "required": true
+        },
+        {
+          "name": "include_want_retweets",
+          "type": "int",
+          "location": "body",
+          "description": "Include want retweets",
+          "required": true
+        },
+        {
+          "name": "skip_status",
+          "type": "int",
+          "location": "body",
+          "description": "Skip status",
+          "required": true
+        },
+        {
+          "name": "user_id",
+          "type": "string",
+          "location": "body",
+          "description": "User id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_bookmarks_get",
+      "description": "get bookmarks. Required: variables, features. Returns the BookmarksResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/Bookmarks",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_community-about-timeline_get",
+      "description": "get about of community. Required: variables, features. Returns the CommunityAboutTimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/CommunityAboutTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_community-media-timeline_get",
+      "description": "get media list of community. Required: variables, features. Returns the CommunityMediaTimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/CommunityMediaTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_community-tweets-timeline_get",
+      "description": "get tweet list of community. rankingMode:[Recency, Relevance]. Required: variables, features. Returns the CommunityTweetsTimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/CommunityTweetsTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_create-bookmark_post",
+      "description": "create Bookmark. Required: queryId (default: aoDbu3RHznuiSkQ9aNM67Q). Returns the new CreateBookmarkResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/CreateBookmark",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_create-retweet_post",
+      "description": "create Retweet. Required: queryId (default: ojPdsZsimiJrUGLR1sjUtA). Returns the new CreateRetweetResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/CreateRetweet",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_create-tweet_post",
+      "description": "create Tweet. Required: queryId (default: IID9x6WsdMnTlXnzXGq8ng). Returns the new CreateTweetResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/CreateTweet",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_delete-bookmark_post",
+      "description": "delete Bookmark. Required: queryId (default: Wlmlj2-xzyS1GN3a6cj-mQ). Returns the new DeleteBookmarkResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/DeleteBookmark",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_delete-retweet_post",
+      "description": "delete Retweet. Required: queryId (default: iQtK4dl5hBmXewYZuEOKVw). Returns the new DeleteRetweetResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/DeleteRetweet",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_delete-tweet_post",
+      "description": "delete Retweet. Required: queryId (default: VaenaVgh5q5ih7kvyVjgtg). Returns the new DeleteTweetResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/DeleteTweet",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_favorite-tweet_post",
+      "description": "favorite Tweet. Required: queryId (default: lI07N6Otwv1PhnEgXILM7A). Returns the new FavoriteTweetResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/FavoriteTweet",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_favoriters_get",
+      "description": "get tweet favoriters. Required: variables, features. Returns the TweetFavoritersResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/Favoriters",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_followers_get",
+      "description": "get user list of followers. Required: variables, features. Returns the FollowResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/Followers",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_followers-you-know_get",
+      "description": "get followers you know. Required: variables, features. Returns the FollowResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/FollowersYouKnow",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_following_get",
+      "description": "get user list of following. Required: variables, features. Returns the FollowResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/Following",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_home-latest-timeline_get",
+      "description": "get tweet list of timeline. Required: variables, features. Returns the TimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/HomeLatestTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_home-timeline_get",
+      "description": "get tweet list of timeline. Required: variables, features. Returns the TimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/HomeTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_likes_get",
+      "description": "get user likes tweets. Required: variables, features, fieldToggles. Returns the UserTweetsResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/Likes",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_list-latest-tweets-timeline_get",
+      "description": "get tweet list of timeline. Required: variables, features. Returns the ListLatestTweetsTimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/ListLatestTweetsTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_notifications-timeline_get",
+      "description": "get notification list. timeline_type:[All, Verified, Mentions]. Required: variables, features. Returns the NotificationsTimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/NotificationsTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_profile-spotlights-query_get",
+      "description": "get user by screen name. Required: variables, features. Returns the ProfileResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/ProfileSpotlightsQuery",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_retweeters_get",
+      "description": "get tweet retweeters. Required: variables, features. Returns the TweetRetweetersResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/Retweeters",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_search-timeline_get",
+      "description": "search tweet list. product:[Top, Latest, People, Photos, Videos]. Required: variables, features. Returns the SearchTimelineResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/SearchTimeline",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_tweet-detail_get",
+      "description": "get TweetDetail. Required: variables, features, fieldToggles. Returns the TweetDetailResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/TweetDetail",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_tweet-result-by-rest-id_get",
+      "description": "get TweetResultByRestId. Required: variables, features, fieldToggles. Returns the TweetResultByRestIdResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/TweetResultByRestId",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_unfavorite-tweet_post",
+      "description": "unfavorite Tweet. Required: queryId (default: ZYKSe-w7KEslx3JhSIk5LA). Returns the new UnfavoriteTweetResponse.",
+      "method": "POST",
+      "path": "/graphql/{pathQueryId}/UnfavoriteTweet",
+      "params": [
+        {
+          "name": "queryId",
+          "type": "string",
+          "location": "body",
+          "description": "Query id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_user-by-rest-id_get",
+      "description": "get user by rest id. Required: variables, features. Returns the UserResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/UserByRestId",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_user-by-screen-name_get",
+      "description": "get user by screen name. Required: variables, features, fieldToggles. Returns the UserResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/UserByScreenName",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_user-highlights-tweets_get",
+      "description": "get user highlights tweets. Required: variables, features, fieldToggles. Returns the UserHighlightsTweetsResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/UserHighlightsTweets",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_user-media_get",
+      "description": "get user media tweets. Required: variables, features, fieldToggles. Returns the UserTweetsResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/UserMedia",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_user-tweets_get",
+      "description": "get user tweets. Required: variables, features, fieldToggles. Returns the UserTweetsResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/UserTweets",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_user-tweets-and-replies_get",
+      "description": "get user replies tweets. Required: variables, features, fieldToggles. Returns the UserTweetsResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/UserTweetsAndReplies",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        },
+        {
+          "name": "fieldToggles",
+          "type": "string",
+          "location": "query",
+          "description": "Field toggles",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "graphql_users-by-rest-ids_get",
+      "description": "get users by rest ids. Required: variables, features. Returns the UsersResponse.",
+      "method": "GET",
+      "path": "/graphql/{pathQueryId}/UsersByRestIds",
+      "params": [
+        {
+          "name": "variables",
+          "type": "string",
+          "location": "query",
+          "description": "Variables",
+          "required": true
+        },
+        {
+          "name": "features",
+          "type": "string",
+          "location": "query",
+          "description": "Features",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "other_other",
+      "description": "This is not an actual endpoint. Returns the OtherObjectAll.",
+      "method": "GET",
+      "path": "/other",
+      "params": []
+    },
+    {
+      "name": "twitter-search_get-search-adaptive",
+      "description": "get search adaptive. Required: include_profile_interstitial_type (default: 1), include_blocking (default: 1), include_blocked_by (default: 1), include_followed_by (default: 1), include_want_retweets (default: 1), include_mute_edge (default: 1), include_can_dm (default: 1), include_can_media_tag (default: 1), include_ext_has_nft_avatar (default: 1), include_ext_is_blue_verified (default: 1), include_ext_verified_type (default: 1), include_ext_profile_image_shape (default: 1), skip_status (default: 1), cards_platform (default: Web-12), include_cards (default: 1), include_ext_alt_text (default: true), include_ext_limited_action_results (default: false), include_quote_count (default: true), include_reply_count (default: 1), tweet_mode (default: extended), include_ext_views (default: true), include_entities (default: true), include_user_entities (default: true), include_ext_media_color (default: true), include_ext_media_availability (default: true), include_ext_sensitive_media_warning (default: true), include_ext_trusted_friends_metadata (default: true), send_error_codes (default: true), simple_quoted_tweet (default: true), q (default: elon musk), query_source (default: trend_click), count (default: 20), requestContext (default: launch), pc (default: 1), spelling_corrections (default: 1), include_ext_edit_control (default: true), ext.",
+      "method": "GET",
+      "path": "/2/search/adaptive.json",
+      "params": [
+        {
+          "name": "include_profile_interstitial_type",
+          "type": "int",
+          "location": "query",
+          "description": "Include profile interstitial type",
+          "required": true
+        },
+        {
+          "name": "include_blocking",
+          "type": "int",
+          "location": "query",
+          "description": "Include blocking",
+          "required": true
+        },
+        {
+          "name": "include_blocked_by",
+          "type": "int",
+          "location": "query",
+          "description": "Include blocked by",
+          "required": true
+        },
+        {
+          "name": "include_followed_by",
+          "type": "int",
+          "location": "query",
+          "description": "Include followed by",
+          "required": true
+        },
+        {
+          "name": "include_want_retweets",
+          "type": "int",
+          "location": "query",
+          "description": "Include want retweets",
+          "required": true
+        },
+        {
+          "name": "include_mute_edge",
+          "type": "int",
+          "location": "query",
+          "description": "Include mute edge",
+          "required": true
+        },
+        {
+          "name": "include_can_dm",
+          "type": "int",
+          "location": "query",
+          "description": "Include can dm",
+          "required": true
+        },
+        {
+          "name": "include_can_media_tag",
+          "type": "int",
+          "location": "query",
+          "description": "Include can media tag",
+          "required": true
+        },
+        {
+          "name": "include_ext_has_nft_avatar",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext has nft avatar",
+          "required": true
+        },
+        {
+          "name": "include_ext_is_blue_verified",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext is blue verified",
+          "required": true
+        },
+        {
+          "name": "include_ext_verified_type",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext verified type",
+          "required": true
+        },
+        {
+          "name": "include_ext_profile_image_shape",
+          "type": "int",
+          "location": "query",
+          "description": "Include ext profile image shape",
+          "required": true
+        },
+        {
+          "name": "skip_status",
+          "type": "int",
+          "location": "query",
+          "description": "Skip status",
+          "required": true
+        },
+        {
+          "name": "cards_platform",
+          "type": "string",
+          "location": "query",
+          "description": "Cards platform",
+          "required": true
+        },
+        {
+          "name": "include_cards",
+          "type": "int",
+          "location": "query",
+          "description": "Include cards",
+          "required": true
+        },
+        {
+          "name": "include_ext_alt_text",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext alt text",
+          "required": true
+        },
+        {
+          "name": "include_ext_limited_action_results",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext limited action results",
+          "required": true
+        },
+        {
+          "name": "include_quote_count",
+          "type": "bool",
+          "location": "query",
+          "description": "Include quote count",
+          "required": true
+        },
+        {
+          "name": "include_reply_count",
+          "type": "int",
+          "location": "query",
+          "description": "Include reply count",
+          "required": true
+        },
+        {
+          "name": "tweet_mode",
+          "type": "string",
+          "location": "query",
+          "description": "Tweet mode",
+          "required": true
+        },
+        {
+          "name": "include_ext_views",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext views",
+          "required": true
+        },
+        {
+          "name": "include_entities",
+          "type": "bool",
+          "location": "query",
+          "description": "Include entities",
+          "required": true
+        },
+        {
+          "name": "include_user_entities",
+          "type": "bool",
+          "location": "query",
+          "description": "Include user entities",
+          "required": true
+        },
+        {
+          "name": "include_ext_media_color",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext media color",
+          "required": true
+        },
+        {
+          "name": "include_ext_media_availability",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext media availability",
+          "required": true
+        },
+        {
+          "name": "include_ext_sensitive_media_warning",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext sensitive media warning",
+          "required": true
+        },
+        {
+          "name": "include_ext_trusted_friends_metadata",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext trusted friends metadata",
+          "required": true
+        },
+        {
+          "name": "send_error_codes",
+          "type": "bool",
+          "location": "query",
+          "description": "Send error codes",
+          "required": true
+        },
+        {
+          "name": "simple_quoted_tweet",
+          "type": "bool",
+          "location": "query",
+          "description": "Simple quoted tweet",
+          "required": true
+        },
+        {
+          "name": "q",
+          "type": "string",
+          "location": "query",
+          "description": "Q",
+          "required": true
+        },
+        {
+          "name": "query_source",
+          "type": "string",
+          "location": "query",
+          "description": "Query source",
+          "required": true
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "location": "query",
+          "description": "Count",
+          "required": true
+        },
+        {
+          "name": "requestContext",
+          "type": "string",
+          "location": "query",
+          "description": "Request context",
+          "required": true
+        },
+        {
+          "name": "pc",
+          "type": "int",
+          "location": "query",
+          "description": "Pc",
+          "required": true
+        },
+        {
+          "name": "spelling_corrections",
+          "type": "int",
+          "location": "query",
+          "description": "Spelling corrections",
+          "required": true
+        },
+        {
+          "name": "include_ext_edit_control",
+          "type": "bool",
+          "location": "query",
+          "description": "Include ext edit control",
+          "required": true
+        },
+        {
+          "name": "ext",
+          "type": "string",
+          "location": "query",
+          "description": "Ext",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

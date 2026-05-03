@@ -1,0 +1,39 @@
+{
+  "manifest_version": "0.3",
+  "name": "twitter-pp-mcp",
+  "display_name": "Twitter",
+  "version": "3.7.0",
+  "description": "Twitter API surface as MCP tools.",
+  "author": {
+    "name": "CLI Printing Press"
+  },
+  "license": "Apache-2.0",
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/twitter-pp-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/bin/twitter-pp-mcp",
+      "args": [],
+      "env": {
+        "TWITTER_ACCEPT": "${user_config.twitter_accept}"
+      }
+    }
+  },
+  "user_config": {
+    "twitter_accept": {
+      "type": "string",
+      "title": "TWITTER_ACCEPT",
+      "description": "Sets TWITTER_ACCEPT for the Twitter MCP server.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ]
+  }
+}

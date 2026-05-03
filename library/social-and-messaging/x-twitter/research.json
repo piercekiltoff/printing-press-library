@@ -1,0 +1,457 @@
+{
+  "api_name": "x-twitter",
+  "novelty_score": 9,
+  "alternatives": [
+    {
+      "name": "fa0311/twitter-openapi",
+      "url": "https://github.com/fa0311/twitter-openapi",
+      "language": "OpenAPI",
+      "install_method": "",
+      "stars": 181,
+      "last_updated": "",
+      "command_count": 39,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "steipete/birdclaw",
+      "url": "https://github.com/steipete/birdclaw",
+      "language": "TypeScript",
+      "install_method": "",
+      "stars": 50,
+      "last_updated": "",
+      "command_count": 12,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "d60/twikit",
+      "url": "https://github.com/d60/twikit",
+      "language": "Python",
+      "install_method": "",
+      "stars": 4400,
+      "last_updated": "",
+      "command_count": 30,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "trevorhobenshield/twitter-api-client",
+      "url": "https://github.com/trevorhobenshield/twitter-api-client",
+      "language": "Python",
+      "install_method": "",
+      "stars": 2500,
+      "last_updated": "",
+      "command_count": 50,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "sferik/x-cli",
+      "url": "https://github.com/sferik/x-cli",
+      "language": "Ruby",
+      "install_method": "",
+      "stars": 7000,
+      "last_updated": "",
+      "command_count": 60,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "Infatoshi/x-cli",
+      "url": "https://github.com/Infatoshi/x-cli",
+      "language": "Go",
+      "install_method": "",
+      "stars": 200,
+      "last_updated": "",
+      "command_count": 8,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "Rishikant181/Rettiwt-API",
+      "url": "https://github.com/Rishikant181/Rettiwt-API",
+      "language": "TypeScript",
+      "install_method": "",
+      "stars": 800,
+      "last_updated": "",
+      "command_count": 25,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "EnesCinr/twitter-mcp",
+      "url": "https://github.com/EnesCinr/twitter-mcp",
+      "language": "TypeScript",
+      "install_method": "",
+      "stars": 200,
+      "last_updated": "",
+      "command_count": 4,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "Infatoshi/x-mcp",
+      "url": "https://github.com/Infatoshi/x-mcp",
+      "language": "TypeScript",
+      "install_method": "",
+      "stars": 100,
+      "last_updated": "",
+      "command_count": 16,
+      "has_json_output": false,
+      "has_auth_support": false
+    }
+  ],
+  "gaps": [],
+  "patterns": [],
+  "recommendation": "proceed",
+  "researched_at": "2026-05-03T08:48:17Z",
+  "novel_features": [
+    {
+      "name": "Following but not following back",
+      "command": "relationships not-following-back",
+      "description": "Surface accounts you follow that don't follow you back, with bio, last-active, and engagement context so you can decide who to unfollow.",
+      "rationale": "Requires a local JOIN of the followers and following tables. SaaS tools (Circleboom, Fedica) require paid OAuth; existing offline tools require manual ZIP uploads. No CLI offers this free + agent-callable.",
+      "example": "x-twitter relationships not-following-back --json --select handle,name,last_tweet_at,follower_count",
+      "why_it_matters": "Pick this for asymmetric-relationship audits. The local store makes it a single SQL query instead of a paid dashboard or a manual ZIP export.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Mutuals (two-way follows)",
+      "command": "relationships mutuals",
+      "description": "Show accounts that follow you AND that you follow back. Filter by recency, language, or follower count.",
+      "rationale": "Local INTERSECT on follow tables. Other tools either lock this behind a paywall or require the official OAuth flow.",
+      "example": "x-twitter relationships mutuals --json --since 90d",
+      "why_it_matters": "Pick this to identify your reciprocal network for outreach, networking, or community building.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Who unfollowed me (since)",
+      "command": "relationships unfollowed-me",
+      "description": "Diff follower snapshots over time to find accounts that unfollowed you in the last N days, with their bio and last activity.",
+      "rationale": "Requires persistent snapshot history, only possible because we maintain a follow_snapshots table. SaaS tools charge for this; no CLI offers it.",
+      "example": "x-twitter relationships unfollowed-me --since 7d --json",
+      "why_it_matters": "Use this to understand audience churn. Snapshot-based, so no API call is needed for the diff itself.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Ghost followers (inactive)",
+      "command": "relationships ghost-followers",
+      "description": "List your followers who haven't tweeted in N days. Detect dead accounts inflating your follower count.",
+      "rationale": "Requires last_tweet_at per follower in the local store. Local SQL filter avoids re-querying the API per check.",
+      "example": "x-twitter relationships ghost-followers --days 90 --json",
+      "why_it_matters": "Pick this for audience hygiene. Helps explain low engagement-per-follower ratios.",
+      "group": "Audience hygiene"
+    },
+    {
+      "name": "Audit inactive accounts you follow",
+      "command": "audit inactive",
+      "description": "Find accounts in your following list that have gone silent for N days. Recommend unfollow candidates.",
+      "rationale": "Inverse of ghost-followers. Local store makes this a single SQL filter.",
+      "example": "x-twitter audit inactive --days 90 --json --select handle,name,last_tweet_at",
+      "why_it_matters": "Use this to clean up your timeline by unfollowing accounts that no longer post.",
+      "group": "Audience hygiene"
+    },
+    {
+      "name": "Fans (they follow me, I don't follow back)",
+      "command": "relationships fans",
+      "description": "Inverse of not-following-back: people who follow you that you haven't followed back. Useful for reciprocal-follow strategies.",
+      "rationale": "Local SET DIFFERENCE on follow tables.",
+      "example": "x-twitter relationships fans --json --since 30d",
+      "why_it_matters": "Pick this when growing reciprocal relationships. Filterable by recency to focus on new followers.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Mutual followers between two users",
+      "command": "relationships overlap",
+      "description": "Find accounts that follow BOTH user A and user B. Useful for network mapping, partnership outreach, OSINT.",
+      "rationale": "Requires syncing followers of both users into the local store, then INTERSECT. Twiangulate's flagship feature, but as an automatable CLI.",
+      "example": "x-twitter relationships overlap @paulg @sama --json --limit 50",
+      "why_it_matters": "Use for warm-intro discovery, audience comparison, or community analysis between any two accounts.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Suspicious follower audit (bots)",
+      "command": "audit suspicious-followers",
+      "description": "Heuristic bot detection: missing profile pic, default-pattern names, recent account age, high follow-to-follower ratio, no original tweets.",
+      "rationale": "All inputs computable from the local store. FollowerAudit-class analytics for free.",
+      "example": "x-twitter audit suspicious-followers --threshold 0.7 --json",
+      "why_it_matters": "Pick this to estimate fake-follower percentage and identify likely bots polluting your audience.",
+      "group": "Audience hygiene"
+    },
+    {
+      "name": "New followers since",
+      "command": "relationships new-followers",
+      "description": "Diff follower snapshots forward to surface newly-acquired followers in the last N days.",
+      "rationale": "Counterpart to unfollowed-me. Requires snapshot history.",
+      "example": "x-twitter relationships new-followers --since 7d --json",
+      "why_it_matters": "Use this to acknowledge new followers and detect spikes in audience growth.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Tweet engagement leaderboard",
+      "command": "tweets engagement",
+      "description": "Local SQL over synced tweets: rank by likes + 2x retweets + 3x replies. Filter by user, language, media presence, or time window.",
+      "rationale": "Local-only analytics over your synced tweet store. No rate limits on repeated queries; composable.",
+      "example": "x-twitter tweets engagement --top 10 --since 30d --user me --json",
+      "why_it_matters": "Pick this for content-performance analysis without re-querying the API for each report.",
+      "group": "Local intelligence"
+    },
+    {
+      "name": "Whois (aggregated profile)",
+      "command": "whois",
+      "description": "One command stitching profile, post velocity, engagement rate, mutuals with you, last active, and top recent tweets into a single agent-friendly view.",
+      "rationale": "Aggregates local store + one live API call. Saves agents from making 5-6 separate calls to assemble a profile picture.",
+      "example": "x-twitter whois @paulg --json",
+      "why_it_matters": "Use this as the first call when researching an account; subsequent commands can drill into specifics.",
+      "group": "Local intelligence"
+    },
+    {
+      "name": "Saved search (search local store)",
+      "command": "search saved",
+      "description": "Search your synced tweet store with FTS5: regex, substring, by user, by language, by media presence. No rate limits, fully composable.",
+      "rationale": "Local FTS5 over synced tweets. Re-running the same query against the live API would burn rate limit; against the store it's free and fast.",
+      "example": "x-twitter search saved --query 'embeddings' --since 30d --user me --json",
+      "why_it_matters": "Pick this when iterating on the same query, building dashboards, or running analyses that need many search variations.",
+      "group": "Local intelligence"
+    },
+    {
+      "name": "Twitter archive ZIP import",
+      "command": "archive import",
+      "description": "Bootstrap your local SQLite store from a Twitter data archive ZIP (the free download X provides on request). No rate-limit-bound sync needed for historical tweets, likes, DMs, blocks, mutes.",
+      "rationale": "X provides a complete archive on request. Importing it directly populates years of historical data instantly, sidestepping API pagination and rate limits. Birdclaw-class onboarding.",
+      "example": "x-twitter archive import ~/Downloads/twitter-2026-04-01.zip --json",
+      "why_it_matters": "Pick this as the first step when onboarding — it bootstraps the entire local store from a free archive download instead of weeks of rate-limited sync.",
+      "group": "Local-first onboarding \u0026 export"
+    },
+    {
+      "name": "Git-friendly JSONL export with yearly shards",
+      "command": "export jsonl",
+      "description": "Export tweets, DMs, or follows as version-controllable JSONL files, partitioned by year. Pairs with `--format markdown` for human-readable backups.",
+      "rationale": "JSONL is text-diffable — a year-by-year shard layout lets you commit your X archive to Git and see what changed week-over-week.",
+      "example": "x-twitter export jsonl --resource tweets --output ./backup --yearly",
+      "why_it_matters": "Use this for durable, text-diffable backups of your X data that survive any tool change.",
+      "group": "Local-first onboarding \u0026 export"
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Following but not following back",
+      "command": "relationships not-following-back",
+      "description": "Surface accounts you follow that don't follow you back, with bio, last-active, and engagement context so you can decide who to unfollow.",
+      "rationale": "Requires a local JOIN of the followers and following tables. SaaS tools (Circleboom, Fedica) require paid OAuth; existing offline tools require manual ZIP uploads. No CLI offers this free + agent-callable.",
+      "example": "x-twitter relationships not-following-back --json --select handle,name,last_tweet_at,follower_count",
+      "why_it_matters": "Pick this for asymmetric-relationship audits. The local store makes it a single SQL query instead of a paid dashboard or a manual ZIP export.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Mutuals (two-way follows)",
+      "command": "relationships mutuals",
+      "description": "Show accounts that follow you AND that you follow back. Filter by recency, language, or follower count.",
+      "rationale": "Local INTERSECT on follow tables. Other tools either lock this behind a paywall or require the official OAuth flow.",
+      "example": "x-twitter relationships mutuals --json --since 90d",
+      "why_it_matters": "Pick this to identify your reciprocal network for outreach, networking, or community building.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Who unfollowed me (since)",
+      "command": "relationships unfollowed-me",
+      "description": "Diff follower snapshots over time to find accounts that unfollowed you in the last N days, with their bio and last activity.",
+      "rationale": "Requires persistent snapshot history, only possible because we maintain a follow_snapshots table. SaaS tools charge for this; no CLI offers it.",
+      "example": "x-twitter relationships unfollowed-me --since 7d --json",
+      "why_it_matters": "Use this to understand audience churn. Snapshot-based, so no API call is needed for the diff itself.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Ghost followers (inactive)",
+      "command": "relationships ghost-followers",
+      "description": "List your followers who haven't tweeted in N days. Detect dead accounts inflating your follower count.",
+      "rationale": "Requires last_tweet_at per follower in the local store. Local SQL filter avoids re-querying the API per check.",
+      "example": "x-twitter relationships ghost-followers --days 90 --json",
+      "why_it_matters": "Pick this for audience hygiene. Helps explain low engagement-per-follower ratios.",
+      "group": "Audience hygiene"
+    },
+    {
+      "name": "Audit inactive accounts you follow",
+      "command": "audit inactive",
+      "description": "Find accounts in your following list that have gone silent for N days. Recommend unfollow candidates.",
+      "rationale": "Inverse of ghost-followers. Local store makes this a single SQL filter.",
+      "example": "x-twitter audit inactive --days 90 --json --select handle,name,last_tweet_at",
+      "why_it_matters": "Use this to clean up your timeline by unfollowing accounts that no longer post.",
+      "group": "Audience hygiene"
+    },
+    {
+      "name": "Fans (they follow me, I don't follow back)",
+      "command": "relationships fans",
+      "description": "Inverse of not-following-back: people who follow you that you haven't followed back. Useful for reciprocal-follow strategies.",
+      "rationale": "Local SET DIFFERENCE on follow tables.",
+      "example": "x-twitter relationships fans --json --since 30d",
+      "why_it_matters": "Pick this when growing reciprocal relationships. Filterable by recency to focus on new followers.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Mutual followers between two users",
+      "command": "relationships overlap",
+      "description": "Find accounts that follow BOTH user A and user B. Useful for network mapping, partnership outreach, OSINT.",
+      "rationale": "Requires syncing followers of both users into the local store, then INTERSECT. Twiangulate's flagship feature, but as an automatable CLI.",
+      "example": "x-twitter relationships overlap @paulg @sama --json --limit 50",
+      "why_it_matters": "Use for warm-intro discovery, audience comparison, or community analysis between any two accounts.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Suspicious follower audit (bots)",
+      "command": "audit suspicious-followers",
+      "description": "Heuristic bot detection: missing profile pic, default-pattern names, recent account age, high follow-to-follower ratio, no original tweets.",
+      "rationale": "All inputs computable from the local store. FollowerAudit-class analytics for free.",
+      "example": "x-twitter audit suspicious-followers --threshold 0.7 --json",
+      "why_it_matters": "Pick this to estimate fake-follower percentage and identify likely bots polluting your audience.",
+      "group": "Audience hygiene"
+    },
+    {
+      "name": "New followers since",
+      "command": "relationships new-followers",
+      "description": "Diff follower snapshots forward to surface newly-acquired followers in the last N days.",
+      "rationale": "Counterpart to unfollowed-me. Requires snapshot history.",
+      "example": "x-twitter relationships new-followers --since 7d --json",
+      "why_it_matters": "Use this to acknowledge new followers and detect spikes in audience growth.",
+      "group": "Asymmetric relationship analytics"
+    },
+    {
+      "name": "Tweet engagement leaderboard",
+      "command": "tweets engagement",
+      "description": "Local SQL over synced tweets: rank by likes + 2x retweets + 3x replies. Filter by user, language, media presence, or time window.",
+      "rationale": "Local-only analytics over your synced tweet store. No rate limits on repeated queries; composable.",
+      "example": "x-twitter tweets engagement --top 10 --since 30d --user me --json",
+      "why_it_matters": "Pick this for content-performance analysis without re-querying the API for each report.",
+      "group": "Local intelligence"
+    },
+    {
+      "name": "Whois (aggregated profile)",
+      "command": "whois",
+      "description": "One command stitching profile, post velocity, engagement rate, mutuals with you, last active, and top recent tweets into a single agent-friendly view.",
+      "rationale": "Aggregates local store + one live API call. Saves agents from making 5-6 separate calls to assemble a profile picture.",
+      "example": "x-twitter whois @paulg --json",
+      "why_it_matters": "Use this as the first call when researching an account; subsequent commands can drill into specifics.",
+      "group": "Local intelligence"
+    },
+    {
+      "name": "Saved search (search local store)",
+      "command": "search saved",
+      "description": "Search your synced tweet store with FTS5: regex, substring, by user, by language, by media presence. No rate limits, fully composable.",
+      "rationale": "Local FTS5 over synced tweets. Re-running the same query against the live API would burn rate limit; against the store it's free and fast.",
+      "example": "x-twitter search saved --query 'embeddings' --since 30d --user me --json",
+      "why_it_matters": "Pick this when iterating on the same query, building dashboards, or running analyses that need many search variations.",
+      "group": "Local intelligence"
+    },
+    {
+      "name": "Twitter archive ZIP import",
+      "command": "archive import",
+      "description": "Bootstrap your local SQLite store from a Twitter data archive ZIP (the free download X provides on request). No rate-limit-bound sync needed for historical tweets, likes, DMs, blocks, mutes.",
+      "rationale": "X provides a complete archive on request. Importing it directly populates years of historical data instantly, sidestepping API pagination and rate limits. Birdclaw-class onboarding.",
+      "example": "x-twitter archive import ~/Downloads/twitter-2026-04-01.zip --json",
+      "why_it_matters": "Pick this as the first step when onboarding — it bootstraps the entire local store from a free archive download instead of weeks of rate-limited sync.",
+      "group": "Local-first onboarding \u0026 export"
+    },
+    {
+      "name": "Git-friendly JSONL export with yearly shards",
+      "command": "export jsonl",
+      "description": "Export tweets, DMs, or follows as version-controllable JSONL files, partitioned by year. Pairs with `--format markdown` for human-readable backups.",
+      "rationale": "JSONL is text-diffable — a year-by-year shard layout lets you commit your X archive to Git and see what changed week-over-week.",
+      "example": "x-twitter export jsonl --resource tweets --output ./backup --yearly",
+      "why_it_matters": "Use this for durable, text-diffable backups of your X data that survive any tool change.",
+      "group": "Local-first onboarding \u0026 export"
+    }
+  ],
+  "narrative": {
+    "display_name": "X (Twitter)",
+    "headline": "Use X from your terminal with your browser session — no paid API key, with a local SQLite database that powers relationship analytics no other tool offers.",
+    "value_prop": "x-twitter is a CLI for X (formerly Twitter) that authenticates via your existing browser cookies — no $100/month API tier required. It mirrors every endpoint from the internal GraphQL API into commands, syncs your followers, following, tweets, and bookmarks into a local SQLite store, and unlocks relationship analytics like 'who isn't following me back', 'mutuals', and 'who unfollowed me' that no free tool offers. Every command is agent-native (--json, --select, exit codes) and exposed through MCP for Claude Desktop and other agent clients.",
+    "auth_narrative": "x-twitter uses cookie-based auth captured from your logged-in browser. Run `x-twitter auth login --chrome` to import your X session cookies (auth_token, ct0, guest_id) from Chrome. The CLI then signs every request with the matching x-csrf-token header and the standard X web-client bearer token. No paid X API tier needed. Cookies expire — re-run `auth login --chrome` whenever `doctor` reports an expired session.",
+    "quickstart": [
+      {
+        "command": "x-twitter auth login --chrome",
+        "comment": "Capture session cookies from your logged-in Chrome browser. No API key needed."
+      },
+      {
+        "command": "x-twitter doctor",
+        "comment": "Verify auth, network, rate-limit headroom, and DB integrity."
+      },
+      {
+        "command": "x-twitter sync followers",
+        "comment": "Mirror your follower list into local SQLite. Required before relationship analytics."
+      },
+      {
+        "command": "x-twitter sync following",
+        "comment": "Mirror who you follow into local SQLite. Required before relationship analytics."
+      },
+      {
+        "command": "x-twitter relationships not-following-back --json --select handle,name,last_tweet_at",
+        "comment": "The killer feature: who you follow that doesn't follow you back."
+      },
+      {
+        "command": "x-twitter whois @paulg --json",
+        "comment": "Aggregated profile + relationship + engagement summary in one call."
+      }
+    ],
+    "troubleshoots": [
+      {
+        "symptom": "doctor reports 'session expired' or commands return 401",
+        "fix": "Cookies have expired. Re-run `x-twitter auth login --chrome` to capture fresh cookies from your browser."
+      },
+      {
+        "symptom": "'csrf cookie does not match header' (error code 353)",
+        "fix": "Your ct0 cookie rotated. Re-run `auth login --chrome` to refresh."
+      },
+      {
+        "symptom": "Rate limit hit during sync",
+        "fix": "Sync resumes from the last cursor. Re-run the sync command after the reset window in the error message."
+      },
+      {
+        "symptom": "GraphQL operation 'X' returned 'unknown query id'",
+        "fix": "X rotates GraphQL query IDs occasionally. Run `x-twitter doctor --refresh-ids` to fetch fresh IDs from the spec source."
+      },
+      {
+        "symptom": "relationships commands return empty results",
+        "fix": "Run `x-twitter sync followers` and `x-twitter sync following` first — relationship commands query the local store."
+      }
+    ],
+    "when_to_use": "Use x-twitter when you need scriptable, agent-driven access to X without paying for the V2 API tier. It excels at relationship analytics (who isn't following you back, who unfollowed you, mutuals overlap between two users), audience hygiene (ghost followers, suspicious-bot detection), and local-store-backed analytics (engagement leaderboards, saved search). For one-off interactive browsing the X web UI is faster, but for any repeated query, automation, or agent workflow x-twitter is a much better fit because it caches data locally and exposes everything as JSON.",
+    "recipes": [
+      {
+        "title": "Find who you follow that doesn't follow back",
+        "command": "x-twitter sync followers \u0026\u0026 x-twitter sync following \u0026\u0026 x-twitter relationships not-following-back --json --select handle,name,follower_count,last_tweet_at | jq '.[] | select(.follower_count \u003e 1000)'",
+        "explanation": "Sync both directions, then list the asymmetric edges, narrowing to influencers."
+      },
+      {
+        "title": "Track who unfollowed you this week",
+        "command": "x-twitter sync followers \u0026\u0026 x-twitter relationships unfollowed-me --since 7d --json",
+        "explanation": "Each sync builds a follower snapshot; the diff command surfaces the deltas."
+      },
+      {
+        "title": "Audit your most engaged tweets last month",
+        "command": "x-twitter sync tweets --user me \u0026\u0026 x-twitter tweets engagement --top 20 --since 30d --user me --json --select id,text,like_count,retweet_count,reply_count",
+        "explanation": "Local SQL ranks your tweets by weighted engagement without burning rate limit."
+      },
+      {
+        "title": "Find common followers between two users (warm intro discovery)",
+        "command": "x-twitter sync followers --user @paulg \u0026\u0026 x-twitter sync followers --user @sama \u0026\u0026 x-twitter relationships overlap @paulg @sama --json --limit 50",
+        "explanation": "Sync both users' followers, then INTERSECT them to find who follows both — useful for partnership outreach."
+      },
+      {
+        "title": "Whois with deeply-nested response narrowing",
+        "command": "x-twitter whois @vercel --json --select profile.handle,profile.bio,engagement.tweets_per_day,engagement.avg_likes,mutuals_with_me_count,top_tweets.id,top_tweets.text",
+        "explanation": "Whois returns nested data; --select with dotted paths lets agents fetch only the fields they need to keep context small."
+      }
+    ],
+    "trigger_phrases": [
+      "who isn't following me back on X",
+      "who unfollowed me on Twitter",
+      "show my mutuals on X",
+      "ghost followers Twitter",
+      "search my saved tweets",
+      "whois on X",
+      "use x-twitter",
+      "run x-twitter"
+    ]
+  }
+}

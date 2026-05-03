@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-03T18:33:49.121952Z",
+  "printing_press_version": "3.7.0",
+  "api_name": "x-twitter",
+  "display_name": "X (Twitter)",
+  "cli_name": "x-twitter-pp-cli",
+  "spec_format": "openapi3",
+  "spec_checksum": "sha256:4e4937f9bfe8e496749437310ae1f97f39e561320440171768f3b62534718cd5",
+  "run_id": "20260503-014536",
+  "mcp_binary": "twitter-pp-mcp",
+  "mcp_tool_count": 39,
+  "mcp_ready": "full",
+  "auth_type": "cookie",
+  "auth_env_vars": [
+    "X_TWITTER_AUTH_TOKEN",
+    "X_TWITTER_CT0",
+    "X_TWITTER_GUEST_ID"
+  ],
+  "novel_features": [
+    {
+      "name": "Following but not following back",
+      "command": "relationships not-following-back",
+      "description": "Surface accounts you follow that don't follow you back, with bio, last-active, and engagement context so you can decide who to unfollow."
+    },
+    {
+      "name": "Mutuals (two-way follows)",
+      "command": "relationships mutuals",
+      "description": "Show accounts that follow you AND that you follow back. Filter by recency, language, or follower count."
+    },
+    {
+      "name": "Who unfollowed me (since)",
+      "command": "relationships unfollowed-me",
+      "description": "Diff follower snapshots over time to find accounts that unfollowed you in the last N days, with their bio and last activity."
+    },
+    {
+      "name": "Ghost followers (inactive)",
+      "command": "relationships ghost-followers",
+      "description": "List your followers who haven't tweeted in N days. Detect dead accounts inflating your follower count."
+    },
+    {
+      "name": "Audit inactive accounts you follow",
+      "command": "audit inactive",
+      "description": "Find accounts in your following list that have gone silent for N days. Recommend unfollow candidates."
+    },
+    {
+      "name": "Fans (they follow me, I don't follow back)",
+      "command": "relationships fans",
+      "description": "Inverse of not-following-back: people who follow you that you haven't followed back. Useful for reciprocal-follow strategies."
+    },
+    {
+      "name": "Mutual followers between two users",
+      "command": "relationships overlap",
+      "description": "Find accounts that follow BOTH user A and user B. Useful for network mapping, partnership outreach, OSINT."
+    },
+    {
+      "name": "Suspicious follower audit (bots)",
+      "command": "audit suspicious-followers",
+      "description": "Heuristic bot detection: missing profile pic, default-pattern names, recent account age, high follow-to-follower ratio, no original tweets."
+    },
+    {
+      "name": "New followers since",
+      "command": "relationships new-followers",
+      "description": "Diff follower snapshots forward to surface newly-acquired followers in the last N days."
+    },
+    {
+      "name": "Tweet engagement leaderboard",
+      "command": "tweets engagement",
+      "description": "Local SQL over synced tweets: rank by likes + 2x retweets + 3x replies. Filter by user, language, media presence, or time window."
+    },
+    {
+      "name": "Whois (aggregated profile)",
+      "command": "whois",
+      "description": "One command stitching profile, post velocity, engagement rate, mutuals with you, last active, and top recent tweets into a single agent-friendly view."
+    },
+    {
+      "name": "Saved search (search local store)",
+      "command": "search saved",
+      "description": "Search your synced tweet store with FTS5: regex, substring, by user, by language, by media presence. No rate limits, fully composable."
+    },
+    {
+      "name": "Twitter archive ZIP import",
+      "command": "archive import",
+      "description": "Bootstrap your local SQLite store from a Twitter data archive ZIP (the free download X provides on request). No rate-limit-bound sync needed for historical tweets, likes, DMs, blocks, mutes."
+    },
+    {
+      "name": "Git-friendly JSONL export with yearly shards",
+      "command": "export jsonl",
+      "description": "Export tweets, DMs, or follows as version-controllable JSONL files, partitioned by year. Pairs with `--format markdown` for human-readable backups."
+    }
+  ],
+  "category": "social-and-messaging"
+}
