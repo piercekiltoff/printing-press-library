@@ -113,6 +113,23 @@
       }
     },
     {
+      "name": "craigslist",
+      "category": "commerce",
+      "api": "Craigslist",
+      "description": "Search, sync, and watch Craigslist with a local SQLite snapshot history, cross-city aggregation, scam scoring, and price-drift detection.",
+      "path": "library/commerce/craigslist",
+      "mcp": {
+        "binary": "craigslist-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 1,
+        "public_tool_count": 1,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "dominos",
       "category": "commerce",
       "api": "Dominos Pizza",
@@ -330,6 +347,22 @@
         "env_vars": [
           "TMDB_API_KEY"
         ],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
+      "name": "open-meteo",
+      "category": "other",
+      "api": "Open-Meteo",
+      "description": "Forecasts, historicals, marine, air quality, flood, climate, ensemble, and seasonal data from Open-Meteo's free tier.",
+      "path": "library/other/open-meteo",
+      "mcp": {
+        "binary": "open-meteo-pp-mcp",
+        "transport": "stdio",
+        "tool_count": 11,
+        "public_tool_count": 11,
+        "auth_type": "none",
         "mcp_ready": "full",
         "spec_format": "internal"
       }
