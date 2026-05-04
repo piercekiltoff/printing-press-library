@@ -101,14 +101,6 @@ func Load(configPath string) (*Config, error) {
 		cfg.BaseURL = v
 	}
 
-	// Legacy compatibility for generated code paths that still reference TwitterAccept
-	if v := os.Getenv("TWITTER_ACCEPT"); v != "" {
-		cfg.TwitterAccept = v
-		if cfg.AuthSource == "" {
-			cfg.AuthSource = "env:TWITTER_ACCEPT"
-		}
-	}
-
 	return cfg, nil
 }
 

@@ -84,9 +84,10 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			// Check auth
 			if cfg != nil {
 				header := cfg.AuthHeader()
-				if header == "" {
+				hasSession := cfg.AuthToken != ""
+				if header == "" || !hasSession {
 					report["auth"] = "not configured"
-					report["auth_hint"] = "export TWITTER_ACCEPT=<your-key>"
+					report["auth_hint"] = "run 'x-twitter-pp-cli auth login --paste' to set cookies, or export X_TWITTER_AUTH_TOKEN, X_TWITTER_CT0, X_TWITTER_GUEST_ID"
 				} else {
 					report["auth"] = "configured"
 					report["auth_source"] = cfg.AuthSource
@@ -96,8 +97,14 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			// Check auth environment variables
 			authEnvChecked := 0
 			authEnvSet := 0
-			authEnvChecked++
-			if os.Getenv("TWITTER_ACCEPT") != "" {
+			authEnvChecked = 3
+			if os.Getenv("X_TWITTER_AUTH_TOKEN") != "" {
+				authEnvSet++
+			}
+			if os.Getenv("X_TWITTER_CT0") != "" {
+				authEnvSet++
+			}
+			if os.Getenv("X_TWITTER_GUEST_ID") != "" {
 				authEnvSet++
 			}
 			if authEnvSet == 0 {

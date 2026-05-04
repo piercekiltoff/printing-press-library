@@ -160,6 +160,9 @@ Higher scores are likelier bots. Inspect signals to validate.
 			}
 			w := cmd.OutOrStdout()
 			if flags.asJSON || !isTerminal(w) {
+				if len(scored) == 0 {
+					emitEmptyStoreHint(cmd, "followers,following")
+				}
 				return printJSONFiltered(w, scored, flags)
 			}
 			if len(scored) == 0 {

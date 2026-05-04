@@ -95,9 +95,12 @@ reading source. Schema is versioned via schema_version.`,
 
 func buildAgentContext(rootCmd *cobra.Command) agentContext {
 	envVars := []string{
-		"TWITTER_ACCEPT",
+		"X_TWITTER_AUTH_TOKEN",
+		"X_TWITTER_CT0",
+		"X_TWITTER_GUEST_ID",
+		"X_TWITTER_BEARER_TOKEN",
 	}
-	authMode := "api_key"
+	authMode := "cookie"
 	if authMode == "" {
 		authMode = "none"
 	}

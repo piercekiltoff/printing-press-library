@@ -385,6 +385,9 @@ Requires 'sync followers --user <handle>' to have run for BOTH users.
 			// (e.g., before sync has populated the store).
 			w := cmd.OutOrStdout()
 			if flags.asJSON || !isTerminal(w) {
+				if len(rows) == 0 {
+					emitEmptyStoreHint(cmd, "followers,following")
+				}
 				envelope := map[string]any{
 					"user_a":  "@" + a,
 					"user_b":  "@" + b,
@@ -547,6 +550,9 @@ func queryUserRows(db *store.Store, query string, args ...any) ([]xUserRow, erro
 func emitUserRows(cmd *cobra.Command, flags *rootFlags, rows []xUserRow) error {
 	w := cmd.OutOrStdout()
 	if flags.asJSON || !isTerminal(w) {
+		if len(rows) == 0 {
+			emitEmptyStoreHint(cmd, "followers,following")
+		}
 		return printJSONFiltered(w, rows, flags)
 	}
 	if len(rows) == 0 {
@@ -568,6 +574,10 @@ func emitUserRows(cmd *cobra.Command, flags *rootFlags, rows []xUserRow) error {
 		}
 	}
 	return nil
+}
+
+func emitEmptyStoreHint(cmd *cobra.Command, resources string) {
+	fmt.Fprintf(cmd.ErrOrStderr(), "hint: local store is empty — run 'x-twitter-pp-cli sync --resources %s' to populate\n", resources)
 }
 
 // openXStore is a small wrapper that opens the default DB path.

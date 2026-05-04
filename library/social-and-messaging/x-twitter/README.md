@@ -248,7 +248,7 @@ go install github.com/mvanhorn/printing-press-library/library/other/x-twitter/cm
 Then register it:
 
 ```bash
-claude mcp add x-twitter x-twitter-pp-mcp -e TWITTER_ACCEPT=<your-key>
+claude mcp add x-twitter x-twitter-pp-mcp -e X_TWITTER_AUTH_TOKEN=<token> -e X_TWITTER_CT0=<ct0> -e X_TWITTER_GUEST_ID=<guest_id>
 ```
 
 </details>
@@ -261,7 +261,7 @@ To install:
 
 1. Download the `.mcpb` for your platform from the [latest release](https://github.com/mvanhorn/printing-press-library/releases/tag/x-twitter-current).
 2. Double-click the `.mcpb` file. Claude Desktop opens and walks you through the install.
-3. Fill in `TWITTER_ACCEPT` when Claude Desktop prompts you.
+3. Fill in the `X_TWITTER_AUTH_TOKEN`, `X_TWITTER_CT0`, and `X_TWITTER_GUEST_ID` cookie values from x.com DevTools when Claude Desktop prompts you.
 
 Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple Silicon (`darwin-arm64`) and Windows (`amd64`, `arm64`); for other platforms, use the manual config below.
 
@@ -282,7 +282,9 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
     "x-twitter": {
       "command": "x-twitter-pp-mcp",
       "env": {
-        "TWITTER_ACCEPT": "<your-key>"
+        "X_TWITTER_AUTH_TOKEN": "<token>",
+        "X_TWITTER_CT0": "<ct0>",
+        "X_TWITTER_GUEST_ID": "<guest_id>"
       }
     }
   }

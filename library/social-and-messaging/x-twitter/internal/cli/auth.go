@@ -125,7 +125,7 @@ Capture X session cookies and persist them to the config file.
 			if fromChrome {
 				authToken, csrfToken, guestID, err = readChromeXCookies()
 				if err != nil {
-					return fmt.Errorf("reading Chrome cookies: %w\n\nFallback: use --paste and copy the cookies from DevTools manually.", err)
+					return authErr(fmt.Errorf("reading Chrome cookies: %w\n\nFallback: use --paste and copy the cookies from DevTools manually.", err))
 				}
 				source = "chrome"
 			} else {

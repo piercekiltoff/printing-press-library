@@ -15,15 +15,31 @@
       "command": "${__dirname}/bin/twitter-pp-mcp",
       "args": [],
       "env": {
-        "TWITTER_ACCEPT": "${user_config.twitter_accept}"
+        "X_TWITTER_AUTH_TOKEN": "${user_config.x_twitter_auth_token}",
+        "X_TWITTER_CT0": "${user_config.x_twitter_ct0}",
+        "X_TWITTER_GUEST_ID": "${user_config.x_twitter_guest_id}"
       }
     }
   },
   "user_config": {
-    "twitter_accept": {
+    "x_twitter_auth_token": {
       "type": "string",
-      "title": "TWITTER_ACCEPT",
-      "description": "Sets TWITTER_ACCEPT for the Twitter MCP server.",
+      "title": "X_TWITTER_AUTH_TOKEN",
+      "description": "X session auth_token cookie value (from x.com DevTools).",
+      "sensitive": true,
+      "required": true
+    },
+    "x_twitter_ct0": {
+      "type": "string",
+      "title": "X_TWITTER_CT0",
+      "description": "X session ct0 cookie value (from x.com DevTools).",
+      "sensitive": true,
+      "required": true
+    },
+    "x_twitter_guest_id": {
+      "type": "string",
+      "title": "X_TWITTER_GUEST_ID",
+      "description": "X session guest_id cookie value (from x.com DevTools).",
       "sensitive": true,
       "required": true
     }

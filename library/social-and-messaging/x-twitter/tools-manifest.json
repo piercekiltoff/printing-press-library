@@ -9,7 +9,9 @@
     "header": "Accept",
     "in": "header",
     "env_vars": [
-      "TWITTER_ACCEPT"
+      "X_TWITTER_AUTH_TOKEN",
+      "X_TWITTER_CT0",
+      "X_TWITTER_GUEST_ID"
     ]
   },
   "required_headers": [],

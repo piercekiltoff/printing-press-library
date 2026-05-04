@@ -584,17 +584,17 @@ func makeAPIHandler(method, pathTemplate string, positionalParams []string) serv
 			case strings.Contains(msg, "HTTP 400") && cliutil.LooksLikeAuthError(msg):
 				return mcplib.NewToolResultError("authentication error: " + cliutil.SanitizeErrorBody(msg) +
 					"\nhint: the API rejected the request — this usually means auth is missing or invalid." +
-					"\n      Set your API key: export TWITTER_ACCEPT=<your-key>" +
+					"\n      Run 'x-twitter-pp-cli auth login --paste' to set session cookies (auth_token, ct0, guest_id)" +
 					"\n      Run 'x-twitter-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 401"):
 				return mcplib.NewToolResultError("authentication failed: " + cliutil.SanitizeErrorBody(msg) +
 					"\nhint: check your API key." +
-					"\n      Set it with: export TWITTER_ACCEPT=<your-key>" +
+					"\n      Run 'x-twitter-pp-cli auth login --paste' to set session cookies (auth_token, ct0, guest_id)" +
 					"\n      Run 'x-twitter-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 403"):
 				return mcplib.NewToolResultError("permission denied: " + cliutil.SanitizeErrorBody(msg) +
 					"\nhint: your credentials are valid but lack access to this resource." +
-					"\n      Set it with: export TWITTER_ACCEPT=<your-key>" +
+					"\n      Run 'x-twitter-pp-cli auth login --paste' to set session cookies (auth_token, ct0, guest_id)" +
 					"\n      Run 'x-twitter-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 404"):
 				if method == "DELETE" {
@@ -735,7 +735,7 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 		"tool_surface": "MCP exposes typed endpoint tools plus a runtime mirror of user-facing CLI commands. Endpoint tools keep typed schemas; command-mirror tools shell out to the companion x-twitter-pp-cli binary.",
 		"auth": map[string]any{
 			"type": "api_key",
-			"env_vars": []string{"TWITTER_ACCEPT",  },
+			"env_vars": []string{"X_TWITTER_AUTH_TOKEN", "X_TWITTER_CT0", "X_TWITTER_GUEST_ID"},
 		},
 		"resources": []map[string]any{
 			{

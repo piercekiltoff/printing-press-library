@@ -68,6 +68,9 @@ Run 'x-twitter sync tweets' to populate the store before searching.
 				}
 				w := cmd.OutOrStdout()
 				if flags.asJSON || !isTerminal(w) {
+					if len(results) == 0 {
+						emitEmptyStoreHint(cmd, "tweets")
+					}
 					return printJSONFiltered(w, results, flags)
 				}
 				if len(results) == 0 {
@@ -142,6 +145,9 @@ Run 'x-twitter sync tweets' to populate the store before searching.
 			}
 			w := cmd.OutOrStdout()
 			if flags.asJSON || !isTerminal(w) {
+				if len(out) == 0 {
+					emitEmptyStoreHint(cmd, "tweets")
+				}
 				return printJSONFiltered(w, out, flags)
 			}
 			if len(out) == 0 {

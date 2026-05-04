@@ -112,6 +112,9 @@ Reads from local store. Run 'x-twitter sync tweets --user me' first to populate.
 			}
 			w := cmd.OutOrStdout()
 			if flags.asJSON || !isTerminal(w) {
+				if len(out) == 0 {
+					emitEmptyStoreHint(cmd, "tweets")
+				}
 				return printJSONFiltered(w, out, flags)
 			}
 			if len(out) == 0 {
