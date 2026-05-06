@@ -72,6 +72,30 @@
       }
     },
     {
+      "name": "amazon-sp-api",
+      "category": "commerce",
+      "api": "Amazon Selling Partner API",
+      "description": "Read FBA inventory, orders, sales reports, listings, and catalog data for an Amazon seller account.",
+      "path": "library/commerce/amazon-sp-api",
+      "mcp": {
+        "binary": "amazon-sp-api-pp-mcp",
+        "transports": [
+          "stdio",
+          "http"
+        ],
+        "tool_count": 12,
+        "public_tool_count": 0,
+        "auth_type": "oauth2",
+        "env_vars": [
+          "SP_API_LWA_CLIENT_ID",
+          "SP_API_LWA_CLIENT_SECRET",
+          "SP_API_REFRESH_TOKEN"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "apartments",
       "category": "other",
       "api": "Apartments",
@@ -723,6 +747,27 @@
         "auth_type": "api_key",
         "env_vars": [
           "SCRAPE_CREATORS_API_KEY_AUTH"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
+      "name": "seats-aero",
+      "category": "travel",
+      "api": "Seats Aero Partner",
+      "description": "Seats.aero Partner API for award travel availability, cached search, route lists, and trip revalidation details.",
+      "path": "library/travel/seats-aero",
+      "mcp": {
+        "binary": "seats-aero-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 4,
+        "public_tool_count": 0,
+        "auth_type": "api_key",
+        "env_vars": [
+          "SEATS_AERO_API_KEY"
         ],
         "mcp_ready": "full",
         "spec_format": "openapi3"
