@@ -8,13 +8,12 @@
 // This tool is the source of truth for registry.json. It runs in CI on
 // push to main against library/** changes (see
 // .github/workflows/generate-registry.yml) and commits the regenerated
-// registry alongside the skills/ppl/references/registry.json mirror,
-// matching the same generated-artifact pattern this repo already uses
-// for cli-skills/.
+// registry, matching the same generated-artifact pattern this repo
+// already uses for cli-skills/.
 //
 // Usage:
 //
-//	go run ./tools/generate-registry             # write registry.json + mirror
+//	go run ./tools/generate-registry             # write registry.json
 //	go run ./tools/generate-registry --check     # exit non-zero if drift detected
 //	go run ./tools/generate-registry --print     # print to stdout, do not write
 package main
@@ -34,12 +33,17 @@ import (
 )
 
 const (
-	libraryDir       = "library"
-	registryPath     = "registry.json"
-	mirrorPath       = "skills/ppl/references/registry.json"
-	readmePath       = "README.md"
-	schemaVersion    = 1
-	defaultTransport = "stdio"
+	libraryDir    = "library"
+	registryPath  = "registry.json"
+	readmePath    = "README.md"
+	schemaVersion = 2
+	// stdioTransport / httpTransport are the registry-side names for the
+	// MCP transports an emitted binary can serve. Detection of which
+	// transports a CLI actually supports happens in detectMCPTransports
+	// by inspecting cmd/<binary>/main.go: every server links ServeStdio,
+	// only the streamable-HTTP-capable ones reference NewStreamableHTTPServer.
+	stdioTransport = "stdio"
+	httpTransport  = "http"
 
 	// README sentinel markers. The generator only rewrites bytes
 	// between matching begin/end markers; surrounding prose stays
@@ -84,7 +88,7 @@ type RegistryEntry struct {
 // would be misleading.
 type MCPBlock struct {
 	Binary          string   `json:"binary"`
-	Transport       string   `json:"transport"`
+	Transports      []string `json:"transports"`
 	ToolCount       int      `json:"tool_count"`
 	PublicToolCount int      `json:"public_tool_count"`
 	AuthType        string   `json:"auth_type,omitempty"`
@@ -175,16 +179,10 @@ func main() {
 	if err := os.WriteFile(registryPath, registryOut, 0o644); err != nil {
 		log.Fatalf("writing %s: %v", registryPath, err)
 	}
-	if err := os.MkdirAll(filepath.Dir(mirrorPath), 0o755); err != nil {
-		log.Fatalf("creating mirror dir: %v", err)
-	}
-	if err := os.WriteFile(mirrorPath, registryOut, 0o644); err != nil {
-		log.Fatalf("writing %s: %v", mirrorPath, err)
-	}
 	if err := os.WriteFile(readmePath, newReadme, 0o644); err != nil {
 		log.Fatalf("writing %s: %v", readmePath, err)
 	}
-	fmt.Fprintf(os.Stderr, "wrote %s, %s, and %s (%d entries)\n", registryPath, mirrorPath, readmePath, len(entries))
+	fmt.Fprintf(os.Stderr, "wrote %s and %s (%d entries)\n", registryPath, readmePath, len(entries))
 }
 
 // loadExistingEntries reads the current registry.json and returns a
@@ -308,9 +306,11 @@ func buildEntry(dir, category, slug string, existing map[string]RegistryEntry) (
 	// This avoids regressing accurate registry values to 0/empty when
 	// only some fields drift forward.
 	if pp.MCPBinary != "" {
-		entry.MCP = buildMCPBlock(pp, prior.MCP)
+		entry.MCP = buildMCPBlock(pp, prior.MCP, dir)
 	} else if prior.MCP != nil {
-		entry.MCP = prior.MCP
+		preserved := *prior.MCP
+		preserved.Transports = detectMCPTransports(dir, preserved.Binary)
+		entry.MCP = &preserved
 	}
 
 	return &entry, nil
@@ -359,11 +359,11 @@ func apiDisplayName(pp printingPressManifest, prior RegistryEntry, slug string) 
 // Field-level fallbacks deliberately mix authoritative (pp) and
 // preserved (prior) signals; full-block preservation for legacy CLIs
 // happens upstream in buildEntry.
-func buildMCPBlock(pp printingPressManifest, prior *MCPBlock) *MCPBlock {
+func buildMCPBlock(pp printingPressManifest, prior *MCPBlock, cliDir string) *MCPBlock {
 	mcp := &MCPBlock{
-		Binary:    pp.MCPBinary,
-		Transport: defaultTransport,
-		ToolCount: pp.MCPToolCount,
+		Binary:     pp.MCPBinary,
+		Transports: detectMCPTransports(cliDir, pp.MCPBinary),
+		ToolCount:  pp.MCPToolCount,
 		// EnvVars must be a non-nil slice so JSON encodes as `[]`
 		// rather than `null`; this matches the historical hand-edited
 		// registry shape where every MCP entry has an env_vars array
@@ -392,6 +392,36 @@ func buildMCPBlock(pp printingPressManifest, prior *MCPBlock) *MCPBlock {
 		mcp.SpecFormat = prior.SpecFormat
 	}
 	return mcp
+}
+
+// detectMCPTransports inspects a CLI's MCP binary main.go to determine
+// which MCP transports the compiled server can serve. Every emitted MCP
+// binary links ServeStdio so stdio is always reported; streamable HTTP
+// is reported only when main.go references NewStreamableHTTPServer
+// (the streamable-HTTP entry point from mark3labs/mcp-go).
+//
+// Detection by source-grep matches the runtime truth: the transport
+// switch in cmd/<binary>/main.go is the only place that wires either
+// ServeStdio or NewStreamableHTTPServer. If the file is missing
+// (e.g., a legacy CLI whose MCP source was never copied here), we
+// degrade to ["stdio"] — the historical default registry value.
+//
+// The returned slice is always non-nil so callers can rely on it
+// encoding as a real JSON array rather than null.
+func detectMCPTransports(cliDir, binary string) []string {
+	transports := []string{stdioTransport}
+	if binary == "" {
+		return transports
+	}
+	mainPath := filepath.Join(cliDir, "cmd", binary, "main.go")
+	data, err := os.ReadFile(mainPath)
+	if err != nil {
+		return transports
+	}
+	if bytes.Contains(data, []byte("NewStreamableHTTPServer")) {
+		transports = append(transports, httpTransport)
+	}
+	return transports
 }
 
 // readGoreleaserDescription returns the first non-empty `description`

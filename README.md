@@ -14,25 +14,32 @@ Three to try first:
 - flight-goat (Kayak nonstop search plus sniffed Google Flights). _"Non-stop flights over 8 hours from Seattle for 4 people, Dec 24 to Jan 1, cheapest first."_ Two sources, one query.
 - linear-pp-cli (50ms against a local SQLite mirror). _"Every blocked issue whose blocker has been stuck for a week."_ Compound queries the Linear API can't answer.
 
-## Release status
+## Install
 
-The v0.1.0 npm installer and `cli-skills/` direct-install namespace are prepared in this repo, but public use is waiting on three release steps:
+The fastest way to start — install four hand-picked CLIs and skills in one command:
 
-1. Merge this work to `main`, so `cli-skills/` exists on the default branch.
-2. Publish `@mvanhorn/printing-press` to npm.
-3. Make the repo public, or document the private-repo token setup for early users.
+```bash
+npx -y @mvanhorn/printing-press install starter-pack
+```
 
-While the repo is private, live installer use requires `GITHUB_TOKEN` or `GH_TOKEN` for catalog and skill fetches, plus private Go module access for `go install`.
+The starter pack: [`espn`](library/media-and-entertainment/espn/) (live sports), [`flight-goat`](library/travel/flightgoat/) (flight search), [`movie-goat`](library/media-and-entertainment/movie-goat/) (movie discovery), [`recipe-goat`](library/food-and-dining/recipe-goat/) (recipe ranking).
 
-## Install a CLI
+Every install pulls the Go binary **and** the focused skill in one shot. Pass `--cli-only` or `--skill-only` if you want just one half.
 
-After v0.1.0 is published, the primary install path is:
+One tool:
 
 ```bash
 npx -y @mvanhorn/printing-press install espn
 ```
 
-That command installs the Go binary and the focused `pp-espn` skill. The npm package is intentionally thin: it reads the live catalog in `registry.json`, resolves the CLI's Go module path, runs `go install`, and installs the matching skill from `cli-skills/pp-<name>`.
+Several at once (bundles and CLI names mix freely):
+
+```bash
+npx -y @mvanhorn/printing-press install espn linear dub
+npx -y @mvanhorn/printing-press install starter-pack hubspot
+```
+
+Under the hood: the npm package is a thin orchestrator that reads the live catalog in `registry.json`, resolves each CLI's Go module path, runs `go install`, and installs the matching skill from `cli-skills/pp-<name>`.
 
 Useful commands:
 
@@ -43,39 +50,7 @@ npx -y @mvanhorn/printing-press update espn
 npx -y @mvanhorn/printing-press uninstall espn --yes
 ```
 
-## Use the plugin router
-
-This repo is also a Claude Code plugin marketplace. Add it and install the plugin:
-
-```text
-/plugin marketplace add mvanhorn/printing-press-library
-/plugin install printing-press-library@printing-press-library
-```
-
-The plugin exposes the catalog router skill:
-
-```text
-/ppl
-```
-
-/ppl handles discovery, routing, and install guidance:
-
-```text
-/ppl
-/ppl sports scores
-/ppl install espn
-/ppl espn lakers score
-/ppl linear my open issues
-```
-
-The plugin intentionally does not install every focused `/pp-*` skill by default. Focused skills live under `cli-skills/` for direct installation, so users can install only the tools they want.
-
-Want to print new CLIs from API specs? Install the Printing Press itself too:
-
-```text
-/plugin marketplace add mvanhorn/cli-printing-press
-/plugin install cli-printing-press@cli-printing-press
-```
+While the catalog repository is private, live installer use requires `GITHUB_TOKEN` or `GH_TOKEN` for catalog and skill fetches, plus working private Go module access for `go install`.
 
 ## Focused skills
 
@@ -93,7 +68,7 @@ Then use the focused slash skill directly:
 /pp-weather-goat phoenix forecast
 ```
 
-`/ppl` is the catalog router. Each `/pp-<name>` skill is a focused interface for one CLI.
+Each `/pp-<name>` skill is a focused interface for one CLI.
 
 ## Catalog
 
@@ -121,7 +96,7 @@ Tools grouped by category, sourced from [`registry.json`](registry.json). Each r
 | [`espn`](library/media-and-entertainment/espn/) | [`/pp-espn`](cli-skills/pp-espn/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/espn-current) | Live scores, standings, news, and game history across 17 sports from ESPN. |
 | [`fedex`](library/commerce/fedex/) | [`/pp-fedex`](cli-skills/pp-fedex/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/fedex-current) | Ship, rate, and track FedEx packages from the terminal — built for small business shippers. |
 | [`firecrawl`](library/developer-tools/firecrawl/) | [`/pp-firecrawl`](cli-skills/pp-firecrawl/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/firecrawl-current) | API for interacting with Firecrawl services to perform web scraping and crawling tasks. |
-| [`flightgoat`](library/travel/flightgoat/) | [`/pp-flightgoat`](cli-skills/pp-flightgoat/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/flightgoat-current) | Free Google Flights search, Kayak nonstop route explorer, and optional FlightAware live tracking in one CLI. No API key required for search. |
+| [`flight-goat`](library/travel/flight-goat/) | [`/pp-flight-goat`](cli-skills/pp-flight-goat/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/flight-goat-current) | # Introduction. |
 | [`food52`](library/food-and-dining/food52/) | [`/pp-food52`](cli-skills/pp-food52/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/food52-current) | Search, browse, and read Food52 from your terminal — with offline FTS, pantry matching, recipe scaling, and the editorial signals other tools throw away. |
 | [`google-photos`](library/media-and-entertainment/google-photos/) | [`/pp-google-photos`](cli-skills/pp-google-photos/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/google-photos-current) | Google Photos Library and Picker APIs for app-created media, albums, uploads, and user-selected media. |
 | [`hackernews`](library/media-and-entertainment/hackernews/) | [`/pp-hackernews`](cli-skills/pp-hackernews/SKILL.md) | [latest](https://github.com/mvanhorn/printing-press-library/releases/tag/hackernews-current) | Hacker News from your terminal — with a local SQLite store, snapshot history, and agent-native output no other HN tool has. |
@@ -191,10 +166,6 @@ library/
       .printing-press.json
       .manuscripts/
 
-.claude-plugin/
-  marketplace.json
-  plugin.json
-
 cli-skills/
   pp-*/
     SKILL.md                 # generated direct-install mirror of library/<.>/SKILL.md
@@ -204,14 +175,10 @@ npm/
   src/
   bin/
 
-skills/
-  ppl/
-    SKILL.md
-
 registry.json
 ```
 
-Each published tool is self-contained: source code, a local README, a `.printing-press.json` provenance manifest, and the manuscripts from the printing run. `cli-skills/pp-*` is a generated mirror of each library `SKILL.md`, produced by `tools/generate-skills/main.go`. `skills/ppl` is the plugin-facing router skill.
+Each published tool is self-contained: source code, a local README, a `.printing-press.json` provenance manifest, and the manuscripts from the printing run. `cli-skills/pp-*` is a generated mirror of each library `SKILL.md`, produced by `tools/generate-skills/main.go`.
 
 ## What endorsed means
 
