@@ -72,13 +72,13 @@
       }
     },
     {
-      "name": "amazon-sp-api",
+      "name": "amazon-seller",
       "category": "commerce",
-      "api": "Amazon Selling Partner API",
+      "api": "Amazon Seller",
       "description": "Read FBA inventory, orders, sales reports, listings, and catalog data for an Amazon seller account.",
-      "path": "library/commerce/amazon-sp-api",
+      "path": "library/commerce/amazon-seller",
       "mcp": {
-        "binary": "amazon-sp-api-pp-mcp",
+        "binary": "amazon-seller-pp-mcp",
         "transports": [
           "stdio",
           "http"
