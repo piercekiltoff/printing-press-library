@@ -83,7 +83,7 @@ Exit codes & warnings:
 			c.NoCache = true
 
 			if dbPath == "" {
-				dbPath = defaultDBPath("twitter-pp-cli")
+				dbPath = defaultDBPath("x-twitter-pp-cli")
 			}
 
 			db, err := store.OpenWithContext(cmd.Context(), dbPath)
@@ -252,7 +252,7 @@ Exit codes & warnings:
 	cmd.Flags().BoolVar(&full, "full", false, "Full resync (ignore previous checkpoint)")
 	cmd.Flags().StringVar(&since, "since", "", "Incremental sync duration (e.g. 7d, 24h, 1w, 30m)")
 	cmd.Flags().IntVar(&concurrency, "concurrency", 4, "Number of parallel sync workers")
-	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/twitter-pp-cli/data.db)")
+	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: ~/.local/share/x-twitter-pp-cli/data.db)")
 	cmd.Flags().IntVar(&maxPages, "max-pages", 100, "Maximum pages to fetch per resource (0 = unlimited; cap-hit emits a sync_warning event)")
 	cmd.Flags().BoolVar(&latestOnly, "latest-only", false, "Refresh head of each resource only; clears resume cursor and caps pages at 1. Mutually exclusive with --since (--since wins).")
 	cmd.Flags().BoolVar(&strict, "strict", false, "Exit non-zero on any per-resource failure (default: only critical failures or all-resource failure exit non-zero).")
@@ -270,6 +270,12 @@ func syncResource(c interface {
 
 	if !humanFriendly {
 		fmt.Fprintf(os.Stdout, `{"event":"sync_start","resource":"%s"}`+"\n", resource)
+	}
+
+	// X's follower-related resources don't fit the generic REST sync pattern;
+	// they require GraphQL operations with templated variables.
+	if isXGraphQLResource(resource) {
+		return syncXGraphQLResource(c, db, resource, maxPages)
 	}
 
 	path, err := syncResourcePath(resource)
@@ -861,6 +867,8 @@ func parseSinceDuration(s string) (time.Time, error) {
 func defaultSyncResources() []string {
 	return []string{
 		"1-1",
+		"followers",
+		"following",
 	}
 }
 
