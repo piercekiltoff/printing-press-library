@@ -312,8 +312,10 @@ go install github.com/mvanhorn/printing-press-library/library/media-and-entertai
 Then register it:
 
 ```bash
-claude mcp add movie-goat movie-goat-pp-mcp -e TMDB_API_KEY=<your-tmdb-key> -e OMDB_API_KEY=<your-omdb-key>
+claude mcp add -e TMDB_API_KEY=<your-tmdb-key> -e OMDB_API_KEY=<your-omdb-key> movie-goat -- movie-goat-pp-mcp
 ```
+
+`OMDB_API_KEY` is optional, but it is what enables IMDb, Rotten Tomatoes, and Metacritic enrichment in the MCP command-mirror tools such as `ratings`, `versus`, and `career`.
 
 </details>
 
@@ -325,7 +327,7 @@ To install:
 
 1. Download the `.mcpb` for your platform from the [latest release](https://github.com/mvanhorn/printing-press-library/releases/tag/movie-goat-current).
 2. Double-click the `.mcpb` file. Claude Desktop opens and walks you through the install.
-3. Fill in `TMDB_API_KEY` when Claude Desktop prompts you. Add `OMDB_API_KEY` too if you want IMDb, Rotten Tomatoes, and Metacritic ratings.
+3. Fill in `TMDB_API_KEY` when Claude Desktop prompts you. Add `OMDB_API_KEY` too if you want IMDb, Rotten Tomatoes, and Metacritic enrichment in `ratings`, `versus`, and `career`.
 
 Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple Silicon (`darwin-arm64`) and Windows (`amd64`, `arm64`); for other platforms, use the manual config below.
 
@@ -370,7 +372,7 @@ Config file: `~/.config/movie-goat-pp-cli/config.toml`
 
 Environment variables:
 - `TMDB_API_KEY`
-- `OMDB_API_KEY` (optional; enables IMDb / Rotten Tomatoes / Metacritic enrichment)
+- `OMDB_API_KEY` (optional; enables IMDb, Rotten Tomatoes, and Metacritic enrichment)
 
 ## Troubleshooting
 **Authentication errors (exit code 4)**
