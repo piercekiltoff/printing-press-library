@@ -569,7 +569,8 @@
         "public_tool_count": 0,
         "auth_type": "api_key",
         "env_vars": [
-          "TMDB_API_KEY"
+          "TMDB_API_KEY",
+          "OMDB_API_KEY"
         ],
         "mcp_ready": "full",
         "spec_format": "internal"
