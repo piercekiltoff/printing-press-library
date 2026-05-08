@@ -154,6 +154,27 @@
       }
     },
     {
+      "name": "cloud-run-admin",
+      "category": "cloud",
+      "api": "Google Cloud Run",
+      "description": "Deploy and manage user provided container images that scale automatically based on incoming requests. The Cloud Run Admin API v1 follows the Knative Serving API specification, while v2 is aligned with Google Cloud AIP-based API standards, as described in https://google.aip.dev/.",
+      "path": "library/cloud/cloud-run-admin",
+      "mcp": {
+        "binary": "cloud-run-admin-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 16,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "CLOUD_RUN_ADMIN_OAUTH2C"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "coingecko",
       "category": "payments",
       "api": "Coingecko",
