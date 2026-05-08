@@ -154,6 +154,25 @@
       }
     },
     {
+      "name": "clarity",
+      "category": "marketing",
+      "api": "PP Clarity",
+      "description": "Client-side instrumentation helpers for Microsoft Clarity.",
+      "path": "library/marketing/clarity",
+      "mcp": {
+        "binary": "clarity-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 1,
+        "public_tool_count": 1,
+        "auth_type": "none",
+        "env_vars": [],
+        "mcp_ready": "full",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "cloud-run-admin",
       "category": "cloud",
       "api": "Google Cloud Run",
