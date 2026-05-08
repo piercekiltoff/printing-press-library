@@ -951,9 +951,10 @@
       "mcp": {
         "binary": "steam-web-pp-mcp",
         "transports": [
-          "stdio"
+          "stdio",
+          "http"
         ],
-        "tool_count": 161,
+        "tool_count": 169,
         "public_tool_count": 0,
         "auth_type": "api_key",
         "env_vars": [
