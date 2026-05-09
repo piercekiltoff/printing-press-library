@@ -38,6 +38,10 @@ go install github.com/mvanhorn/printing-press-library/library/project-management
 
 If `--version` reports "command not found" after install, the install step did not put the binary on `$PATH`. Do not proceed with skill commands until verification succeeds.
 
+## Cursor
+
+Personal API keys are created under **Account → Security & access** in Linear, not under Integrations. For step-by-step Cursor setup (keys, `auth set-api-key`, optional MCP tradeoffs), see [CURSOR.md](https://github.com/mvanhorn/printing-press-library/blob/main/library/project-management/linear/CURSOR.md) in the Linear module.
+
 ## When to Use This CLI
 
 Reach for this when the user wants:
@@ -79,13 +83,14 @@ Ask the user for the actual key value before running.
 ## Direct Use
 
 1. Check installed: `which linear-pp-cli`. If missing, offer CLI installation.
-2. Run `linear-pp-cli sync` once (or when data is stale) to populate the local SQLite store. Analytics and search commands then run offline.
-3. Discover commands: `linear-pp-cli --help`; drill into `linear-pp-cli <cmd> --help`.
-4. Execute with `--agent` for structured output:
+2. Ensure auth: `export LINEAR_API_KEY=...` or `linear-pp-cli auth set-api-key lin_api_...` (not `auth set-token`, which is for OAuth access tokens). Run `linear-pp-cli doctor` to confirm.
+3. Run `linear-pp-cli sync` once (or when data is stale) to populate the local SQLite store. Analytics and search commands then run offline.
+4. Discover commands: `linear-pp-cli --help`; drill into `linear-pp-cli <cmd> --help`.
+5. Execute with `--agent` for structured output:
    ```bash
    linear-pp-cli <command> [args] --agent
    ```
-5. `--data-source auto` (default) hits the local store first with live fallback; use `--data-source live` to force a live call (e.g. for time-sensitive queries on unsynced fields).
+6. `--data-source auto` (default) hits the local store first with live fallback; use `--data-source live` to force a live call (e.g. for time-sensitive queries on unsynced fields).
 
 ## Notable Commands
 
