@@ -867,6 +867,15 @@
       }
     },
     {
+      "name": "openrouter",
+      "category": "ai",
+      "api": "openrouter",
+      "description": "Agent-first OpenRouter introspection — terse output for cron and AI agents (--agent and --llm modes), local SQLite...",
+      "path": "library/ai/openrouter",
+      "printer": "rvdlaar",
+      "printer_name": "Rick van de Laar"
+    },
+    {
       "name": "opensnow",
       "category": "productivity",
       "api": "OpenSnow",
