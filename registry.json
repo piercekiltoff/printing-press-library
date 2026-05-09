@@ -834,6 +834,29 @@
       }
     },
     {
+      "name": "podscan",
+      "category": "media-and-entertainment",
+      "api": "Podscan",
+      "description": "Podscan REST API — search 51M+ podcast episodes and 4.4M+ podcasts. Full transcripts, AI-extracted entities,...",
+      "path": "library/media-and-entertainment/podscan",
+      "printer": "gregvanhorn",
+      "printer_name": "Greg Van Horn",
+      "mcp": {
+        "binary": "podscan-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 14,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "PODSCAN_BEARER_AUTH"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "pokeapi",
       "category": "media-and-entertainment",
       "api": "PokéAPI",
