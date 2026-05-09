@@ -623,6 +623,14 @@
       }
     },
     {
+      "name": "google-search-console",
+      "category": "marketing",
+      "api": "Google Search Console",
+      "description": "Every Google Search Console feature you'd reach for, plus an offline SQLite cache that powers period compare, quick...",
+      "path": "library/marketing/google-search-console",
+      "printer": "bossriceshark"
+    },
+    {
       "name": "hackernews",
       "category": "media-and-entertainment",
       "api": "Hacker News",
