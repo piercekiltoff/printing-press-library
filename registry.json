@@ -771,6 +771,25 @@
       }
     },
     {
+      "name": "myfitnesspal",
+      "category": "productivity",
+      "api": "MyFitnessPal",
+      "description": "Pull every meal you ever logged out of MyFitnessPal — per-food CSV, agent-shaped trends, and a local SQLite store...",
+      "path": "library/productivity/myfitnesspal",
+      "mcp": {
+        "binary": "myfitnesspal-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 15,
+        "public_tool_count": 0,
+        "auth_type": "cookie",
+        "env_vars": [],
+        "mcp_ready": "partial",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "notion",
       "category": "productivity",
       "api": "Notion",
