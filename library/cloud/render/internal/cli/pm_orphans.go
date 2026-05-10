@@ -1,4 +1,9 @@
 // Copyright 2026 giuliano-giacaglia. Licensed under Apache-2.0. See LICENSE.
+//
+// PATCH: Replaces the generator's generic missing-assignee orphan scan with a
+// Render-specific orphan sweep — unattached disks, empty env-groups, dangling
+// custom-domains, unused registry credentials, retention-violating snapshots.
+// See .printing-press-patches.json (id: render-orphans-domain-rewrite).
 
 package cli
 
