@@ -985,16 +985,16 @@ func (s *Store) UpdateTopicLastChecked(topic string) error {
 	return err
 }
 
-// SearchHeadlines searches cached headlines (river resource) for a query string since a given time.
+// SearchHeadlines searches cached headlines for a query string since a given time.
 func (s *Store) SearchHeadlines(query string, since time.Time) ([]json.RawMessage, error) {
 	q := "%" + strings.ToLower(query) + "%"
 	rows, err := s.db.Query(
 		`SELECT data FROM resources
-		 WHERE resource_type = 'river'
+		 WHERE resource_type = 'headline'
 		 AND LOWER(data) LIKE ?
-		 AND updated_at >= ?
-		 ORDER BY updated_at DESC`,
-		q, since.Format("2006-01-02 15:04:05"),
+		 AND json_extract(data, '$.timestamp') >= ?
+		 ORDER BY json_extract(data, '$.timestamp') DESC`,
+		q, since.Format(time.RFC3339),
 	)
 	if err != nil {
 		return nil, err
@@ -1012,14 +1012,14 @@ func (s *Store) SearchHeadlines(query string, since time.Time) ([]json.RawMessag
 	return results, rows.Err()
 }
 
-// HeadlinesSince returns cached headlines (river resource) updated since the given time.
+// HeadlinesSince returns cached headlines with a timestamp since the given time.
 func (s *Store) HeadlinesSince(since time.Time) ([]json.RawMessage, error) {
 	rows, err := s.db.Query(
 		`SELECT data FROM resources
-		 WHERE resource_type = 'river'
-		 AND updated_at >= ?
-		 ORDER BY updated_at DESC`,
-		since.Format("2006-01-02 15:04:05"),
+		 WHERE resource_type = 'headline'
+		 AND json_extract(data, '$.timestamp') >= ?
+		 ORDER BY json_extract(data, '$.timestamp') DESC`,
+		since.Format(time.RFC3339),
 	)
 	if err != nil {
 		return nil, err
@@ -1037,14 +1037,13 @@ func (s *Store) HeadlinesSince(since time.Time) ([]json.RawMessage, error) {
 	return results, rows.Err()
 }
 
-// HeadlinesForDate returns cached headlines (river resource) for a specific date.
+// HeadlinesForDate returns cached headlines for a specific date (YYYY-MM-DD).
 func (s *Store) HeadlinesForDate(date string) ([]json.RawMessage, error) {
-	// Match on the date portion: date is YYYY-MM-DD
 	rows, err := s.db.Query(
 		`SELECT data FROM resources
-		 WHERE resource_type = 'river'
-		 AND DATE(updated_at) = ?
-		 ORDER BY updated_at DESC`,
+		 WHERE resource_type = 'headline'
+		 AND SUBSTR(json_extract(data, '$.timestamp'), 1, 10) = ?
+		 ORDER BY json_extract(data, '$.timestamp') DESC`,
 		date,
 	)
 	if err != nil {
@@ -1068,7 +1067,7 @@ func (s *Store) SearchByAuthor(name string) ([]json.RawMessage, error) {
 	q := "%" + strings.ToLower(name) + "%"
 	rows, err := s.db.Query(
 		`SELECT data FROM resources
-		 WHERE resource_type = 'river'
+		 WHERE resource_type = 'headline'
 		 AND LOWER(json_extract(data, '$.author')) LIKE ?
 		 ORDER BY updated_at DESC`,
 		q,
@@ -1077,7 +1076,7 @@ func (s *Store) SearchByAuthor(name string) ([]json.RawMessage, error) {
 		// Fallback: search in raw data for author field
 		rows, err = s.db.Query(
 			`SELECT data FROM resources
-			 WHERE resource_type = 'river'
+			 WHERE resource_type = 'headline'
 			 AND LOWER(data) LIKE ?
 			 ORDER BY updated_at DESC`,
 			"%\"author\":%"+q+"%",

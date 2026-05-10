@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"github.com/mvanhorn/printing-press-library/library/productivity/techmeme/internal/store"
+	"techmeme-pp-cli/internal/store"
 	"time"
 )
 
@@ -94,6 +94,32 @@ Exit codes & warnings:
 			// If no specific resources, sync top-level resources
 			if len(resources) == 0 {
 				resources = defaultSyncResources()
+			}
+
+			// Techmeme has no JSON API — sync from RSS feed and river HTML
+			if len(resources) == 0 {
+				started := time.Now()
+				count, err := syncRiver(c, db)
+				if err != nil {
+					return fmt.Errorf("syncing river: %w", err)
+				}
+				elapsed := time.Since(started)
+				summary := map[string]any{
+					"event":         "sync_summary",
+					"total_records": count,
+					"resources":     1,
+					"success":       1,
+					"warned":        0,
+					"errored":       0,
+					"duration_ms":   elapsed.Milliseconds(),
+				}
+				if humanFriendly {
+					fmt.Fprintf(cmd.OutOrStdout(), "Synced %d headlines from river (%s)\n", count, elapsed.Round(time.Millisecond))
+				} else {
+					b, _ := json.Marshal(summary)
+					fmt.Fprintln(cmd.OutOrStdout(), string(b))
+				}
+				return nil
 			}
 
 			// --full: clear all sync cursors before starting
