@@ -943,6 +943,27 @@
       }
     },
     {
+      "name": "ordertogo",
+      "category": "food-and-dining",
+      "api": "OrderToGo",
+      "description": "Browse, cart, and place orders at any OrderToGo.com restaurant from the terminal — pure-Go agent-native client...",
+      "path": "library/food-and-dining/ordertogo",
+      "printer": "mvanhorn",
+      "printer_name": "Matt Van Horn",
+      "mcp": {
+        "binary": "ordertogo-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 15,
+        "public_tool_count": 0,
+        "auth_type": "cookie",
+        "env_vars": [],
+        "mcp_ready": "partial",
+        "spec_format": "internal"
+      }
+    },
+    {
       "name": "pagliacci",
       "category": "food-and-dining",
       "api": "Pagliacci Pizza",
