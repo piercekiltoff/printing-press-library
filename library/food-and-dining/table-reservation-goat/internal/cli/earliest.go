@@ -48,12 +48,88 @@ type earliestRow struct {
 	Source   string `json:"source,omitempty"`
 }
 
+type earliestMeta struct {
+	// VenuesRequested is the count of input slugs (including duplicates).
+	VenuesRequested int `json:"venues_requested"`
+	// Resolved is the count of slugs that the source-client successfully
+	// mapped to a real network (OpenTable or Tock). Resolved-but-blocked
+	// counts here too — they got past slug→ID resolution, just couldn't
+	// fetch slots.
+	Resolved int `json:"resolved"`
+	// Unresolved is VenuesRequested - Resolved. Issue #406 failure 4:
+	// without this field, a request that resolved zero slugs returned
+	// `{}` (under `--select results.X` with no rows), indistinguishable
+	// from "resolved fine, just no slots open." Surfacing the count
+	// always lets agents branch on the case.
+	Unresolved int `json:"unresolved"`
+	// Available is the count of resolved venues with at least one bookable
+	// slot in the window.
+	Available int `json:"available"`
+}
+
+type unresolvedRow struct {
+	Venue  string `json:"venue"`
+	Reason string `json:"reason,omitempty"`
+}
+
 type earliestResponse struct {
-	Venues    []string      `json:"venues"`
-	Party     int           `json:"party"`
-	Within    int           `json:"within_days"`
-	Results   []earliestRow `json:"results"`
-	QueriedAt string        `json:"queried_at"`
+	Venues  []string      `json:"venues"`
+	Party   int           `json:"party"`
+	Within  int           `json:"within_days"`
+	Meta    earliestMeta  `json:"meta"`
+	Results []earliestRow `json:"results"`
+	// Unresolved is emitted as `[]` (not omitted) when empty, mirroring
+	// `Results`. Agents checking `"unresolved" in response` would
+	// otherwise see a false negative when ALL venues resolved (key
+	// absent) vs SOME unresolved (key present). Symmetry with Results
+	// keeps the response shape predictable.
+	Unresolved []unresolvedRow `json:"unresolved"`
+	QueriedAt  string          `json:"queried_at"`
+}
+
+// summarizeEarliest partitions the row set into resolved-only Results
+// and unresolved companions, and computes the meta summary alongside.
+//
+// A row is considered "unresolved" when its Network is empty or "unknown" —
+// the resolver short-circuited before assigning a network. Resolved-but-
+// blocked rows (Network set, Available=false, Reason mentions Akamai etc.)
+// stay in Results but don't count toward Available.
+//
+// Partitioning here (rather than passing the raw `rows` to Results)
+// closes the duplication bug Greptile flagged on PR #424 round-2:
+// previously unresolved venues appeared in BOTH the results[] and
+// unresolved[] arrays simultaneously.
+//
+// PRECONDITION: callers must pass `rows` produced from `venues` so that
+// `len(rows) == len(venues)` and entries correspond positionally. The
+// invariant `Resolved + Unresolved == VenuesRequested` only holds under
+// this condition; mismatched slices silently produce diverging counts.
+// All current callers (newEarliestCmd's dry-run and live paths) satisfy
+// this by appending one row per input venue in order.
+func summarizeEarliest(venues []string, rows []earliestRow) (earliestMeta, []earliestRow, []unresolvedRow) {
+	// Initialize as empty slices (not nil) so JSON serialization emits
+	// `[]` rather than `null`. Symmetry across results + unresolved
+	// matters for the agent contract — both keys should always be
+	// present so consumers can iterate without nil-checks.
+	results := []earliestRow{}
+	unresolved := []unresolvedRow{}
+	var available int
+	for _, r := range rows {
+		if r.Network == "" || r.Network == "unknown" {
+			unresolved = append(unresolved, unresolvedRow{Venue: r.Venue, Reason: r.Reason})
+			continue
+		}
+		results = append(results, r)
+		if r.Available {
+			available++
+		}
+	}
+	return earliestMeta{
+		VenuesRequested: len(venues),
+		Resolved:        len(results),
+		Unresolved:      len(unresolved),
+		Available:       available,
+	}, results, unresolved
 }
 
 // newEarliestCmd computes "soonest open slot per venue across both networks"
@@ -75,8 +151,20 @@ func newEarliestCmd(flags *rootFlags) *cobra.Command {
 		Long: "Across a comma-separated list of restaurant slugs, return the " +
 			"earliest open slot per venue within `--within N days`. Slugs may be " +
 			"network-prefixed (`opentable:le-bernardin`, `tock:alinea`) for " +
-			"explicit routing, otherwise both networks are tried. Use `--tonight` " +
-			"as shorthand for `--date <today> --within 1d`.\n\n" +
+			"explicit routing, otherwise both networks are tried. Numeric IDs " +
+			"from `restaurants list --json` (the `id` field) work as inputs too. " +
+			"Use `--tonight` as shorthand for `--date <today> --within 1d`.\n\n" +
+			"Response shape:\n" +
+			"  • `meta.venues_requested`, `meta.resolved`, `meta.unresolved`, " +
+			"`meta.available` — summary counts always present, regardless of\n" +
+			"    `--select` path, so agents can distinguish \"checked, no\n" +
+			"    slots\" from \"couldn't resolve any input.\"\n" +
+			"  • `results[]` — one row per resolved venue with slot data.\n" +
+			"  • `unresolved[]` — venues that didn't resolve, with reason\n" +
+			"    strings. Empty when all resolve.\n\n" +
+			"Common `--select` paths: `results.venue`, `results.network`,\n" +
+			"`results.slot_at`, `results.bookable_times`, `meta.resolved`,\n" +
+			"`meta.available`, `unresolved.venue`, `unresolved.reason`.\n\n" +
 			"OpenTable availability is cached on disk for 3 minutes by default; " +
 			"pass `--no-cache` (or set `TRG_OT_NO_CACHE=1`) to force a fresh fetch. " +
 			"To route OT traffic through a personal proxy or Tor SOCKS5, set " +
@@ -111,8 +199,10 @@ func newEarliestCmd(flags *rootFlags) *cobra.Command {
 				for _, v := range venues {
 					rows = append(rows, earliestRow{Venue: v, Network: "opentable", Available: false, Reason: "dry-run"})
 				}
+				meta, results, unresolved := summarizeEarliest(venues, rows)
 				return printJSONFiltered(cmd.OutOrStdout(), earliestResponse{
-					Venues: venues, Party: party, Within: withinDays, Results: rows,
+					Venues: venues, Party: party, Within: withinDays,
+					Meta: meta, Results: results, Unresolved: unresolved,
 					QueriedAt: time.Now().UTC().Format(time.RFC3339),
 				}, flags)
 			}
@@ -140,8 +230,10 @@ func newEarliestCmd(flags *rootFlags) *cobra.Command {
 				}
 				return rows[i].Venue < rows[j].Venue
 			})
+			meta, results, unresolved := summarizeEarliest(venues, rows)
 			return printJSONFiltered(cmd.OutOrStdout(), earliestResponse{
-				Venues: venues, Party: party, Within: withinDays, Results: rows,
+				Venues: venues, Party: party, Within: withinDays,
+				Meta: meta, Results: results, Unresolved: unresolved,
 				QueriedAt: time.Now().UTC().Format(time.RFC3339),
 			}, flags)
 		},
@@ -284,7 +376,15 @@ func resolveEarliestForVenue(ctx context.Context, s *auth.Session, venue string,
 	if tryOT {
 		c, err := opentable.New(s)
 		if err == nil {
-			row.Network = "opentable"
+			// NOTE: `row.Network = "opentable"` is deliberately NOT set
+			// here. PR #424 round-3 Greptile finding: setting Network
+			// before slug resolution caused slug-resolve failures to be
+			// miscounted as `meta.resolved` (Network was already
+			// "opentable" when summarizeEarliest's partition ran). The
+			// assignment moves AFTER we have a confirmed valid restID
+			// so the partition correctly categorizes failures as
+			// `meta.unresolved`.
+
 			// Numeric-ID short-circuit (issue #406, failure 2): `restaurants
 			// list` emits numeric OpenTable IDs (e.g. id=3688 for "Daniel's
 			// Broiler - Bellevue") but the Autocomplete-based slug resolver
@@ -318,11 +418,19 @@ func resolveEarliestForVenue(ctx context.Context, s *auth.Session, venue string,
 				var rerr error
 				restID, restName, restSlug, rerr = c.RestaurantIDFromQuery(ctx, slug, 40.7128, -74.0060)
 				if rerr != nil {
+					// Slug-resolve failed. row.Network stays empty so
+					// summarizeEarliest partitions this row into
+					// `unresolved[]` (PR #424 round-3 fix).
 					row.Available = false
 					row.Reason = fmt.Sprintf("opentable: could not resolve %q (%v)", slug, rerr)
 					return row
 				}
 			}
+			// Slug resolution succeeded (numeric path or named path).
+			// Claim the row for OpenTable so downstream partitioning
+			// counts this venue as resolved, even if the subsequent
+			// availability fetch is blocked by Akamai.
+			row.Network = "opentable"
 			row.URL = fmt.Sprintf("%s/restaurant/profile/%d", opentable.Origin, restID)
 			// New OT gateway (May 2026) returns single-day availability per
 			// call (forwardDays=0); scan multi-day windows by looping the
