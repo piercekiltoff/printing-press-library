@@ -215,6 +215,18 @@ func newEarliestCmd(flags *rootFlags) *cobra.Command {
 				startDate = time.Now().Format("2006-01-02")
 			}
 			ctx := cmd.Context()
+
+			// Hydrate the metro registry from Tock's metroArea SSR so
+			// slug-suffix inference inside resolveOTSlugGeoAware can
+			// resolve the full 248-metro dynamic list (vs the 20-entry
+			// static fallback). Cached 24h on disk; first call ~200ms,
+			// subsequent calls <1ms. Silent on failure — falls back to
+			// static. (PR #425 round-2 Greptile finding: this call
+			// existed on the goat path but was missing here, so
+			// `earliest 'joey-bellevue'` couldn't infer the bellevue
+			// suffix on a fresh install.)
+			hydrateMetrosFromTock(ctx, session)
+
 			rows := make([]earliestRow, 0, len(venues))
 			for _, v := range venues {
 				row := resolveEarliestForVenue(ctx, session, v, party, startDate, withinDays, noCache)
@@ -406,17 +418,23 @@ func resolveEarliestForVenue(ctx context.Context, s *auth.Session, venue string,
 				// chrome-avail SSR fetch can hydrate the name later if
 				// needed, but for agents the URL is the canonical anchor.
 			} else {
-				// Resolve slug → restaurant ID via Autocomplete. The OT
-				// `RestaurantsAvailability` GraphQL takes a numeric
-				// restaurantId, not a slug. Slug-format queries
-				// (`le-bernardin`) are converted to spaced names.
-				// OT's Autocomplete is broken when called with lat=0/lng=0 — its
-				// `personalizer-autocomplete/v4` upstream returns INTERNAL_SERVER_ERROR
-				// without a coordinate to anchor on. Defaulting to NYC (which has
-				// the largest OT footprint) lets the GraphQL search the global
-				// index and still match restaurants in any metro.
-				var rerr error
-				restID, restName, restSlug, rerr = c.RestaurantIDFromQuery(ctx, slug, 40.7128, -74.0060)
+				// Resolve slug → restaurant ID. Issue #406 failure 1: the
+				// previous resolver called RestaurantIDFromQuery directly,
+				// which picks the first Autocomplete hit by name — so
+				// `joey-bellevue` resolved to "Joey's Bold Flavors"
+				// (Tampa, FL) because the `-bellevue` suffix was dropped
+				// on the floor. resolveOTSlugGeoAware detects the city
+				// suffix, anchors Autocomplete on the inferred metro's
+				// centroid, and picks the geo-closest in-radius match.
+				// When no city suffix is detected, falls through to the
+				// existing RestaurantIDFromQuery behavior (NYC anchor).
+				var (
+					rerr      error
+					metroUsed Metro
+				)
+				restID, restName, restSlug, metroUsed, rerr = resolveOTSlugGeoAware(
+					ctx, c, slug, 40.7128, -74.0060, defaultMetroRadiusKm,
+				)
 				if rerr != nil {
 					// Slug-resolve failed. row.Network stays empty so
 					// summarizeEarliest partitions this row into
@@ -425,6 +443,7 @@ func resolveEarliestForVenue(ctx context.Context, s *auth.Session, venue string,
 					row.Reason = fmt.Sprintf("opentable: could not resolve %q (%v)", slug, rerr)
 					return row
 				}
+				_ = metroUsed // hooks into future per-row geo annotation
 			}
 			// Slug resolution succeeded (numeric path or named path).
 			// Claim the row for OpenTable so downstream partitioning
