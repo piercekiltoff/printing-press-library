@@ -508,6 +508,30 @@
       }
     },
     {
+      "name": "figma",
+      "category": "productivity",
+      "api": "Figma",
+      "description": "Every Figma endpoint, plus codegen-ready frame extracts, comments audit, orphans finder, tokens diff, and webhook...",
+      "path": "library/productivity/figma",
+      "printer": "giacaglia",
+      "printer_name": "Giuliano Giacaglia",
+      "mcp": {
+        "binary": "figma-pp-mcp",
+        "transports": [
+          "stdio",
+          "http"
+        ],
+        "tool_count": 48,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "FIGMA_OAUTH2"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "firecrawl",
       "category": "developer-tools",
       "api": "Firecrawl",
