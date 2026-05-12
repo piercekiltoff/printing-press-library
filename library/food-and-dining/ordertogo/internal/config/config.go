@@ -37,6 +37,9 @@ type Config struct {
 	CustomerFirstName string `toml:"customer_firstname"`
 	CustomerLastName  string `toml:"customer_lastname"`
 	CustomerPhone     string `toml:"customer_phone"`
+	// PATCH: cached mesh user id resolved from /api/getRestmeshUser. Avoids
+	// repeating the fbuser->meshuser handshake on every orders list / sync.
+	MeshUserID        int    `toml:"mesh_user_id"`
 	Path              string `toml:"-"`
 }
 
@@ -179,6 +182,26 @@ func CookieHeaderFromStore(path string) (string, error) {
 		parts = append(parts, cookie.Name+"="+cookie.Value)
 	}
 	return strings.Join(parts, "; "), nil
+}
+
+// PATCH: CookieValueFromStore returns the raw value of a single cookie by
+// name. Used by the client to lift `_fbtoken` into the Authorization header
+// (the ordertogo.com API gates POST /api/* on a Firebase JWT header, not the
+// cookie itself) and `_fbuid` / `_fbphone` for the meshuser handshake.
+func CookieValueFromStore(path, name string) (string, error) {
+	cookies, err := LoadCookies(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	for _, cookie := range cookies {
+		if cookie.Name == name {
+			return cookie.Value, nil
+		}
+	}
+	return "", nil
 }
 
 func (c *Config) SetKey(key, value string) error {
