@@ -724,6 +724,29 @@
       "printer_name": "Matt"
     },
     {
+      "name": "granola",
+      "category": "productivity",
+      "api": "Granola",
+      "description": "Every Granola feature — plus offline SQLite cross-meeting search, attendee timelines, and a MEMO pipeline runner...",
+      "path": "library/productivity/granola",
+      "printer": "dstevens",
+      "printer_name": "Damien Stevens",
+      "mcp": {
+        "binary": "granola-pp-mcp",
+        "transports": [
+          "stdio"
+        ],
+        "tool_count": 3,
+        "public_tool_count": 0,
+        "auth_type": "bearer_token",
+        "env_vars": [
+          "GRANOLA_API_KEY"
+        ],
+        "mcp_ready": "full",
+        "spec_format": "openapi3"
+      }
+    },
+    {
       "name": "hackernews",
       "category": "media-and-entertainment",
       "api": "Hacker News",
