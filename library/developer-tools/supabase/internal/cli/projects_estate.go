@@ -1,3 +1,4 @@
+// PATCH: novel one-row-per-project estate rollup over local store; renamed from 'health' to avoid spec-derived 'projects health' collision.
 package cli
 
 import (

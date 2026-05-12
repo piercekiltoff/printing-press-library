@@ -1,3 +1,4 @@
+// PATCH: novel pgrst-schema introspection wrapping /v1/projects/{ref}/api/rest for typed query planning.
 package cli
 
 import (

@@ -1,3 +1,4 @@
+<!-- // PATCH: hand-edited headline + Known Gaps section + narrowed trigger phrases vs generated defaults; aligned with README/SKILL contract. -->
 # Supabase CLI
 
 **The full Supabase Management API (108 endpoints) plus a local SQLite cache of orgs, projects, functions, branches, and secret names — powering cross-project queries no live API answers in one call, with Auth Admin lookup and PostgREST schema introspection on top.**

@@ -1,3 +1,4 @@
+// PATCH: novel cross-project secret-name rollups (where-name, rotation) reading from the local store; not in the Management API.
 package cli
 
 import (

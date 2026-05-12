@@ -1,3 +1,4 @@
+// PATCH: novel branches-drift sweep over locally-synced preview branches; not in the Management API.
 package cli
 
 import (

@@ -7,7 +7,7 @@
     {
       "id": "novel-cross-project-commands",
       "summary": "8 hand-authored cross-project novel commands: secrets where-name/rotation, functions inventory, branches drift, projects estate, auth-admin lookup/recent, pgrst schema, storage usage.",
-      "reason": "Supabase's Management API is project-scoped; cross-project rollups are the highest-leverage value-add this CLI offers over supabase-js and the dashboard. These read from the local SQLite store (populated by sync) for offline cross-project queries, with auth-admin / pgrst / storage hitting live project APIs through a shared project_surface.go helper that resolves the three-credential model (PAT, publishable, service_role).",
+      "reason": "Supabase's Management API is project-scoped; cross-project rollups are the highest-leverage value-add this CLI offers over supabase-js and the dashboard. These read from the local SQLite store (populated by sync) for offline cross-project queries, with auth-admin / pgrst / storage hitting live project APIs through a shared project_surface.go helper that resolves the three-credential model (PAT, publishable, service_role). Spec-level patches (server URL, x-mcp orchestration, x-auth-env-vars, stub security schemes for upstream-undefined fga_permissions/oauth2 refs) were applied to spec.json pre-generation; they don't show up as source patches because the generator consumed them upstream.",
       "files": [
         "internal/cli/secrets_top.go",
         "internal/cli/functions_top.go",
@@ -18,18 +18,6 @@
         "internal/cli/storage_top.go",
         "internal/cli/project_surface.go"
       ]
-    },
-    {
-      "id": "spec-stub-security-schemes",
-      "summary": "Added stub `fga_permissions` (referenced 169x) and `oauth2` (referenced 3x) security schemes to spec.json components.securitySchemes.",
-      "reason": "Upstream Supabase Management OpenAPI spec references these schemes on operations but omits them from components.securitySchemes, causing scorecard's spec validator to fail with 172 dangling refs. Stub schemes preserve scoring without affecting generated auth (no operations require these schemes at runtime). Candidate retro: have the generator ingest auto-define placeholder schemes for unresolved security refs.",
-      "files": ["spec.json"]
-    },
-    {
-      "id": "spec-server-url-and-extensions",
-      "summary": "Patched spec with explicit server URL (https://api.supabase.com), x-mcp Cloudflare orchestration block, and x-auth-env-vars on the bearer scheme.",
-      "reason": "The published Supabase Management OpenAPI is incomplete: no `servers:` entry (so generated client has no base URL), no x-mcp configuration (default emits MCP transport: stdio only — Supabase publishes a remote MCP at https://mcp.supabase.com/mcp suitable for stdio+http orchestration), and no x-auth-env-vars (default would emit SUPABASE_TOKEN, but the canonical env var is SUPABASE_ACCESS_TOKEN for PATs).",
-      "files": ["spec.json"]
     },
     {
       "id": "root-help-text",

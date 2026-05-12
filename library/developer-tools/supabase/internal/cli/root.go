@@ -123,6 +123,7 @@ func isCobraUsageError(err error) bool {
 func newRootCmd(flags *rootFlags) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "supabase-pp-cli",
+		// PATCH: calibrated --help Short/Long to match README headline (108 endpoints + local cache, known gaps listed); generator default overclaimed wrapped surface.
 		Short: `Supabase Management API (108 endpoints) + local SQLite cache for cross-project queries, with Auth Admin lookup and PostgREST schema introspection.`,
 		Long: `The full Supabase Management API (108 endpoints) plus a local SQLite cache of orgs, projects, functions, branches, and secret names — powering cross-project queries no live API answers in one call, with Auth Admin lookup and PostgREST schema introspection on top.
 

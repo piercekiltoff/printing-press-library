@@ -1,3 +1,4 @@
+// PATCH: novel auth-admin lookup/recent commands wrapping Supabase Auth Admin endpoints with optional PostgREST context-table join.
 package cli
 
 import (

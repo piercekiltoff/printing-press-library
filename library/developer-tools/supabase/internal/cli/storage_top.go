@@ -1,3 +1,4 @@
+// PATCH: novel storage-usage aggregation over Storage bucket+object listings (// pp:client-call markers on the real HTTP calls).
 package cli
 
 import (

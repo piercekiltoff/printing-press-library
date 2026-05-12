@@ -1,3 +1,4 @@
+// PATCH: shared helper resolving the three-credential model (PAT / publishable / service_role) for the novel auth-admin, pgrst, and storage commands.
 package cli
 
 import (
