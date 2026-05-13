@@ -1,0 +1,318 @@
+{
+  "api_name": "servicetitan-crm",
+  "novelty_score": 0,
+  "alternatives": [
+    {
+      "name": "BusyBee3333/servicetitan-mcp-2026-complete",
+      "url": "https://github.com/BusyBee3333/servicetitan-mcp-2026-complete",
+      "language": "TypeScript",
+      "install_method": "",
+      "stars": 0,
+      "last_updated": "",
+      "command_count": 100,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "glassdoc/servicetitan-mcp",
+      "url": "https://github.com/glassdoc/servicetitan-mcp",
+      "language": "Python",
+      "install_method": "",
+      "stars": 0,
+      "last_updated": "",
+      "command_count": 60,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "elliotpalmer/servicepytan",
+      "url": "https://github.com/elliotpalmer/servicepytan",
+      "language": "Python",
+      "install_method": "",
+      "stars": 0,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "JordanDalton/ServiceTitanMcpServer",
+      "url": "https://github.com/JordanDalton/ServiceTitanMcpServer",
+      "language": "PHP",
+      "install_method": "",
+      "stars": 0,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "compwright/servicetitan",
+      "url": "https://github.com/compwright/servicetitan",
+      "language": "PHP",
+      "install_method": "",
+      "stars": 0,
+      "last_updated": "",
+      "command_count": 0,
+      "has_json_output": false,
+      "has_auth_support": false
+    }
+  ],
+  "gaps": [],
+  "patterns": [],
+  "recommendation": "proceed",
+  "researched_at": "2026-05-12T21:42:00Z",
+  "novel_features": [
+    {
+      "name": "Customer 360 find",
+      "command": "customers find",
+      "description": "Find a customer by phone, email, name, or partial address and see every linked location, active booking, contact method, and tag in one shot.",
+      "rationale": "Joins customers, locations, bookings, contacts, and tags from the local SQLite store with FTS5 — no single ServiceTitan endpoint returns this composed view.",
+      "example": "servicetitan-crm-pp-cli customers find \"555-0142\" --json",
+      "why_it_matters": "Reach for this when a CSR or agent needs the full picture of a customer in under a second; faster than the ServiceTitan Web UI and avoids 4 chained API calls.",
+      "group": "Customer-360 lookups"
+    },
+    {
+      "name": "Lead-followup audit",
+      "command": "leads audit",
+      "description": "Bucket leads from the last N days into untouched, converted, and stale, with timestamps for each transition.",
+      "rationale": "Joins leads with customer-creation timestamps and contact-method updates from the local store — the ServiceTitan Web UI requires an Excel export and pivot to answer this.",
+      "example": "servicetitan-crm-pp-cli leads audit --since 30d --json",
+      "why_it_matters": "Reach for this for the Monday lead-pipeline review; the only way to surface stale leads without manual spreadsheet work.",
+      "group": "Pipeline audits"
+    },
+    {
+      "name": "Tag segment export",
+      "command": "segments export",
+      "description": "Resolve a tag-AND-tag-AND-filter expression against the local store and emit a deterministic CSV or JSON segment list for marketing or campaign handoff.",
+      "rationale": "Boolean tag composition + zone and recency filters are local-only; ServiceTitan's UI export drops some tag fields and requires manual VLOOKUP-style joins.",
+      "example": "servicetitan-crm-pp-cli segments export municipal --and-tag commercial-warranty --no-booking-since 90d --csv",
+      "why_it_matters": "Reach for this when handing a campaign-ready segment to email tooling or Sheets; replaces a fragile manual export pipeline.",
+      "group": "Pipeline audits"
+    },
+    {
+      "name": "Booking prep-audit",
+      "command": "bookings prep-audit",
+      "description": "List bookings in a window whose linked location is missing a confirmed contact method, gate code, or required tag — so dispatch can fix gaps before the truck rolls.",
+      "rationale": "Requires joining bookings, locations, contact methods, and tags locally; no single ServiceTitan endpoint surfaces under-prepped bookings.",
+      "example": "servicetitan-crm-pp-cli bookings prep-audit --window 1d --json",
+      "why_it_matters": "Reach for this in dispatch's afternoon prep ritual; surfaces the missing-info bookings that cause same-day cancellations.",
+      "group": "Dispatch prep"
+    },
+    {
+      "name": "Customer dedupe finder",
+      "command": "customers dedupe",
+      "description": "Find likely duplicate customer records across normalized phone, email, or address, ranked by overlap strength so a CSR can review and merge.",
+      "rationale": "Pure local SQL GROUP BY against synced customer rows; the ServiceTitan API has no dedup-detection endpoint.",
+      "example": "servicetitan-crm-pp-cli customers dedupe --by phone --json",
+      "why_it_matters": "Reach for this on the lead-intake step where duplicate-customer creation is the most common data-quality failure.",
+      "group": "Customer-360 lookups"
+    },
+    {
+      "name": "Customer timeline",
+      "command": "customers timeline",
+      "description": "Chronological event stream for one customer across creation, locations added, bookings, tag changes, and contact-method updates from the local store.",
+      "rationale": "UNION across multiple synced tables ordered by timestamp — there is no ServiceTitan endpoint that returns a customer event stream.",
+      "example": "servicetitan-crm-pp-cli customers timeline 12345 --json --select events.kind,events.at,events.summary",
+      "why_it_matters": "Reach for this on escalation calls or disputes when the operator needs the full customer history without screen-jumping.",
+      "group": "Customer-360 lookups"
+    },
+    {
+      "name": "Lead one-shot convert",
+      "command": "leads convert",
+      "description": "Run the lead-to-customer-to-location-to-optional-first-booking sequence as one operation, with --dry-run preview and idempotent retry.",
+      "rationale": "Wraps three to four ServiceTitan POSTs in an atomic operation; --dry-run resolves IDs and shows the diff before commit, which the API does not offer.",
+      "example": "servicetitan-crm-pp-cli leads convert 8842 --book --dry-run",
+      "why_it_matters": "Reach for this on lead intake to collapse a 3-5 screen ServiceTitan UI sequence into a previewable, scriptable single command.",
+      "group": "Lifecycle operations"
+    },
+    {
+      "name": "Sync status",
+      "command": "sync-status",
+      "description": "Show last-modified-on per CRM entity from the local store and report row counts for the offline cache.",
+      "rationale": "Walks the local SyncState rows that incremental sync persists; no comparable surface in any competing tool that lacks a local store.",
+      "example": "servicetitan-crm-pp-cli sync-status --json",
+      "why_it_matters": "Reach for this before any analysis command — it is the substrate that makes the offline transcendence commands possible.",
+      "group": "Sync substrate"
+    },
+    {
+      "name": "Stale-customer scan",
+      "command": "customers stale",
+      "description": "List customers whose latest booking, contact-method update, and notes are all older than N days — for re-engagement campaigns or archival review.",
+      "rationale": "Local join across customer activity timestamps; ServiceTitan UI has no all-activity-older-than predicate.",
+      "example": "servicetitan-crm-pp-cli customers stale --no-activity 365d --csv",
+      "why_it_matters": "Reach for this when planning a re-engagement campaign or pruning the active customer list for marketing relevance.",
+      "group": "Pipeline audits"
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Customer 360 find",
+      "command": "customers find",
+      "description": "Find a customer by phone, email, name, or partial address and see every linked location, active booking, contact method, and tag in one shot.",
+      "rationale": "Joins customers, locations, bookings, contacts, and tags from the local SQLite store with FTS5 — no single ServiceTitan endpoint returns this composed view.",
+      "example": "servicetitan-crm-pp-cli customers find \"555-0142\" --json",
+      "why_it_matters": "Reach for this when a CSR or agent needs the full picture of a customer in under a second; faster than the ServiceTitan Web UI and avoids 4 chained API calls.",
+      "group": "Customer-360 lookups"
+    },
+    {
+      "name": "Lead-followup audit",
+      "command": "leads audit",
+      "description": "Bucket leads from the last N days into untouched, converted, and stale, with timestamps for each transition.",
+      "rationale": "Joins leads with customer-creation timestamps and contact-method updates from the local store — the ServiceTitan Web UI requires an Excel export and pivot to answer this.",
+      "example": "servicetitan-crm-pp-cli leads audit --since 30d --json",
+      "why_it_matters": "Reach for this for the Monday lead-pipeline review; the only way to surface stale leads without manual spreadsheet work.",
+      "group": "Pipeline audits"
+    },
+    {
+      "name": "Tag segment export",
+      "command": "segments export",
+      "description": "Resolve a tag-AND-tag-AND-filter expression against the local store and emit a deterministic CSV or JSON segment list for marketing or campaign handoff.",
+      "rationale": "Boolean tag composition + zone and recency filters are local-only; ServiceTitan's UI export drops some tag fields and requires manual VLOOKUP-style joins.",
+      "example": "servicetitan-crm-pp-cli segments export municipal --and-tag commercial-warranty --no-booking-since 90d --csv",
+      "why_it_matters": "Reach for this when handing a campaign-ready segment to email tooling or Sheets; replaces a fragile manual export pipeline.",
+      "group": "Pipeline audits"
+    },
+    {
+      "name": "Booking prep-audit",
+      "command": "bookings prep-audit",
+      "description": "List bookings in a window whose linked location is missing a confirmed contact method, gate code, or required tag — so dispatch can fix gaps before the truck rolls.",
+      "rationale": "Requires joining bookings, locations, contact methods, and tags locally; no single ServiceTitan endpoint surfaces under-prepped bookings.",
+      "example": "servicetitan-crm-pp-cli bookings prep-audit --window 1d --json",
+      "why_it_matters": "Reach for this in dispatch's afternoon prep ritual; surfaces the missing-info bookings that cause same-day cancellations.",
+      "group": "Dispatch prep"
+    },
+    {
+      "name": "Customer dedupe finder",
+      "command": "customers dedupe",
+      "description": "Find likely duplicate customer records across normalized phone, email, or address, ranked by overlap strength so a CSR can review and merge.",
+      "rationale": "Pure local SQL GROUP BY against synced customer rows; the ServiceTitan API has no dedup-detection endpoint.",
+      "example": "servicetitan-crm-pp-cli customers dedupe --by phone --json",
+      "why_it_matters": "Reach for this on the lead-intake step where duplicate-customer creation is the most common data-quality failure.",
+      "group": "Customer-360 lookups"
+    },
+    {
+      "name": "Customer timeline",
+      "command": "customers timeline",
+      "description": "Chronological event stream for one customer across creation, locations added, bookings, tag changes, and contact-method updates from the local store.",
+      "rationale": "UNION across multiple synced tables ordered by timestamp — there is no ServiceTitan endpoint that returns a customer event stream.",
+      "example": "servicetitan-crm-pp-cli customers timeline 12345 --json --select events.kind,events.at,events.summary",
+      "why_it_matters": "Reach for this on escalation calls or disputes when the operator needs the full customer history without screen-jumping.",
+      "group": "Customer-360 lookups"
+    },
+    {
+      "name": "Lead one-shot convert",
+      "command": "leads convert",
+      "description": "Run the lead-to-customer-to-location-to-optional-first-booking sequence as one operation, with --dry-run preview and idempotent retry.",
+      "rationale": "Wraps three to four ServiceTitan POSTs in an atomic operation; --dry-run resolves IDs and shows the diff before commit, which the API does not offer.",
+      "example": "servicetitan-crm-pp-cli leads convert 8842 --book --dry-run",
+      "why_it_matters": "Reach for this on lead intake to collapse a 3-5 screen ServiceTitan UI sequence into a previewable, scriptable single command.",
+      "group": "Lifecycle operations"
+    },
+    {
+      "name": "Sync status",
+      "command": "sync-status",
+      "description": "Show last-modified-on per CRM entity from the local store and report row counts for the offline cache.",
+      "rationale": "Walks the local SyncState rows that incremental sync persists; no comparable surface in any competing tool that lacks a local store.",
+      "example": "servicetitan-crm-pp-cli sync-status --json",
+      "why_it_matters": "Reach for this before any analysis command — it is the substrate that makes the offline transcendence commands possible.",
+      "group": "Sync substrate"
+    },
+    {
+      "name": "Stale-customer scan",
+      "command": "customers stale",
+      "description": "List customers whose latest booking, contact-method update, and notes are all older than N days — for re-engagement campaigns or archival review.",
+      "rationale": "Local join across customer activity timestamps; ServiceTitan UI has no all-activity-older-than predicate.",
+      "example": "servicetitan-crm-pp-cli customers stale --no-activity 365d --csv",
+      "why_it_matters": "Reach for this when planning a re-engagement campaign or pruning the active customer list for marketing relevance.",
+      "group": "Pipeline audits"
+    }
+  ],
+  "narrative": {
+    "display_name": "ServiceTitan CRM",
+    "headline": "Every ServiceTitan CRM endpoint plus customer-360 search, lead-followup audit, and a 2-tool MCP surface that replaces the heavy ServiceTitan MCP for the CRM module.",
+    "value_prop": "A per-module pp-cli for the ServiceTitan CRM module: 86 typed Cobra commands covering customers, locations, bookings, contacts, leads, and tags, backed by an offline SQLite store with FTS5 search. The MCP server uses the Cloudflare orchestration pattern to expose the entire surface as 2 intent tools (`servicetitan_crm_search` + `servicetitan_crm_execute`) instead of 86 raw mirrors, cutting per-turn agent token cost dramatically. Includes nine hand-built transcendence commands — `customers find`, `customers timeline`, `customers dedupe`, `customers stale`, `leads audit`, `leads convert`, `bookings prep-audit`, `segments export`, `sync run` — that answer cross-entity questions ServiceTitan's Web UI cannot.",
+    "auth_narrative": "ServiceTitan uses composed authentication: a static `ST-App-Key` header AND a short-lived OAuth2 bearer token from the client-credentials flow. The CLI reads `ST_APP_KEY`, `ST_CLIENT_ID`, `ST_CLIENT_SECRET`, and `ST_TENANT_ID` from the environment and refreshes the OAuth token automatically (~30 min TTL). Tenant id is path-positional on every endpoint and defaults to `ST_TENANT_ID` for novel commands so you don't have to pass it explicitly. Run `servicetitan-crm-pp-cli doctor` to verify all four credentials and reach the API. Whitespace in `ST_CLIENT_ID` or `ST_CLIENT_SECRET` is stripped defensively (a known JKA env gotcha that produced opaque `invalid_client` 400s).",
+    "quickstart": [
+      {
+        "command": "servicetitan-crm-pp-cli doctor",
+        "comment": "Verify ST_APP_KEY, ST_CLIENT_ID, ST_CLIENT_SECRET, ST_TENANT_ID and confirm the OAuth token exchange works."
+      },
+      {
+        "command": "servicetitan-crm-pp-cli sync run",
+        "comment": "Pull customers, locations, contacts, bookings, leads, and tags into the local SQLite store; required before any offline command. Incremental by default (uses the last sync cursor)."
+      },
+      {
+        "command": "servicetitan-crm-pp-cli customers find \"555-0142\" --json",
+        "comment": "Look up a customer by phone with all linked locations, bookings, and contacts in one shot — the headline transcendence command."
+      },
+      {
+        "command": "servicetitan-crm-pp-cli leads audit --since 30d --json",
+        "comment": "See untouched, converted, and stale leads — the Monday pipeline-review answer the Web UI cannot give."
+      },
+      {
+        "command": "servicetitan-crm-pp-cli bookings prep-audit --window 1d --json",
+        "comment": "Surface tomorrow's bookings missing contact methods or gate codes for dispatch to fix before the truck rolls."
+      }
+    ],
+    "troubleshoots": [
+      {
+        "symptom": "doctor reports 400 invalid_client from the OAuth endpoint",
+        "fix": "Trim whitespace on ST_CLIENT_ID / ST_CLIENT_SECRET. Run `printenv ST_CLIENT_ID | cat -A` to see leading/trailing space. Re-export with the trimmed value."
+      },
+      {
+        "symptom": "All commands return 401 Unauthorized",
+        "fix": "Both ST-App-Key AND OAuth bearer are required. Verify `ST_APP_KEY` is set and OAuth scopes include the resource you are calling (e.g., `tn.crm.customers:r`)."
+      },
+      {
+        "symptom": "novel commands prompt for --tenant",
+        "fix": "Set ST_TENANT_ID in the environment; novel commands default to that value. CSR/dispatch operators usually have it in their shell profile."
+      },
+      {
+        "symptom": "sync run reports 429 rate limited",
+        "fix": "ServiceTitan's standard tier limits to ~120 req/min/tenant. The client's adaptive limiter handles 429s; add `--page-size 50` to slow the walk on the busiest list endpoints."
+      },
+      {
+        "symptom": "customers find returns no results after sync",
+        "fix": "FTS5 indexes build during sync; if you ran sync mid-flight, run `sync run --rebuild-fts` to force re-indexing of customer.name, customer.email, location.address, and contact methods."
+      }
+    ],
+    "when_to_use": "Use this CLI when an agent or operator needs to interact with the ServiceTitan CRM module without paying the heavy ServiceTitan MCP's ~400-tool token tax per turn. The CRM surface here is the customer/location/contact/lead/booking/tag stack. Reach for the transcendence commands (`customers find`, `leads audit`, `bookings prep-audit`, `segments export`) when the answer requires joining across CRM entities — the ServiceTitan Web UI and the heavy MCP can hit the endpoints individually, but only this CLI keeps a local copy that supports SQL-shaped queries. For dispatch board, project rollup, or jobs/appointments work, use the sibling `servicetitan-jpm-pp-cli` instead.",
+    "recipes": [
+      {
+        "title": "Customer 360 from a phone fragment",
+        "command": "servicetitan-crm-pp-cli customers find \"555-0142\" --json --select customer.name,customer.id,locations.address,bookings.start,bookings.status,contacts.email",
+        "explanation": "FTS5 lookup joined across customers + locations + bookings + contacts; --select trims the deeply nested response to only the fields a CSR needs on a 30-second call window."
+      },
+      {
+        "title": "Monday lead-pipeline review",
+        "command": "servicetitan-crm-pp-cli leads audit --since 30d --json --select untouched.id,untouched.created,converted.id,converted.customer_id,stale.id,stale.last_contact",
+        "explanation": "Bucketed lead status with timestamps; pipe to jq for slack/email digests."
+      },
+      {
+        "title": "Tomorrow's under-prepped bookings",
+        "command": "servicetitan-crm-pp-cli bookings prep-audit --window 1d --json --select id,location.address,missing",
+        "explanation": "Local join surfacing bookings whose location lacks confirmed contact, gate code, or required tag — the dispatcher's afternoon prep query."
+      },
+      {
+        "title": "Marketing segment export to CSV",
+        "command": "servicetitan-crm-pp-cli segments export municipal --and-tag commercial-warranty --no-booking-since 90d --csv \u003e segment.csv",
+        "explanation": "Boolean tag expression + recency filter; deterministic CSV column order so downstream tooling can rely on the schema."
+      },
+      {
+        "title": "Find duplicate customer records by phone",
+        "command": "servicetitan-crm-pp-cli customers dedupe --by phone --json --select cluster.phone,cluster.customers.id,cluster.customers.name,cluster.score",
+        "explanation": "GROUP BY normalized phone surfaces duplicate clusters with overlap scores; CSR uses the output to merge before creating yet another duplicate."
+      }
+    ],
+    "trigger_phrases": [
+      "find ServiceTitan customer",
+      "customer 360 lookup",
+      "lead followup audit",
+      "ServiceTitan booking prep",
+      "tag segment export",
+      "use servicetitan-crm",
+      "run servicetitan-crm"
+    ]
+  }
+}

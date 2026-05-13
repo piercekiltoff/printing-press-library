@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-13T02:32:43.908987Z",
+  "printing_press_version": "4.5.1",
+  "api_name": "servicetitan-crm",
+  "display_name": "Crm",
+  "cli_name": "servicetitan-crm-pp-cli",
+  "owner": "user",
+  "printer": "pierc",
+  "printer_name": "Pierce",
+  "spec_format": "openapi3",
+  "spec_checksum": "sha256:18319e47cc868eb3e618175909a86c417ad5b87ec53ec4a16d17c8dc67f74679",
+  "run_id": "20260512-143214",
+  "mcp_binary": "crm-pp-mcp",
+  "mcp_tool_count": 86,
+  "mcp_ready": "full",
+  "api_version": "1.0",
+  "auth_type": "bearer_token",
+  "auth_env_vars": [
+    "ST_CLIENT_ID",
+    "ST_CLIENT_SECRET"
+  ],
+  "auth_env_var_specs": [
+    {
+      "name": "ST_CLIENT_ID",
+      "kind": "auth_flow_input",
+      "required": true,
+      "sensitive": true,
+      "description": "ServiceTitan OAuth2 client_id for the integration. Used by the auth login flow to exchange for a bearer token at https://auth.servicetitan.io/connect/token. Whitespace is stripped defensively."
+    },
+    {
+      "name": "ST_CLIENT_SECRET",
+      "kind": "auth_flow_input",
+      "required": true,
+      "sensitive": true,
+      "description": "ServiceTitan OAuth2 client_secret paired with ST_CLIENT_ID. Whitespace is stripped defensively (a known JKA env gotcha that produced opaque invalid_client 400s)."
+    }
+  ],
+  "novel_features": [
+    {
+      "name": "Customer 360 find",
+      "command": "customers find",
+      "description": "Find a customer by phone, email, name, or partial address and see every linked location, active booking, contact method, and tag in one shot."
+    },
+    {
+      "name": "Lead-followup audit",
+      "command": "leads audit",
+      "description": "Bucket leads from the last N days into untouched, converted, and stale, with timestamps for each transition."
+    },
+    {
+      "name": "Tag segment export",
+      "command": "segments export",
+      "description": "Resolve a tag-AND-tag-AND-filter expression against the local store and emit a deterministic CSV or JSON segment list for marketing or campaign handoff."
+    },
+    {
+      "name": "Booking prep-audit",
+      "command": "bookings prep-audit",
+      "description": "List bookings in a window whose linked location is missing a confirmed contact method, gate code, or required tag — so dispatch can fix gaps before the truck rolls."
+    },
+    {
+      "name": "Customer dedupe finder",
+      "command": "customers dedupe",
+      "description": "Find likely duplicate customer records across normalized phone, email, or address, ranked by overlap strength so a CSR can review and merge."
+    },
+    {
+      "name": "Customer timeline",
+      "command": "customers timeline",
+      "description": "Chronological event stream for one customer across creation, locations added, bookings, tag changes, and contact-method updates from the local store."
+    },
+    {
+      "name": "Lead one-shot convert",
+      "command": "leads convert",
+      "description": "Run the lead-to-customer-to-location-to-optional-first-booking sequence as one operation, with --dry-run preview and idempotent retry."
+    },
+    {
+      "name": "Sync status",
+      "command": "sync-status",
+      "description": "Show last-modified-on per CRM entity from the local store and report row counts for the offline cache."
+    },
+    {
+      "name": "Stale-customer scan",
+      "command": "customers stale",
+      "description": "List customers whose latest booking, contact-method update, and notes are all older than N days — for re-engagement campaigns or archival review."
+    }
+  ]
+}

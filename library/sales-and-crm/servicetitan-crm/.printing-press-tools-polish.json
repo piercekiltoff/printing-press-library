@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-05-13T02:30:45.7282301Z",
+  "cli_dir": "C:/Users/pierc/printing-press/.runstate/cli-printing-press-ee879150/runs/20260512-143214/working/servicetitan-crm-pp-cli",
+  "findings": null,
+  "scorecard_before": {
+    "mcp_description_quality": 10,
+    "captured": "2026-05-13T02:30:45.7282301Z"
+  }
+}

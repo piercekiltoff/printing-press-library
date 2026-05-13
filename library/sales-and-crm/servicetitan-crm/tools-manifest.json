@@ -1,0 +1,4478 @@
+{
+  "api_name": "crm",
+  "base_url": "https://api.servicetitan.io/crm/v2",
+  "description": "Bookings, bookings provider tags, contacts, customers, leads, locations, tags",
+  "mcp_ready": "full",
+  "http_transport": "standard",
+  "auth": {
+    "type": "bearer_token",
+    "header": "Authorization",
+    "env_vars": [
+      "ST_CLIENT_ID",
+      "ST_CLIENT_SECRET"
+    ],
+    "env_var_specs": [
+      {
+        "name": "ST_CLIENT_ID",
+        "kind": "auth_flow_input",
+        "required": true,
+        "sensitive": true,
+        "description": "ServiceTitan OAuth2 client_id for the integration. Used by the auth login flow to exchange for a bearer token at https://auth.servicetitan.io/connect/token. Whitespace is stripped defensively."
+      },
+      {
+        "name": "ST_CLIENT_SECRET",
+        "kind": "auth_flow_input",
+        "required": true,
+        "sensitive": true,
+        "description": "ServiceTitan OAuth2 client_secret paired with ST_CLIENT_ID. Whitespace is stripped defensively (a known JKA env gotcha that produced opaque invalid_client 400s)."
+      }
+    ]
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "booking-provider_bookings_create",
+      "description": "Creates a booking for a booking provider. Required: booking_provider, tenant, externalId, isFirstTimeClient, name, source, summary. Optional: address, businessUnitId, campaignId (plus 7 more). Returns the new CrmV2BookingResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "location": "body",
+          "description": "Address of the booking"
+        },
+        {
+          "name": "businessUnitId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the booking's business unit"
+        },
+        {
+          "name": "campaignId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the booking's campaign"
+        },
+        {
+          "name": "contacts",
+          "type": "array",
+          "location": "body",
+          "description": "Contacts for the booking"
+        },
+        {
+          "name": "customerType",
+          "type": "string",
+          "location": "body",
+          "description": "Type of the customer (Residential/Commercial)"
+        },
+        {
+          "name": "externalId",
+          "type": "string",
+          "location": "body",
+          "description": "External ID of booking",
+          "required": true
+        },
+        {
+          "name": "isFirstTimeClient",
+          "type": "bool",
+          "location": "body",
+          "description": "True if first time client",
+          "required": true
+        },
+        {
+          "name": "isSendConfirmationEmail",
+          "type": "bool",
+          "location": "body",
+          "description": "Returns true if customer should receive email when booking is created"
+        },
+        {
+          "name": "jobTypeId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the booking's job type"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the customer",
+          "required": true
+        },
+        {
+          "name": "priority",
+          "type": "string",
+          "location": "body",
+          "description": "Booking priority"
+        },
+        {
+          "name": "source",
+          "type": "string",
+          "location": "body",
+          "description": "Source of the booking",
+          "required": true
+        },
+        {
+          "name": "start",
+          "type": "string",
+          "location": "body",
+          "description": "Booking's start Date(time) in UTC"
+        },
+        {
+          "name": "summary",
+          "type": "string",
+          "location": "body",
+          "description": "Summary of the booking",
+          "required": true
+        },
+        {
+          "name": "uploadedImages",
+          "type": "array",
+          "location": "body",
+          "description": "Uploaded images"
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_create-contact",
+      "description": "Creates a contact on the specified booking for a booking provider. Required: booking_provider, id, tenant, type, value. Optional: memo. Returns the new CrmV2BookingContactResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings/{id}/contacts",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo of contact"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Type of contact",
+          "required": true
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value of contact",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_delete-contact",
+      "description": "Removes a contact from a booking for a booking provider. Required: booking_provider, id, contactId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings/{id}/contacts/{contactId}",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "contactId",
+          "type": "int",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_dismiss",
+      "description": "Bookings_dismiss booking. Required: id, tenant, booking_provider. Optional: callReasonId, dismissingMemo.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings/{id}/dismiss",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "booking_provider",
+          "type": "string",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "callReasonId",
+          "type": "int",
+          "location": "body",
+          "description": "Call reason ID for dismissing the booking"
+        },
+        {
+          "name": "dismissingMemo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo for dismissing the booking"
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_get-contact-list2",
+      "description": "Get a list of contacts for a booking for a booking provider. Required: booking_provider, id, tenant. Optional: page, pageSize, includeTotal. Returns array of CrmV2BookingContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings/{id}/contacts",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_get-for-provider",
+      "description": "Gets a booking by ID for a booking provider. Required: booking_provider, id, tenant. Returns the CrmV2BookingResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings/{id}",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_get-list2",
+      "description": "Gets a list of bookings for a booking provider. Required: booking_provider, tenant. Optional: ids, page, pageSize (plus 7 more). Returns array of CrmV2BookingResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "externalId",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by booking's external ID"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_update",
+      "description": "Updates a booking for a booking provider. Required: booking_provider, id, tenant. Optional: address, businessUnitId, campaignId (plus 10 more). Returns the updated CrmV2BookingResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings/{id}",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "address",
+          "type": "object",
+          "location": "body",
+          "description": "Address"
+        },
+        {
+          "name": "businessUnitId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the booking's business unit"
+        },
+        {
+          "name": "campaignId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the booking's campaign"
+        },
+        {
+          "name": "customerType",
+          "type": "string",
+          "location": "body",
+          "description": "Type of customer (Residential/Commercial)"
+        },
+        {
+          "name": "externalId",
+          "type": "string",
+          "location": "body",
+          "description": "External ID of booking"
+        },
+        {
+          "name": "isFirstTimeClient",
+          "type": "bool",
+          "location": "body",
+          "description": "True if first time client"
+        },
+        {
+          "name": "jobTypeId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the booking's job type"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the booking's customer"
+        },
+        {
+          "name": "priority",
+          "type": "string",
+          "location": "body",
+          "description": "Booking priority"
+        },
+        {
+          "name": "source",
+          "type": "string",
+          "location": "body",
+          "description": "Source of the booking"
+        },
+        {
+          "name": "start",
+          "type": "string",
+          "location": "body",
+          "description": "Booking's start date time, in UTC"
+        },
+        {
+          "name": "summary",
+          "type": "string",
+          "location": "body",
+          "description": "Booking summary"
+        },
+        {
+          "name": "uploadedImages",
+          "type": "array",
+          "location": "body",
+          "description": "Uploaded images"
+        }
+      ]
+    },
+    {
+      "name": "booking-provider_bookings_update-contact",
+      "description": "Updates a single booking contact for a booking provider. Required: booking_provider, id, contactId, tenant. Optional: memo, type, value. Returns the updated CrmV2UpdateBookingContactRequest.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/booking-provider/{booking_provider}/bookings/{id}/contacts/{contactId}",
+      "params": [
+        {
+          "name": "booking_provider",
+          "type": "int",
+          "location": "path",
+          "description": "Booking provider",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "contactId",
+          "type": "int",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Type"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value"
+        }
+      ]
+    },
+    {
+      "name": "booking-provider-tags_create",
+      "description": "Create a booking provider tag. Required: tenant, description, tagName. Returns the new CrmV2CreateBookingProviderTagResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/booking-provider-tags",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "location": "body",
+          "description": "Description of tag",
+          "required": true
+        },
+        {
+          "name": "tagName",
+          "type": "string",
+          "location": "body",
+          "description": "Name of tag",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "booking-provider-tags_get",
+      "description": "Gets a single booking provider tag by ID. Required: id, tenant. Returns the CrmV2GetBookingProviderTagResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/booking-provider-tags/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "booking-provider-tags_get-list",
+      "description": "Gets a list of booking provider tags. Required: tenant. Optional: name, ids, page (plus 7 more). Returns array of CrmV2GetBookingProviderTagResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/booking-provider-tags",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "query",
+          "description": "Name of the booking provider tag"
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        }
+      ]
+    },
+    {
+      "name": "booking-provider-tags_update",
+      "description": "Update a booking provider tag. Required: id, tenant. Optional: description, tagName. Returns the updated CrmV2BookingProviderTagResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/booking-provider-tags/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "location": "body",
+          "description": "Description of tag"
+        },
+        {
+          "name": "tagName",
+          "type": "string",
+          "location": "body",
+          "description": "Name of tag"
+        }
+      ]
+    },
+    {
+      "name": "bookings_get",
+      "description": "Gets a booking by ID. Required: id, tenant. Returns the CrmV2BookingResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/bookings/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "bookings_get-list",
+      "description": "Gets a list of bookings. Required: tenant. Optional: ids, page, pageSize (plus 7 more). Returns array of CrmV2BookingResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/bookings",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "externalId",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by booking's external ID"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        }
+      ]
+    },
+    {
+      "name": "bookings_contacts_bookings-get-list",
+      "description": "Get a list of contacts for a booking. Required: id, tenant. Optional: page, pageSize, includeTotal. Returns array of CrmV2BookingContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/bookings/{id}/contacts",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        }
+      ]
+    },
+    {
+      "name": "contacts_create",
+      "description": "Creates a new contact. Required: tenant. Optional: name, referenceId, title. Returns the new CrmV2ContactResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/contacts",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the contact"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "body",
+          "description": "External reference ID of the contact"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "location": "body",
+          "description": "Title of the contact"
+        }
+      ]
+    },
+    {
+      "name": "contacts_delete",
+      "description": "Deletes a contact. Required: id, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/contacts/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "string",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_get",
+      "description": "Gets a contact specified by ID. Required: id, tenant. Returns the CrmV2ContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "string",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_get-by-relationship-id",
+      "description": "Gets a list of contacts for a specified relationship ID. Required: relationshipId, tenant. Optional: name, title, referenceId (plus 9 more). Returns array of CrmV2ContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/relationships/{relationshipId}",
+      "params": [
+        {
+          "name": "relationshipId",
+          "type": "int",
+          "location": "path",
+          "description": "Relationship id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact name"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact title"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by external reference ID"
+        },
+        {
+          "name": "isArchived",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact archive status"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        }
+      ]
+    },
+    {
+      "name": "contacts_get-list",
+      "description": "Gets a list of contacts. Required: tenant. Optional: name, title, referenceId (plus 9 more). Returns array of CrmV2ContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact name"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact title"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by external reference ID"
+        },
+        {
+          "name": "isArchived",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact archive status"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        }
+      ]
+    },
+    {
+      "name": "contacts_get-preference-metadata-list",
+      "description": "Gets a list of preferences metadata. Required: tenant. Returns array of CrmV2ContactPreferenceTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/preferences",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_replace",
+      "description": "Replaces a contact. Required: id, tenant, isArchived. Optional: name, referenceId, title. Returns the updated CrmV2ContactResponse.",
+      "method": "PUT",
+      "path": "/tenant/{tenant}/contacts/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "string",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "isArchived",
+          "type": "bool",
+          "location": "body",
+          "description": "Sets whether the contact has been archived.",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the contact"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "body",
+          "description": "External reference ID of the contact"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "location": "body",
+          "description": "Title of the contact"
+        }
+      ]
+    },
+    {
+      "name": "contacts_search-methods",
+      "description": "Search for contact methods. Required: tenant. Optional: contactId, referenceId, type (plus 9 more). Returns array of CrmV2ContactMethodResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/contact-methods",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "query",
+          "description": "Contact id"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by reference ID"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact method type"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact method value"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        }
+      ]
+    },
+    {
+      "name": "contacts_update",
+      "description": "Updates a contact. Required: id, tenant, isArchived. Optional: name, referenceId, title. Returns the updated CrmV2ContactResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/contacts/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "string",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "isArchived",
+          "type": "bool",
+          "location": "body",
+          "description": "Sets whether the contact has been archived.",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the contact"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "body",
+          "description": "External reference ID of the contact"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "location": "body",
+          "description": "Title of the contact"
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_contact-preferences-get-preference",
+      "description": "Gets a contact preference specified by preference name. Required: contactId, contactMethodId, preferenceName, tenant. Returns the CrmV2ContactPreferenceResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods/{contactMethodId}/preferences/{preferenceName}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "contactMethodId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact method id",
+          "required": true
+        },
+        {
+          "name": "preferenceName",
+          "type": "string",
+          "location": "path",
+          "description": "Preference name",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_contact-preferences-get-preferences",
+      "description": "Gets a list of contact preferences for a specified contact method ID. Required: contactId, contactMethodId, tenant. Returns array of CrmV2ContactPreferenceResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods/{contactMethodId}/preferences",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "contactMethodId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact method id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_contact-preferences-update-preference",
+      "description": "Updates a contact preference. Required: contactId, contactMethodId, preferenceName, tenant. Optional: value. Returns the updated CrmV2ContactPreferenceResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods/{contactMethodId}/preferences/{preferenceName}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "contactMethodId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact method id",
+          "required": true
+        },
+        {
+          "name": "preferenceName",
+          "type": "string",
+          "location": "path",
+          "description": "Preference name",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value of the contact method"
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_create",
+      "description": "Creates a new contact method. Required: contactId, tenant, type, value. Optional: memo, referenceId. Returns the new CrmV2ContactMethodResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo for the contact method"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "body",
+          "description": "Reference ID of the contact method"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Type of the contact method",
+          "required": true
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value of the contact method",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_delete",
+      "description": "Deletes a contact method. Required: contactId, contactMethodId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods/{contactMethodId}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "contactMethodId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact method id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_get",
+      "description": "Gets a list of contact methods for a specified contact ID. Required: contactId, tenant. Optional: referenceId, type, value (plus 8 more). Returns array of CrmV2ContactMethodResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by reference ID"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact method type"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by contact method value"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_get-tenant",
+      "description": "Gets a contact method specified by ID. Required: contactId, contactMethodId, tenant. Returns the CrmV2ContactMethodResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods/{contactMethodId}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "contactMethodId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact method id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_update",
+      "description": "Updates a contact method. Required: contactId, contactMethodId, tenant. Optional: memo, value. Returns the updated CrmV2ContactMethodResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods/{contactMethodId}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "contactMethodId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact method id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo for the contact method"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value of the contact method"
+        }
+      ]
+    },
+    {
+      "name": "contacts_contact-methods_upsert",
+      "description": "Replaces a contact method. Required: contactId, contactMethodId, tenant, type, value. Optional: memo, referenceId. Returns the updated CrmV2ContactMethodResponse.",
+      "method": "PUT",
+      "path": "/tenant/{tenant}/contacts/{contactId}/contact-methods/{contactMethodId}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "contactMethodId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact method id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo for the contact method"
+        },
+        {
+          "name": "referenceId",
+          "type": "string",
+          "location": "body",
+          "description": "Reference ID of the contact method"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Type of the contact method",
+          "required": true
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value of the contact method",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_relationships_contacts-create-contact",
+      "description": "Create a contact relationship. Required: contactId, relatedEntityId, typeSlug, tenant.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/contacts/{contactId}/relationships/{relatedEntityId}/{typeSlug}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact Id",
+          "required": true
+        },
+        {
+          "name": "relatedEntityId",
+          "type": "int",
+          "location": "path",
+          "description": "Related Entity ID",
+          "required": true
+        },
+        {
+          "name": "typeSlug",
+          "type": "string",
+          "location": "path",
+          "description": "Relationship type slug: customer, location, booking",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_relationships_contacts-delete-contact",
+      "description": "Removes a relationship from a contact. Required: contactId, relatedEntityId, typeSlug, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/contacts/{contactId}/relationships/{relatedEntityId}/{typeSlug}",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact Id",
+          "required": true
+        },
+        {
+          "name": "relatedEntityId",
+          "type": "int",
+          "location": "path",
+          "description": "Related Entity ID",
+          "required": true
+        },
+        {
+          "name": "typeSlug",
+          "type": "string",
+          "location": "path",
+          "description": "Relationship type: customer, location, booking",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "contacts_relationships_contacts-get-contact-list",
+      "description": "Gets a list of contact relationships. Required: contactId, tenant. Optional: relatedEntityId, typeSlug, typeName (plus 6 more). Returns array of CrmV2ContactRelationshipResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/contacts/{contactId}/relationships",
+      "params": [
+        {
+          "name": "contactId",
+          "type": "string",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "relatedEntityId",
+          "type": "int",
+          "location": "query",
+          "description": "Filters by related entity id"
+        },
+        {
+          "name": "typeSlug",
+          "type": "string",
+          "location": "query",
+          "description": "Relationship type slug: customer, location, booking"
+        },
+        {
+          "name": "typeName",
+          "type": "string",
+          "location": "query",
+          "description": "Relationship type name: Customer, Location, Booking"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?sort=+FieldName' for ascending order, '?sort=-FieldName' for descending order. Available fields are: ID, ModifiedOn, CreatedOn."
+        }
+      ]
+    },
+    {
+      "name": "crm-export_bookings-get",
+      "description": "Provides export feed for bookings. Required: tenant. Optional: from, includeRecentChanges. Returns array of CrmV2ExportBookingResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/bookings",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "crm-export_contacts-customers-contacts",
+      "description": "Provides export feed for customer contacts. Required: tenant. Optional: from, includeRecentChanges. Returns array of CrmV2ExportCustomerContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/customers/contacts",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "crm-export_contacts-locations-contacts",
+      "description": "Provides export feed for locations contacts. Required: tenant. Optional: from, includeRecentChanges. Returns array of CrmV2ExportLocationContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/locations/contacts",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "crm-export_customers-get-customers",
+      "description": "Provides export feed for customers. Required: tenant. Optional: from, includeRecentChanges. Returns array of CrmV2ExportCustomerResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/customers",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "crm-export_leads-leads",
+      "description": "Provides export feed for leads. Required: tenant. Optional: from, includeRecentChanges. Returns array of CrmV2ExportLeadsResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/leads",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "crm-export_locations-locations",
+      "description": "Provides export feed for appointments. Required: tenant. Optional: from, includeRecentChanges. Returns array of CrmV2ExportLocationsResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/locations",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "customers_create",
+      "description": "Creates a New Customer. Required: tenant, address, locations, name. Optional: contacts, creditLimit, creditLimitBalance (plus 9 more). Returns the new CrmV2CustomersCreatedCustomerResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/customers",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "location": "body",
+          "description": "Bill-To address of the customer record",
+          "required": true
+        },
+        {
+          "name": "contacts",
+          "type": "array",
+          "location": "body",
+          "description": "Contacts for the customer"
+        },
+        {
+          "name": "creditLimit",
+          "type": "float",
+          "location": "body",
+          "description": "Credit Limit for the customer."
+        },
+        {
+          "name": "creditLimitBalance",
+          "type": "float",
+          "location": "body",
+          "description": "Credit Limit for the customer."
+        },
+        {
+          "name": "customFields",
+          "type": "array",
+          "location": "body",
+          "description": "Customer record’s custom fields"
+        },
+        {
+          "name": "doNotMail",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as “do not mail”"
+        },
+        {
+          "name": "doNotService",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as “do not service”"
+        },
+        {
+          "name": "externalData",
+          "type": "string",
+          "location": "body",
+          "description": "Optional model that contains a list of external data items that should be attached to this Customer."
+        },
+        {
+          "name": "locations",
+          "type": "array",
+          "location": "body",
+          "description": "Locations for the customer",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the customer",
+          "required": true
+        },
+        {
+          "name": "nationalAccount",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as National Account"
+        },
+        {
+          "name": "paymentTermId",
+          "type": "int",
+          "location": "body",
+          "description": "Optional Payment Term ID."
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "Tag Type IDs to be associated with the customer"
+        },
+        {
+          "name": "taxExempt",
+          "type": "bool",
+          "location": "body",
+          "description": "Optional Tax Exempt."
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Residential or commercial"
+        }
+      ]
+    },
+    {
+      "name": "customers_get",
+      "description": "Gets a Customer specified by ID. Required: id, tenant. Returns the CrmV2CustomersCustomerResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/customers/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "customers_get-custom-field-types",
+      "description": "Gets a list of custom field types available for customers. Required: tenant. Optional: page, pageSize, includeTotal (plus 5 more). Returns array of CrmV2CustomersCustomFieldTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/customers/custom-fields",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Sort"
+        }
+      ]
+    },
+    {
+      "name": "customers_get-list",
+      "description": "Gets a list of Customers. Required: tenant. Optional: page, pageSize, includeTotal (plus 21 more). Returns array of CrmV2CustomersCustomerResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/customers",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Returns specific customer records by customer ID."
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records created before the requested date (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records created on or after the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records modified before the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records modified after the requested date (in UTC)"
+        },
+        {
+          "name": "excludeAccountingChangesFromModifiedDateRange",
+          "type": "bool",
+          "location": "query",
+          "description": "Excludes accounting changes such as balance adjustments from the modified date range."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by name."
+        },
+        {
+          "name": "street",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by street."
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by unit."
+        },
+        {
+          "name": "city",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by city."
+        },
+        {
+          "name": "state",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by state."
+        },
+        {
+          "name": "zip",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by zip."
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by country."
+        },
+        {
+          "name": "latitude",
+          "type": "float",
+          "location": "query",
+          "description": "Returns customer records by latitude."
+        },
+        {
+          "name": "longitude",
+          "type": "float",
+          "location": "query",
+          "description": "Returns customer records by longitude."
+        },
+        {
+          "name": "phone",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by phone number of contacts."
+        },
+        {
+          "name": "active",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records by active status (only active items will be returned by default). Values: [True, Any, False]"
+        },
+        {
+          "name": "externalDataApplicationGuid",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customer records with external data for a particular GUID"
+        },
+        {
+          "name": "externalDataKey",
+          "type": "string",
+          "location": "query",
+          "description": "External data key"
+        },
+        {
+          "name": "externalDataValues",
+          "type": "string",
+          "location": "query",
+          "description": "External data values"
+        }
+      ]
+    },
+    {
+      "name": "customers_get-modified-contacts-list",
+      "description": "Gets a list of contacts for a specific modified-on date range or by their Customer IDs. Either CustomerIds, modifiedOn or modifiedOnOrAfter parameter must be specified. Required: tenant. Optional: page, pageSize, includeTotal (plus 5 more). Returns array of CrmV2CustomersCustomerContactWithModifiedOnAndCustomerIdResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/customers/contacts",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC). Either modifiedBefore or modifiedOnOrAfter parameter must be specified"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on/after certain date/time (in UTC). Either modifiedBefore or modifiedOnOrAfter parameter must be specified"
+        },
+        {
+          "name": "customerIds",
+          "type": "string",
+          "location": "query",
+          "description": "Returns specific contact records by customer IDs."
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns items created before the requested date (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns items created on or after the requested date (in UTC)"
+        }
+      ]
+    },
+    {
+      "name": "customers_update",
+      "description": "Update a customer. Required: id, tenant. Optional: active, address, creditLimit (plus 11 more). Returns the updated CrmV2CustomersCustomerResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/customers/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as “active” ar 'innactive'"
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "location": "body",
+          "description": "Bill-To address of the customer record"
+        },
+        {
+          "name": "creditLimit",
+          "type": "float",
+          "location": "body",
+          "description": "Credit Limit for the customer."
+        },
+        {
+          "name": "creditLimitBalance",
+          "type": "float",
+          "location": "body",
+          "description": "Credit Limit Balance for the customer."
+        },
+        {
+          "name": "customFields",
+          "type": "array",
+          "location": "body",
+          "description": "Customer record’s custom fields"
+        },
+        {
+          "name": "doNotMail",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as “do not mail”"
+        },
+        {
+          "name": "doNotService",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as “do not service”"
+        },
+        {
+          "name": "externalData",
+          "type": "string",
+          "location": "body",
+          "description": "External data update model."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the customer"
+        },
+        {
+          "name": "nationalAccount",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as National Account"
+        },
+        {
+          "name": "paymentTermId",
+          "type": "int",
+          "location": "body",
+          "description": "Payment Term ID"
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "IDs of the Tag Types"
+        },
+        {
+          "name": "taxExempt",
+          "type": "bool",
+          "location": "body",
+          "description": "Customer has been flagged as Tax Exempt"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Residential or commercial"
+        }
+      ]
+    },
+    {
+      "name": "customers_contacts_customers-create",
+      "description": "Creates a contact on the customer. Required: id, tenant, type, value. Optional: memo. Returns the new CrmV2CustomersCustomerContactWithModifiedOnResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/customers/{id}/contacts",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Short description about this contact, for example, “work #” or “Owner’s daughter - Kelly”"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Landline, mobile, e-mail, or fax",
+          "required": true
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "The email, phone number, or fax number for the contact",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "customers_contacts_customers-delete",
+      "description": "Removes a contact from a customer. Required: id, contactId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/customers/{id}/contacts/{contactId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "contactId",
+          "type": "int",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "customers_contacts_customers-get-list",
+      "description": "Gets a list of contacts for the specified customer. Required: id, tenant. Optional: page, pageSize, includeTotal. Returns array of CrmV2CustomersCustomerContactWithModifiedOnResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/customers/{id}/contacts",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        }
+      ]
+    },
+    {
+      "name": "customers_contacts_customers-update",
+      "description": "Updates a contact on the customer. Required: id, contactId, tenant. Optional: memo, preferences, type (plus 1 more). Returns the updated CrmV2CustomersCustomerContactWithModifiedOnResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/customers/{id}/contacts/{contactId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "contactId",
+          "type": "int",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Short description about this contact, for example, “work #” or “Owner’s daughter - Kelly”"
+        },
+        {
+          "name": "preferences",
+          "type": "string",
+          "location": "body",
+          "description": "Contact preference setting for Job Reminders and Marketing Updates"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Landline, mobile, e-mail, or fax"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "The email, phone number, or fax number for the contact"
+        }
+      ]
+    },
+    {
+      "name": "customers_notes_customers-create",
+      "description": "Creates a New Note. Required: id, tenant, text. Optional: addToLocations, pinToTop. Returns the new CrmV2NoteResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/customers/{id}/notes",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "addToLocations",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to add the same note to the customer's active locations"
+        },
+        {
+          "name": "pinToTop",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to pin customer note to the top"
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "location": "body",
+          "description": "Text content of customer note",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "customers_notes_customers-delete",
+      "description": "Deletes a note on the specified customer. Required: id, noteId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/customers/{id}/notes/{noteId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "noteId",
+          "type": "int",
+          "location": "path",
+          "description": "Note id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "customers_notes_customers-get",
+      "description": "Gets a list of notes for a customer. Required: id, tenant. Optional: page, pageSize, includeTotal (plus 4 more). Returns array of CrmV2NoteResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/customers/{id}/notes",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes created before the requested date (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes created on or after the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes modified before the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes modified after the requested date (in UTC)"
+        }
+      ]
+    },
+    {
+      "name": "customers_tags_customers-create",
+      "description": "Adds a Tag to a Customer. Required: id, tagTypeId, tenant. Returns the new CrmV2CustomersCreateCustomerTagResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/customers/{id}/tags/{tagTypeId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tagTypeId",
+          "type": "int",
+          "location": "path",
+          "description": "Tag type id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "customers_tags_customers-delete",
+      "description": "Removes a Tag from a Customer. Required: id, tagTypeId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/customers/{id}/tags/{tagTypeId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tagTypeId",
+          "type": "int",
+          "location": "path",
+          "description": "Tag type id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "leads_create",
+      "description": "Creates a lead. Required: tenant, campaignId, summary. Optional: bookingId, businessUnitId, callReasonId (plus 15 more). Returns the new CrmV2LeadResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/leads",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "bookingId",
+          "type": "int",
+          "location": "body",
+          "description": "The associated Booking Id to use for creating the Lead. This Booking will be dismissed and a Lead will get created associated to this Booking."
+        },
+        {
+          "name": "businessUnitId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the business unit"
+        },
+        {
+          "name": "callReasonId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the call reason. Required if follow up date is not provided."
+        },
+        {
+          "name": "campaignId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the campaign",
+          "required": true
+        },
+        {
+          "name": "customerId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the customer"
+        },
+        {
+          "name": "followUpDate",
+          "type": "string",
+          "location": "body",
+          "description": "Date of when to follow up. Required if call reason ID is not provided."
+        },
+        {
+          "name": "jobTypeId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of job type"
+        },
+        {
+          "name": "leadCity",
+          "type": "string",
+          "location": "body",
+          "description": "City provided for the lead"
+        },
+        {
+          "name": "leadCountry",
+          "type": "string",
+          "location": "body",
+          "description": "Country provided for the lead"
+        },
+        {
+          "name": "leadCustomerName",
+          "type": "string",
+          "location": "body",
+          "description": "Customer name provided for the lead"
+        },
+        {
+          "name": "leadEmail",
+          "type": "string",
+          "location": "body",
+          "description": "Email provided for the lead"
+        },
+        {
+          "name": "leadPhone",
+          "type": "string",
+          "location": "body",
+          "description": "Phone number provided for the lead"
+        },
+        {
+          "name": "leadState",
+          "type": "string",
+          "location": "body",
+          "description": "State provided for the lead"
+        },
+        {
+          "name": "leadStreet",
+          "type": "string",
+          "location": "body",
+          "description": "Street provided for the lead"
+        },
+        {
+          "name": "leadUnit",
+          "type": "string",
+          "location": "body",
+          "description": "Unit provided for the lead"
+        },
+        {
+          "name": "leadZip",
+          "type": "string",
+          "location": "body",
+          "description": "Zip provided for the lead"
+        },
+        {
+          "name": "locationId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the location"
+        },
+        {
+          "name": "priority",
+          "type": "string",
+          "location": "body",
+          "description": "Priority of the lead"
+        },
+        {
+          "name": "summary",
+          "type": "string",
+          "location": "body",
+          "description": "Lead summary",
+          "required": true
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "List of IDs of tags on the lead"
+        }
+      ]
+    },
+    {
+      "name": "leads_get",
+      "description": "Gets a lead specified by ID. Required: id, tenant. Returns the CrmV2LeadResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/leads/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "leads_get-list",
+      "description": "Gets a list of leads. Required: tenant. Optional: page, pageSize, includeTotal (plus 20 more). Returns array of CrmV2LeadResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/leads",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "customerId",
+          "type": "int",
+          "location": "query",
+          "description": "Filters by associated customer"
+        },
+        {
+          "name": "isProspect",
+          "type": "bool",
+          "location": "query",
+          "description": "Allows to filter leads where the customer doesn't have a job, or there is no customer. Possible values are: null (return all leads); true (return leads without customer/jobs); false (return leads with customer and job)"
+        },
+        {
+          "name": "withoutCustomer",
+          "type": "bool",
+          "location": "query",
+          "description": "Allows to filter leads that don't have a customer or location record associated to it. Possible values are: null (return all leads); true (return leads without customers or locations only); false (return leads with customers and locations only)"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by status Values: [Open, Dismissed, Converted]"
+        },
+        {
+          "name": "customerCity",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer city"
+        },
+        {
+          "name": "customerState",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer state"
+        },
+        {
+          "name": "customerZip",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer zip"
+        },
+        {
+          "name": "customerCreatedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customers who were created on or before a certain date/time (in UTC)"
+        },
+        {
+          "name": "customerCreatedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customers who were created after a certain date/time (in UTC)"
+        },
+        {
+          "name": "customerModifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns customers who were modified on or before a certain date/time (in UTC)"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        },
+        {
+          "name": "genPermUrl",
+          "type": "bool",
+          "location": "query",
+          "description": "If true, generates a permanent URL for the lead"
+        },
+        {
+          "name": "leadCustomerName",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer name"
+        },
+        {
+          "name": "leadPhone",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by phone"
+        },
+        {
+          "name": "isCaptureSourceForm",
+          "type": "bool",
+          "location": "query",
+          "description": "Filters by capture source"
+        }
+      ]
+    },
+    {
+      "name": "leads_submit-form",
+      "description": "Submits a lead form. Required: tenant, name. Optional: id, address, email (plus 2 more). Returns the new CrmV2SubmitLeadFormResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/leads/form",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "id",
+          "type": "int",
+          "location": "query",
+          "description": "Id"
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "location": "body",
+          "description": "The address of the customer"
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "location": "body",
+          "description": "The email of the customer"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "The name of the customer",
+          "required": true
+        },
+        {
+          "name": "phoneNumber",
+          "type": "string",
+          "location": "body",
+          "description": "The phone number of the customer"
+        },
+        {
+          "name": "summary",
+          "type": "string",
+          "location": "body",
+          "description": "Summary submitted in the form"
+        }
+      ]
+    },
+    {
+      "name": "leads_update",
+      "description": "Updates a lead. Required: id, tenant. Optional: businessUnitId, campaignId, jobTypeId (plus 11 more). Returns the updated CrmV2LeadResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/leads/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "businessUnitId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the business unit"
+        },
+        {
+          "name": "campaignId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the campaign"
+        },
+        {
+          "name": "jobTypeId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of job type"
+        },
+        {
+          "name": "leadCity",
+          "type": "string",
+          "location": "body",
+          "description": "City provided for the lead"
+        },
+        {
+          "name": "leadCountry",
+          "type": "string",
+          "location": "body",
+          "description": "Country provided for the lead"
+        },
+        {
+          "name": "leadCustomerName",
+          "type": "string",
+          "location": "body",
+          "description": "Customer name provided for the lead"
+        },
+        {
+          "name": "leadEmail",
+          "type": "string",
+          "location": "body",
+          "description": "Email provided for the lead"
+        },
+        {
+          "name": "leadPhone",
+          "type": "string",
+          "location": "body",
+          "description": "Phone number provided for the lead"
+        },
+        {
+          "name": "leadState",
+          "type": "string",
+          "location": "body",
+          "description": "State provided for the lead"
+        },
+        {
+          "name": "leadStreet",
+          "type": "string",
+          "location": "body",
+          "description": "Street provided for the lead"
+        },
+        {
+          "name": "leadUnit",
+          "type": "string",
+          "location": "body",
+          "description": "Unit provided for the lead"
+        },
+        {
+          "name": "leadZip",
+          "type": "string",
+          "location": "body",
+          "description": "Zip provided for the lead"
+        },
+        {
+          "name": "priority",
+          "type": "string",
+          "location": "body",
+          "description": "Priority of the lead"
+        },
+        {
+          "name": "summary",
+          "type": "string",
+          "location": "body",
+          "description": "Lead summary"
+        }
+      ]
+    },
+    {
+      "name": "leads_dismiss_leads",
+      "description": "Dismisses a lead specified by ID. Required: id, tenant, dismissingReasonId.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/leads/{id}/dismiss",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "dismissingReasonId",
+          "type": "int",
+          "location": "body",
+          "description": "Select a Call Reason to associate to a Booking that’s being dismissed for reporting purposes.",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "leads_follow-up_leads-create",
+      "description": "Creates a follow-up. Required: id, tenant, followUpDate. Optional: pinToTop, text. Returns the new CrmV2FollowUpResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/leads/{id}/follow-up",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "followUpDate",
+          "type": "string",
+          "location": "body",
+          "description": "Follow-up date",
+          "required": true
+        },
+        {
+          "name": "pinToTop",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to pin follow-up note to the top"
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "location": "body",
+          "description": "Text of follow-up note"
+        }
+      ]
+    },
+    {
+      "name": "leads_notes_leads-create",
+      "description": "Creates a note on the specified lead. Required: id, tenant, text. Optional: pinToTop. Returns the new CrmV2NoteResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/leads/{id}/notes",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "pinToTop",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to pin lead note to the top"
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "location": "body",
+          "description": "Text content of lead note",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "leads_notes_leads-get",
+      "description": "Gets notes for a lead. Required: id, tenant. Optional: page, pageSize, includeTotal (plus 4 more). Returns array of CrmV2NoteResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/leads/{id}/notes",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes created before the requested date (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes created on or after the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes modified before the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes modified after the requested date (in UTC)"
+        }
+      ]
+    },
+    {
+      "name": "locations_create",
+      "description": "Creates a new location. Required: tenant, address, customerId, name. Optional: contacts, coordinatesSource, coordinatesVerificationStatus (plus 3 more). Returns the new CrmV2LocationsCreateLocationResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/locations",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "location": "body",
+          "description": "Address of the location record",
+          "required": true
+        },
+        {
+          "name": "contacts",
+          "type": "array",
+          "location": "body",
+          "description": "Contacts for the location"
+        },
+        {
+          "name": "coordinatesSource",
+          "type": "string",
+          "location": "body",
+          "description": "Gets or sets the source of the coordinates."
+        },
+        {
+          "name": "coordinatesVerificationStatus",
+          "type": "string",
+          "location": "body",
+          "description": "Gets or sets the verification status of the coordinates."
+        },
+        {
+          "name": "customFields",
+          "type": "array",
+          "location": "body",
+          "description": "Location record’s custom fields"
+        },
+        {
+          "name": "customerId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the location’s customer.",
+          "required": true
+        },
+        {
+          "name": "externalData",
+          "type": "string",
+          "location": "body",
+          "description": "Optional model that contains a list of external data items that should be attached to this Location."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the location",
+          "required": true
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "Tag type ids for the location"
+        }
+      ]
+    },
+    {
+      "name": "locations_get",
+      "description": "Gets a location specified by ID. Required: id, tenant. Returns the CrmV2LocationsLocationResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/locations/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_get-contacts-list",
+      "description": "Gets a list of contacts for a specific ModifiedOn date range, CreatedOn date range or by their Location IDs. Either LocationIds, modifiedOn, modifiedOnOrAfter, createdBefore or createdOnOrAfter parameter must be specified. Required: tenant. Optional: page, pageSize, includeTotal (plus 5 more). Returns array of CrmV2LocationsContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/locations/contacts",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "Page size"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Include total"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC). Either modifiedBefore or modifiedOnOrAfter parameter must be specified"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on/after certain date/time (in UTC). Either modifiedBefore or modifiedOnOrAfter parameter must be specified"
+        },
+        {
+          "name": "locationIds",
+          "type": "string",
+          "location": "query",
+          "description": "Returns specific contact records by location IDs."
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns items created before the requested date (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns items created on or after the requested date (in UTC)"
+        }
+      ]
+    },
+    {
+      "name": "locations_get-custom-field-types",
+      "description": "Gets a list of custom field types available for locations. Required: tenant. Optional: page, pageSize, includeTotal (plus 5 more). Returns array of CrmV2LocationsCustomFieldTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/locations/custom-fields",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Sort"
+        }
+      ]
+    },
+    {
+      "name": "locations_get-list",
+      "description": "Gets a list of locations. Required: tenant. Optional: ids, name, customerId (plus 20 more). Returns array of CrmV2LocationsLocationResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/locations",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer's name"
+        },
+        {
+          "name": "customerId",
+          "type": "int",
+          "location": "query",
+          "description": "Filters by customer ID"
+        },
+        {
+          "name": "street",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer's street"
+        },
+        {
+          "name": "unit",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer's unit"
+        },
+        {
+          "name": "city",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer's city"
+        },
+        {
+          "name": "state",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer's state"
+        },
+        {
+          "name": "zip",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer's zip"
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer's country"
+        },
+        {
+          "name": "latitude",
+          "type": "float",
+          "location": "query",
+          "description": "Filters by customer's latitude"
+        },
+        {
+          "name": "longitude",
+          "type": "float",
+          "location": "query",
+          "description": "Filters by customer's longitude"
+        },
+        {
+          "name": "active",
+          "type": "string",
+          "location": "query",
+          "description": "What kind of items should be returned (only active items will be returned by default) Values: [True, Any, False]"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "externalDataApplicationGuid",
+          "type": "string",
+          "location": "query",
+          "description": "Returns location records with external data for a particular GUID"
+        },
+        {
+          "name": "externalDataKey",
+          "type": "string",
+          "location": "query",
+          "description": "Performs lookup by external data key, 'externalDataValues' must also be provided."
+        },
+        {
+          "name": "externalDataValues",
+          "type": "string",
+          "location": "query",
+          "description": "Performs lookup by external data values (maximum 50), 'externalDataKey' must also be provided."
+        }
+      ]
+    },
+    {
+      "name": "locations_update",
+      "description": "Updates a location. Required: id, tenant. Optional: active, address, customFields (plus 5 more). Returns the updated CrmV2LocationsLocationResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/locations/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "location": "body",
+          "description": "If false, the record has been deactivated."
+        },
+        {
+          "name": "address",
+          "type": "string",
+          "location": "body",
+          "description": "Address of the location record"
+        },
+        {
+          "name": "customFields",
+          "type": "array",
+          "location": "body",
+          "description": "List of custom fields and their values. This list must describe the full list of custom fields on the location. If location A has values for custom fields X and Y and this field only contains a model for custom field X, then the value for custom field Y on location A will be removed."
+        },
+        {
+          "name": "customerId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the location’s customer."
+        },
+        {
+          "name": "externalData",
+          "type": "string",
+          "location": "body",
+          "description": "Optional model that contains a list of external data items that should be updated to this Location."
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Name of the location"
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "List of tag type IDs. If location has tag types X and Y and this field only contains tag type X, then Y will removed from the location. If it is an empty list, all tags on the location will be removed."
+        },
+        {
+          "name": "taxZoneId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the location tax zone"
+        }
+      ]
+    },
+    {
+      "name": "locations_contacts_locations-create",
+      "description": "Creates a contact on the location. Required: id, tenant, type, value. Optional: memo. Returns the new CrmV2LocationContactResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/locations/{id}/contacts",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo of contact"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Type of contact",
+          "required": true
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value of contact",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_contacts_locations-delete",
+      "description": "Removes a contact from a location. Required: id, contactId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/locations/{id}/contacts/{contactId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "contactId",
+          "type": "int",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_contacts_locations-get-list",
+      "description": "Gets a list of contacts for the specified location. Required: id, tenant. Optional: page, pageSize, includeTotal. Returns array of CrmV2LocationContactResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/locations/{id}/contacts",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        }
+      ]
+    },
+    {
+      "name": "locations_contacts_locations-update",
+      "description": "Updates a contact on the location. Required: id, contactId, tenant. Optional: memo, preferences, type (plus 1 more). Returns the updated CrmV2LocationContactResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/locations/{id}/contacts/{contactId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "contactId",
+          "type": "int",
+          "location": "path",
+          "description": "Contact id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo of contact"
+        },
+        {
+          "name": "preferences",
+          "type": "string",
+          "location": "body",
+          "description": "Contact preference setting for Job Reminders and Marketing Updates"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "body",
+          "description": "Type of contact"
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "location": "body",
+          "description": "Value of contact"
+        }
+      ]
+    },
+    {
+      "name": "locations_notes_locations-create",
+      "description": "Creates a note on the specified location. Required: id, tenant, text. Optional: addToCustomer, pinToTop. Returns the new CrmV2NoteResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/locations/{id}/notes",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "addToCustomer",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to add the same note to the location's customer"
+        },
+        {
+          "name": "pinToTop",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether to pin location note to the top"
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "location": "body",
+          "description": "Text content of location note",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_notes_locations-delete",
+      "description": "Deletes a note on the specified location. Required: id, noteId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/locations/{id}/notes/{noteId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "noteId",
+          "type": "int",
+          "location": "path",
+          "description": "Note id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_notes_locations-get",
+      "description": "Gets a list of notes on the specified location. Required: id, tenant. Optional: page, pageSize, includeTotal (plus 4 more). Returns array of CrmV2NoteResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/locations/{id}/notes",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes created before the requested date (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes created on or after the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes modified before the requested date (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Returns notes modified after the requested date (in UTC)"
+        }
+      ]
+    },
+    {
+      "name": "locations_preferredtechnician_locations-get-preferred-technician",
+      "description": "Locations_get preferred technician. Required: id, tenant.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/locations/{id}/preferredtechnician",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_preferredtechnician_locations-update-preferred-technician",
+      "description": "Locations_update preferred technician. Required: id, preferredTechnicianId, tenant.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/locations/{id}/preferredtechnician/{preferredTechnicianId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "preferredTechnicianId",
+          "type": "int",
+          "location": "path",
+          "description": "Preferred technician id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_tags_locations-create",
+      "description": "Adds a Tag to a Location. Required: id, tagTypeId, tenant. Returns the new CrmV2LocationsCreateLocationTagResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/locations/{id}/tags/{tagTypeId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tagTypeId",
+          "type": "int",
+          "location": "path",
+          "description": "Tag type id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "locations_tags_locations-delete",
+      "description": "Removes a Tag from a Location. Required: id, tagTypeId, tenant. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/locations/{id}/tags/{tagTypeId}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Id",
+          "required": true
+        },
+        {
+          "name": "tagTypeId",
+          "type": "int",
+          "location": "path",
+          "description": "Tag type id",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "tags_bulk-add",
+      "description": "Add multiple tags to more than 1 customer. Required: tenant, customerIds, tagTypeIds.",
+      "method": "PUT",
+      "path": "/tenant/{tenant}/tags",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "customerIds",
+          "type": "array",
+          "location": "body",
+          "description": "List of Customer ID(s)",
+          "required": true
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "List of TagType ID(s) to add to the customers",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "tags_bulk-remove",
+      "description": "Remove multiple tags to more than 1 customer. Required: tenant, customerIds, tagTypeIds. Destructive.",
+      "method": "DELETE",
+      "path": "/tenant/{tenant}/tags",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "customerIds",
+          "type": "array",
+          "location": "body",
+          "description": "List of Customer ID(s)",
+          "required": true
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "List of TagType ID(s) to add to the customers",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
