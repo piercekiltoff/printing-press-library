@@ -45,6 +45,20 @@
       "reason": "The generator's doctor only recognized a bearer token as 'configured', so fresh installs of a composed-auth CLI always reported 'unconfigured' until the first call minted a token (#1303 / inventory-retro anti-pattern). Tenant readiness is part of the same readiness check (#1332).",
       "files": ["internal/cli/doctor.go"],
       "validated_outcome": "doctor reports 'configured (composed: ST-App-Key + OAuth2 client_credentials; bearer minted on first call)' when env vars are set"
+    },
+    {
+      "id": "cache-key-param-separator",
+      "summary": "cacheKey() inserts '&' between sorted param entries so different param sets cannot collide on a single cache file.",
+      "reason": "Greptile review (PR #576): the original loop concatenated 'k=v' with no separator, so {\"a\":\"1b\",\"c\":\"2\"} and {\"a\":\"1\",\"bc\":\"2\"} both produced 'a=1bc=2' — different queries could silently share a cached response.",
+      "files": ["internal/client/client.go"],
+      "validated_outcome": "go build, go vet, go test ./internal/pricebook/ all clean"
+    },
+    {
+      "id": "cost-drift-since-yyyymmdd",
+      "summary": "CostDrift promotes a bare YYYY-MM-DD --since to end-of-day before comparing against RFC3339 snapshot timestamps so same-day snapshots are included in the baseline window.",
+      "reason": "Greptile review (PR #576): s.at is stored as RFC3339 (\"2026-04-01T08:00:00Z\") but --since is documented as YYYY-MM-DD. Lexicographically \"2026-04-01T08:00:00Z\" sorts after \"2026-04-01\", so s.at <= since was false for every same-day snapshot — the baseline silently slipped to the previous day.",
+      "files": ["internal/pricebook/costhistory.go"],
+      "validated_outcome": "go build, go vet, go test ./internal/pricebook/ all clean"
     }
   ]
 }

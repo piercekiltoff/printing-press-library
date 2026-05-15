@@ -215,10 +215,18 @@ func CostDrift(db *store.Store, since string) ([]DriftRow, error) {
 			continue // need at least two snapshots to see drift
 		}
 		latest := snaps[len(snaps)-1]
+		// s.at is RFC3339 ("2026-04-01T08:00:00Z"); --since is documented as
+		// YYYY-MM-DD. A bare date sorts BEFORE any same-day RFC3339 string, so
+		// a lexicographic s.at <= since would silently drop same-day snapshots
+		// from the baseline window. Promote a bare date to end-of-day.
+		sinceBound := since
+		if len(sinceBound) == 10 {
+			sinceBound += "T23:59:59Z"
+		}
 		baseline := snaps[0]
 		for _, s := range snaps {
-			if since != "" && s.at <= since {
-				baseline = s // walk forward to the newest snapshot <= since
+			if sinceBound != "" && s.at <= sinceBound {
+				baseline = s // walk forward to the newest snapshot <= sinceBound
 			}
 		}
 		if baseline.at == latest.at || baseline.cost == latest.cost {
