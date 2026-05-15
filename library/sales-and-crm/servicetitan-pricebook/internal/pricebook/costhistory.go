@@ -73,7 +73,14 @@ func Snapshot(db *store.Store) (written, considered int, err error) {
 		return 0, 0, err
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	// PATCH: snapshot-nanos-precision (Greptile PR #576). The composite PK on
+	// (snapshot_at, sku_kind, sku_id) plus INSERT OR IGNORE silently drops
+	// any row whose timestamp collides with one already in the table. Second-
+	// precision RFC3339 made same-second concurrent Snapshot() calls (agent-
+	// loop --tail, parallel health checks) lose every row that came after
+	// the first. RFC3339Nano keeps the same TEXT column shape but makes
+	// real collisions astronomically unlikely.
+	now := time.Now().UTC().Format(time.RFC3339Nano)
 	tx, err := db.DB().Begin()
 	if err != nil {
 		return 0, 0, fmt.Errorf("begin snapshot tx: %w", err)

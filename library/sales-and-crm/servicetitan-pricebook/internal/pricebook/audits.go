@@ -377,7 +377,19 @@ func Health(db *store.Store, markupTolerancePct, dedupeMinScore float64, since s
 	if err != nil {
 		return h, err
 	}
-	h.OrphanSKUs = len(orphans)
+	// PATCH: orphan-sku-health-dedup (Greptile PR #576). OrphanSKUs emits one
+	// row per (SKU, bad-ref) so the orphan-skus command shows every bad
+	// category reference, but the health rollup is the agent-priming signal
+	// and should count distinct SKUs needing attention — not bad-ref pairs.
+	type orphanKey struct {
+		kind SKUKind
+		id   int64
+	}
+	unique := make(map[orphanKey]struct{}, len(orphans))
+	for _, o := range orphans {
+		unique[orphanKey{o.Kind, o.ID}] = struct{}{}
+	}
+	h.OrphanSKUs = len(unique)
 
 	copyIssues, err := CopyAudit(db, "")
 	if err != nil {

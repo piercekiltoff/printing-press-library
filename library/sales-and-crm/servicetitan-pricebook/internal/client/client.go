@@ -526,67 +526,11 @@ func (c *Client) mintClientCredentials(clientID, clientSecret string) error {
 	return nil
 }
 
-func (c *Client) refreshAccessToken() error {
-	if c.Config == nil {
-		return nil
-	}
-	if c.Config.RefreshToken == "" {
-		return nil
-	}
-
-	tokenURL := c.Config.TokenURL
-	if tokenURL == "" {
-		tokenURL = "https://auth.servicetitan.io/connect/token"
-	}
-
-	params := url.Values{
-		"grant_type":    {"refresh_token"},
-		"refresh_token": {c.Config.RefreshToken},
-		"client_id":     {c.Config.ClientID},
-	}
-	if c.Config.ClientSecret != "" {
-		params.Set("client_secret", c.Config.ClientSecret)
-	}
-
-	resp, err := c.HTTPClient.PostForm(tokenURL, params)
-	if err != nil {
-		return fmt.Errorf("refreshing access token: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("refreshing access token: HTTP %d: %s", resp.StatusCode, truncateBody(body))
-	}
-
-	var tokenResp struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-		ExpiresIn    int    `json:"expires_in"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return fmt.Errorf("parsing refresh response: %w", err)
-	}
-	if tokenResp.AccessToken == "" {
-		return fmt.Errorf("refreshing access token: no access token in response")
-	}
-
-	refreshToken := c.Config.RefreshToken
-	if tokenResp.RefreshToken != "" {
-		refreshToken = tokenResp.RefreshToken
-	}
-
-	expiry := time.Time{}
-	if tokenResp.ExpiresIn > 0 {
-		expiry = time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
-	}
-
-	if err := c.Config.SaveTokens(c.Config.ClientID, c.Config.ClientSecret, tokenResp.AccessToken, refreshToken, expiry); err != nil {
-		return fmt.Errorf("saving refreshed token: %w", err)
-	}
-
-	return nil
-}
+// PATCH: drop-refresh-token-flow (Greptile PR #576). ServiceTitan composed
+// auth only issues client_credentials tokens — no refresh tokens are ever
+// minted, so the generator-emitted refreshAccessToken() was unreachable and
+// would mislead maintainers into thinking a refresh-token flow was wired.
+// authHeader() handles the token lifecycle via mintClientCredentials.
 
 // sanitizeJSONResponse strips known JSONP/XSSI prefixes and UTF-8 BOM from
 // response bodies so that downstream JSON parsing succeeds. For clean JSON

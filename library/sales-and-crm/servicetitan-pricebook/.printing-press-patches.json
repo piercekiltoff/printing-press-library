@@ -59,6 +59,27 @@
       "reason": "Greptile review (PR #576): s.at is stored as RFC3339 (\"2026-04-01T08:00:00Z\") but --since is documented as YYYY-MM-DD. Lexicographically \"2026-04-01T08:00:00Z\" sorts after \"2026-04-01\", so s.at <= since was false for every same-day snapshot — the baseline silently slipped to the previous day.",
       "files": ["internal/pricebook/costhistory.go"],
       "validated_outcome": "go build, go vet, go test ./internal/pricebook/ all clean"
+    },
+    {
+      "id": "orphan-sku-health-dedup",
+      "summary": "Health.OrphanSKUs now counts distinct (Kind, ID) SKUs instead of (SKU, bad-ref) pairs, so a SKU in two inactive categories contributes 1 to the rollup, not 2.",
+      "reason": "Greptile review (PR #576): the orphan-skus command still emits one row per bad reference (agents need to see every broken assignment), but the health report is the agent-priming signal and over-reporting drives redundant fix attempts in automated pipelines.",
+      "files": ["internal/pricebook/audits.go"],
+      "validated_outcome": "go build, go vet, go test ./internal/pricebook/ all clean"
+    },
+    {
+      "id": "drop-refresh-token-flow",
+      "summary": "Removed the unreachable refreshAccessToken() function from the HTTP client.",
+      "reason": "Greptile review (PR #576): ServiceTitan composed auth only issues client_credentials tokens — no refresh tokens are ever minted. The generator-emitted function was never called from authHeader() (which uses mintClientCredentials exclusively) and existed only to mislead future maintainers into believing a refresh-token flow was wired.",
+      "files": ["internal/client/client.go"],
+      "validated_outcome": "go build, go vet, go test ./internal/pricebook/ all clean"
+    },
+    {
+      "id": "snapshot-nanos-precision",
+      "summary": "Snapshot() formats snapshot_at with time.RFC3339Nano so sub-second concurrent Snapshot() calls cannot collide on the composite PK.",
+      "reason": "Greptile review (PR #576): RFC3339 (second precision) + INSERT OR IGNORE on (snapshot_at, sku_kind, sku_id) silently dropped any row whose timestamp collided with an existing one. Agent-loop modes (--tail, parallel health checks) hit this window. RFC3339Nano keeps the same TEXT column shape but makes real collisions astronomically unlikely.",
+      "files": ["internal/pricebook/costhistory.go"],
+      "validated_outcome": "go build, go vet, go test ./internal/pricebook/ all clean"
     }
   ]
 }
