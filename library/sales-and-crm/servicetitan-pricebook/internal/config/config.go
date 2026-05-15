@@ -26,7 +26,7 @@ type Config struct {
 	// StAppKey is the static ServiceTitan App Key sent as the ST-App-Key
 	// header. ServiceTitan uses composed auth: this static header PLUS the
 	// OAuth2 client-credentials bearer must both be present on every call.
-	// PATCH composed-auth-apikey-config: generator (v4.6.1) wired the OAuth
+	// PATCH: composed-auth-apikey-config: generator (v4.6.1) wired the OAuth
 	// bearer half but not the ST-App-Key apiKey half (#1303 apiKey half).
 	StAppKey string `toml:"app_key"`
 	// TenantID is the numeric ServiceTitan tenant ID. Every Pricebook path is
@@ -63,7 +63,7 @@ func Load(configPath string) (*Config, error) {
 	}
 
 	// Env var overrides.
-	// PATCH composed-auth-credentials-trim (#1303 / JKA env gotcha): ST
+	// PATCH: composed-auth-credentials-trim (#1303 / JKA env gotcha): ST
 	// credentials are TrimSpace'd defensively — a trailing newline in a
 	// PowerShell or .env-sourced var produced opaque invalid_client 400s.
 	if v := strings.TrimSpace(os.Getenv("ST_CLIENT_ID")); v != "" {
@@ -74,13 +74,13 @@ func Load(configPath string) (*Config, error) {
 		cfg.ClientSecret = v
 		cfg.AuthSource = "env:ST_CLIENT_SECRET"
 	}
-	// PATCH composed-auth-apikey-config (#1303 apiKey half): ST-App-Key is
+	// PATCH: composed-auth-apikey-config (#1303 apiKey half): ST-App-Key is
 	// the static apiKey header half of ServiceTitan's composed auth.
 	if v := strings.TrimSpace(os.Getenv("ST_APP_KEY")); v != "" {
 		cfg.StAppKey = v
 		cfg.AuthSource = "env:ST_APP_KEY"
 	}
-	// PATCH tenant-env-config (#1332): every Pricebook path is tenant-scoped.
+	// PATCH: tenant-env-config (#1332): every Pricebook path is tenant-scoped.
 	if v := strings.TrimSpace(os.Getenv("ST_TENANT_ID")); v != "" {
 		cfg.TenantID = v
 	}

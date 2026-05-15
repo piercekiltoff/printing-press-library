@@ -273,7 +273,7 @@ func (c *Client) do(method, path string, params map[string]string, body any, hea
 		if authHeader != "" {
 			req.Header.Set("Authorization", authHeader)
 		}
-		// PATCH composed-auth-apikey-wire (#1303 apiKey half): ServiceTitan
+		// PATCH: composed-auth-apikey-wire (#1303 apiKey half): ServiceTitan
 		// composed auth needs the static ST-App-Key header on every call in
 		// addition to the OAuth2 bearer. The v4.6.1 generator wired the
 		// bearer half but omitted this one — without it every authenticated
@@ -399,7 +399,7 @@ func (c *Client) dryRun(method, targetURL, path string, params map[string]string
 	if authHeader != "" {
 		fmt.Fprintf(os.Stderr, "  %s: %s\n", "Authorization", maskToken(authHeader))
 	}
-	// PATCH composed-auth-apikey-wire (#1303 apiKey half): mirror the live
+	// PATCH: composed-auth-apikey-wire (#1303 apiKey half): mirror the live
 	// request path so --dry-run previews the full composed-auth header set.
 	if c.Config != nil && c.Config.StAppKey != "" {
 		fmt.Fprintf(os.Stderr, "  %s: %s\n", "ST-App-Key", maskToken(c.Config.StAppKey))

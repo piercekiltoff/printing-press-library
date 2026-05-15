@@ -85,7 +85,7 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			}
 
 			// Check auth.
-			// PATCH composed-auth-doctor (#1303 / inventory-retro anti-pattern):
+			// PATCH: composed-auth-doctor (#1303 / inventory-retro anti-pattern):
 			// ServiceTitan composed auth mints the OAuth2 bearer lazily on the
 			// first API call, so cfg.AuthHeader() is empty at doctor time even
 			// when auth is fully configured. Recognize composed auth from the
@@ -132,7 +132,7 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 			authEnvOptionalNames := []string{}
 			// Validation rejects multi-OR-group specs upstream, so the single optional-satisfied state is sufficient at runtime.
 			authEnvOptionalSatisfied := false
-			// PATCH composed-auth-doctor (#1303 / #1332): ServiceTitan
+			// PATCH: composed-auth-doctor (#1303 / #1332): ServiceTitan
 			// composed auth needs all four of ST_APP_KEY, ST_CLIENT_ID,
 			// ST_CLIENT_SECRET, and ST_TENANT_ID. The generator only checked
 			// the two OAuth client-credential vars.

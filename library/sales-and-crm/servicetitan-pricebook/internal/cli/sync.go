@@ -925,7 +925,7 @@ func parseSinceDuration(s string) (time.Time, error) {
 	}
 }
 
-// PATCH sync-default-resources (#1305): the v4.6.1 generator emitted
+// PATCH: sync-default-resources (#1305): the v4.6.1 generator emitted
 // `return []string{}` for this tenant-scoped spec, so plain `sync` silently
 // exited with resources:0. Populated with the cacheable Pricebook list
 // resources so a no-flag `sync` iterates the full set.
@@ -956,7 +956,7 @@ func knownSyncResourceNames() []string {
 // syncResourcePath maps resource names to their actual API endpoint paths.
 // For REST APIs this is typically "/<resource>". For non-REST APIs (e.g., Steam)
 // this preserves the actual endpoint path like "/ISteamApps/GetAppList/v2".
-// PATCH sync-paths-registry (#1305 / #1332): the v4.6.1 generator emitted
+// PATCH: sync-paths-registry (#1305 / #1332): the v4.6.1 generator emitted
 // an empty `paths := map[string]string{}`, so sync errored "unknown sync
 // resource" for every resource. Populated from the spec's tenant-scoped
 // list endpoints; the {tenant} placeholder is substituted from
