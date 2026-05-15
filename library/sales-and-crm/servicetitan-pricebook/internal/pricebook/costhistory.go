@@ -215,9 +215,10 @@ func CostDrift(db *store.Store, since string) ([]DriftRow, error) {
 			continue // need at least two snapshots to see drift
 		}
 		latest := snaps[len(snaps)-1]
-		// s.at is RFC3339 ("2026-04-01T08:00:00Z"); --since is documented as
-		// YYYY-MM-DD. A bare date sorts BEFORE any same-day RFC3339 string, so
-		// a lexicographic s.at <= since would silently drop same-day snapshots
+		// PATCH: cost-drift-since-yyyymmdd (Greptile PR #576). s.at is RFC3339
+		// ("2026-04-01T08:00:00Z"); --since is documented as YYYY-MM-DD. A
+		// bare date sorts BEFORE any same-day RFC3339 string, so a
+		// lexicographic s.at <= since would silently drop same-day snapshots
 		// from the baseline window. Promote a bare date to end-of-day.
 		sinceBound := since
 		if len(sinceBound) == 10 {

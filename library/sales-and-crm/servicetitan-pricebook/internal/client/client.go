@@ -113,8 +113,9 @@ func (c *Client) cacheKey(path string, params map[string]string) string {
 		paramKeys = append(paramKeys, k)
 	}
 	sort.Strings(paramKeys)
-	// Use "&" between entries so {"a":"1b","c":"2"} and {"a":"1","bc":"2"}
-	// produce distinct keys instead of both collapsing to "a=...bc=...".
+	// PATCH: cache-key-param-separator (Greptile PR #576). Use "&" between
+	// entries so {"a":"1b","c":"2"} and {"a":"1","bc":"2"} produce distinct
+	// keys instead of both collapsing to "a=...bc=...".
 	for _, k := range paramKeys {
 		key += "&" + k + "=" + params[k]
 	}
