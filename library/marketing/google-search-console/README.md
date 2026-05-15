@@ -52,7 +52,64 @@ Install the pp-google-search-console skill from https://github.com/mvanhorn/prin
 
 ## Authentication
 
-Google Search Console uses OAuth 2.0. The CLI reads a pre-fetched access token from the GSC_ACCESS_TOKEN environment variable. Generate one from the Google OAuth Playground (https://developers.google.com/oauthplayground/) using scope https://www.googleapis.com/auth/webmasters.readonly for read-only operations or https://www.googleapis.com/auth/webmasters for full read-write (sitemap submit/delete, sites add/delete). Tokens expire after one hour; refresh from the same Playground UI. There is no `auth login` flow in this CLI by design -- pre-fetched tokens keep the install path simple and match the google-ads house pattern.
+Two paths. Pick one.
+
+### Path A: `auth login` (recommended -- auto-refreshes, never see a token)
+
+One-time setup in Google Cloud Console (about 5 minutes):
+
+1. Open [console.cloud.google.com](https://console.cloud.google.com), create or pick a project.
+2. **APIs & Services -> Library** -> enable **Google Search Console API**.
+3. **APIs & Services -> OAuth consent screen** -> External -> fill in App name, your email -> Save. Add yourself as a Test user under the **Audience** tab.
+4. **APIs & Services -> Credentials** -> **Create Credentials** -> **OAuth client ID** -> Application type: **Desktop app** -> name it -> Create.
+5. Copy the **Client ID** and **Client secret** from the resulting dialog.
+
+Then, from your terminal:
+
+```bash
+google-search-console-pp-cli auth set-client <client_id> <client_secret>
+google-search-console-pp-cli auth login
+```
+
+`auth login` opens your default browser, you click Allow, the CLI captures the result on a loopback port, and saves an access + refresh token to `~/.config/google-search-console-pp-cli/config.toml` (mode 0600). Every command from then on silently refreshes the access token when it expires.
+
+First-time consent will show Google's "Google hasn't verified this app" interstitial because your OAuth client is in Testing mode. Click **Advanced -> Go to [your app] (unsafe)** to continue. This is expected for personal-use Desktop clients and does not indicate a problem with the CLI.
+
+WSL2 / headless / SSH:
+
+```bash
+google-search-console-pp-cli auth login --no-browser
+```
+
+Prints the URL for you to paste into any browser, then waits for the callback. Use this when `xdg-open` is unreliable or there is no display.
+
+Write scope (sitemap submit, site add/delete) is opt-in:
+
+```bash
+google-search-console-pp-cli auth login --scope write
+```
+
+### Path B: `GSC_ACCESS_TOKEN` (CI / one-shot scripts)
+
+For non-interactive contexts where running `auth login` is impractical:
+
+```bash
+export GSC_ACCESS_TOKEN="ya29..."   # fetch from https://developers.google.com/oauthplayground/
+```
+
+Tokens last one hour. No auto-refresh. Pre-existing scripts continue to work unchanged.
+
+### Auth command surface
+
+```bash
+google-search-console-pp-cli auth status                   # show account, expiry, refresh-token presence
+google-search-console-pp-cli auth login                    # browser login (loopback OAuth, PKCE S256)
+google-search-console-pp-cli auth logout                   # clear tokens, keep OAuth client
+google-search-console-pp-cli auth logout --revoke          # also revoke at Google
+google-search-console-pp-cli auth forget                   # nuke everything (tokens + client)
+google-search-console-pp-cli auth set-client <id> <secret> # one-time OAuth client setup
+google-search-console-pp-cli auth set-token <token>        # save a static access token (no auto-refresh)
+```
 
 ## Quick Start
 
