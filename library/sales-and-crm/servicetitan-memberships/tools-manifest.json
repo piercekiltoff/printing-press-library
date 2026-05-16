@@ -1,0 +1,1478 @@
+{
+  "api_name": "memberships",
+  "base_url": "https://api.servicetitan.io/memberships/v2",
+  "description": "Customer memberships, invoice templates, membership types, recurring services, recurring service events, recurring service types",
+  "mcp_ready": "full",
+  "http_transport": "standard",
+  "auth": {
+    "type": "bearer_token",
+    "header": "Authorization",
+    "env_vars": [
+      "ST_CLIENT_ID",
+      "ST_CLIENT_SECRET"
+    ],
+    "env_var_specs": [
+      {
+        "name": "ST_CLIENT_ID",
+        "kind": "auth_flow_input",
+        "required": true,
+        "sensitive": true,
+        "description": "ServiceTitan OAuth2 client_id for the integration. Used by the auth login flow to exchange for a bearer token at https://auth.servicetitan.io/connect/token. Whitespace is stripped defensively."
+      },
+      {
+        "name": "ST_CLIENT_SECRET",
+        "kind": "auth_flow_input",
+        "required": true,
+        "sensitive": true,
+        "description": "ServiceTitan OAuth2 client_secret paired with ST_CLIENT_ID. Whitespace is stripped defensively (a known JKA env gotcha that produced opaque invalid_client 400s)."
+      }
+    ]
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "invoice-templates_create",
+      "description": "Creates new invoice template. Required: tenant. Optional: items. Returns the new ModificationResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/invoice-templates",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "items",
+          "type": "array",
+          "location": "body",
+          "description": "Invoice template items"
+        }
+      ]
+    },
+    {
+      "name": "invoice-templates_get",
+      "description": "Gets invoice template specified by ID. Required: id, tenant. Returns the MembershipsV2InvoiceTemplateResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/invoice-templates/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Invoice template ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "invoice-templates_get-list",
+      "description": "Please note this endpoint does not allow to enumerate all invoice templates. Use the Customer Membership endpoint (for billing template) or Recurring Service endpoint (for invoice template) to get invoice template IDs. Required: tenant, ids. Returns array of MembershipsV2InvoiceTemplateResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/invoice-templates",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "invoice-templates_update",
+      "description": "Updates specified invoice template in 'patch' mode. Required: id, tenant. Optional: active, createdById, createdOn (plus 2 more). Returns the updated ModificationResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/invoice-templates/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Invoice template ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether invoice template is active"
+        },
+        {
+          "name": "createdById",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the user that created invoice template"
+        },
+        {
+          "name": "createdOn",
+          "type": "string",
+          "location": "body",
+          "description": "Invoice template creation date"
+        },
+        {
+          "name": "items",
+          "type": "array",
+          "location": "body",
+          "description": "Invoice template items"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Invoice template name (used only for shared invoice templates)"
+        }
+      ]
+    },
+    {
+      "name": "membership-types_get",
+      "description": "Gets membership type specified by ID. Required: id, tenant. Returns the MembershipsV2MembershipTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/membership-types/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Membership type ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "membership-types_get-list",
+      "description": "Gets a list of membership types. Required: tenant. Optional: ids, active, duration (plus 13 more). Returns array of MembershipsV2MembershipTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/membership-types",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "active",
+          "type": "string",
+          "location": "query",
+          "description": "What kind of items should be returned (only active items will be returned by default)..."
+        },
+        {
+          "name": "duration",
+          "type": "int",
+          "location": "query",
+          "description": "Filters by membership duration (in months); use null for ongoing memberships"
+        },
+        {
+          "name": "billingFrequency",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by membership billing frequency Values: [OneTime, Monthly, EveryOtherMonth, Quarterly, BiAnnual, Annual]"
+        },
+        {
+          "name": "includeDurationBilling",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether duration/billing should be included in the result"
+        },
+        {
+          "name": "includeDiscounts",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether discounts should be included in the result"
+        },
+        {
+          "name": "includeRecurringServices",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether recurring service types associated with the membership type should be included in the result"
+        },
+        {
+          "name": "includeTags",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether tag type IDs associated with the membership type should be included in the result"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by specified fields"
+        }
+      ]
+    },
+    {
+      "name": "membership-types_discounts_membership-types-get-list",
+      "description": "Gets discounts for the given membership type. Required: id, tenant. Returns array of MembershipsV2MembershipTypeDiscountItemResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/membership-types/{id}/discounts",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Membership type ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "membership-types_duration-billing-items_membership-types-get-duration-billing-list",
+      "description": "Gets duration/billing options for the given membership type. Required: id, tenant. Optional: active. Returns array of MembershipsV2MembershipTypeDurationBillingItemResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/membership-types/{id}/duration-billing-items",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Membership type ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "active",
+          "type": "string",
+          "location": "query",
+          "description": "What kind of items should be returned (only active items will be returned by default)..."
+        }
+      ]
+    },
+    {
+      "name": "membership-types_recurring-service-items_membership-types-get",
+      "description": "Gets recurring services for the given membership type. Required: id, tenant. Returns array of MembershipsV2MembershipTypeRecurringServiceItemResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/membership-types/{id}/recurring-service-items",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Membership type ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "memberships_customer-create",
+      "description": "Creates membership sale invoice. Required: tenant, businessUnitId, customerId, durationBillingId, recurringServiceAction, saleTaskId. Optional: locationId, recurringLocationId. Returns the new MembershipsV2MembershipSaleInvoiceCreateResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/memberships/sale",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "businessUnitId",
+          "type": "int",
+          "location": "body",
+          "description": "Business unit ID",
+          "required": true
+        },
+        {
+          "name": "customerId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the customer you are creating the Membership Sale Invoice for",
+          "required": true
+        },
+        {
+          "name": "durationBillingId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the duration/billing option to be used",
+          "required": true
+        },
+        {
+          "name": "locationId",
+          "type": "int",
+          "location": "body",
+          "description": "Discount location ID of this membership (null if all locations)"
+        },
+        {
+          "name": "recurringLocationId",
+          "type": "int",
+          "location": "body",
+          "description": "The location at which recurring services are scheduled (null if all locations)"
+        },
+        {
+          "name": "recurringServiceAction",
+          "type": "string",
+          "location": "body",
+          "description": "Required if RecurringLocationId is set. Determines how many of the customer's locations that recurring services should be added to: all, single, or none (which deletes existing recurring services).",
+          "required": true
+        },
+        {
+          "name": "saleTaskId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the sale task that is creating the membership",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "memberships_customer-get",
+      "description": "Gets customer membership specified by ID. Required: id, tenant. Returns the MembershipsV2CustomerMembershipResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/memberships/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Customer membership ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "memberships_customer-get-custom-fields",
+      "description": "Gets a list of custom field types that apply to customer memberships. Required: tenant. Optional: page, pageSize, includeTotal (plus 5 more). Returns array of MembershipsV2CustomFieldTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/memberships/custom-fields",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by specified fields"
+        }
+      ]
+    },
+    {
+      "name": "memberships_customer-get-list",
+      "description": "Gets a list of customer memberships. Required: tenant. Optional: ids, customerIds, status (plus 11 more). Returns array of MembershipsV2CustomerMembershipResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/memberships",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "customerIds",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer IDs"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by membership status Values: [Active, Suspended, Expired, Canceled, Deleted]"
+        },
+        {
+          "name": "duration",
+          "type": "int",
+          "location": "query",
+          "description": "Filters by membership duration (in months); use null for ongoing memberships"
+        },
+        {
+          "name": "billingFrequency",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by membership billing frequency Values: [OneTime, Monthly, EveryOtherMonth, Quarterly, BiAnnual, Annual]"
+        },
+        {
+          "name": "active",
+          "type": "string",
+          "location": "query",
+          "description": "What kind of items should be returned (only active items will be returned by default)..."
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by specified fields"
+        }
+      ]
+    },
+    {
+      "name": "memberships_customer-update",
+      "description": "Updates specified customer membership in 'patch' mode. Required: id, tenant. Optional: billingTemplateId, businessUnitId, cancellationBalanceInvoiceId (plus 14 more). Returns the updated ModificationResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/memberships/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Customer membership ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "billingTemplateId",
+          "type": "int",
+          "location": "body",
+          "description": "The ID of the invoice template used to bill this membership. Can either be a 'settings template' (when invoice template is shared – in this case new invoice template will be created), or be a new invoice template created specifically for this customer membership."
+        },
+        {
+          "name": "businessUnitId",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the Business Unit associated with this membership"
+        },
+        {
+          "name": "cancellationBalanceInvoiceId",
+          "type": "int",
+          "location": "body",
+          "description": "The ID of the invoice created upon membership cancellation in order to zero out the deferred revenue balance."
+        },
+        {
+          "name": "cancellationInvoiceId",
+          "type": "int",
+          "location": "body",
+          "description": "The ID of the invoice optionally created upon membership cancellation in order to charge (or refund) the customer if deferred revenue balance is not 0."
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "body",
+          "description": "The starting date of this membership"
+        },
+        {
+          "name": "initialDeferredRevenue",
+          "type": "float",
+          "location": "body",
+          "description": "The amount of deferred revenue that this membership should start with that is not accounted for in the sale task."
+        },
+        {
+          "name": "locationId",
+          "type": "int",
+          "location": "body",
+          "description": "Discount location ID of this membership (null if all locations)"
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo text field"
+        },
+        {
+          "name": "nextScheduledBillDate",
+          "type": "string",
+          "location": "body",
+          "description": "Next date that this membership will be billed on"
+        },
+        {
+          "name": "paymentMethodId",
+          "type": "int",
+          "location": "body",
+          "description": "The ID of the payment method (credit card or bank account) that should be used for this membership. This field is mutually exclusive with payment type. Only one or the other can be set at a time."
+        },
+        {
+          "name": "paymentTypeId",
+          "type": "int",
+          "location": "body",
+          "description": "The payment type (cash, check, etc) that should be used for this membership. This field is mutually exclusive with payment type. Only one or the other can be set at a time. Setting payment type means we will not automatically use a payment method to bill the membership and payment will have to be collected manually."
+        },
+        {
+          "name": "recurringLocationId",
+          "type": "int",
+          "location": "body",
+          "description": "The location at which recurring services are scheduled (null if all locations)"
+        },
+        {
+          "name": "recurringServiceAction",
+          "type": "string",
+          "location": "body",
+          "description": "Required if RecurringLocationId is set. Determines how many of the customer's locations that recurring services should be added to: all, single, or none (which deletes existing recurring services)."
+        },
+        {
+          "name": "renewalMembershipTaskId",
+          "type": "int",
+          "location": "body",
+          "description": "The ID of the service that will be used as the default to renew this membership."
+        },
+        {
+          "name": "soldById",
+          "type": "int",
+          "location": "body",
+          "description": "ID of the user that was credited for the sale of this membership"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "body",
+          "description": "Status of the membership"
+        },
+        {
+          "name": "to",
+          "type": "string",
+          "location": "body",
+          "description": "The end date of this membership (null if ongoing)"
+        }
+      ]
+    },
+    {
+      "name": "memberships_status-changes_customer-memberships-get",
+      "description": "Gets status changes for the given customer membership. Required: id, tenant. Returns array of MembershipsV2CustomerMembershipStatusChangeItemResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/memberships/{id}/status-changes",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Customer membership ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "memberships-export_invoice-templates",
+      "description": "Provides export feed for invoice templates. Required: tenant. Optional: from, includeRecentChanges. Returns array of MembershipsV2ExportInvoiceTemplateResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/invoice-templates",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "memberships-export_location-recurring-service-events",
+      "description": "Provides export feed for recurring service events. Required: tenant. Optional: from, includeRecentChanges. Returns array of MembershipsV2ExportLocationRecurringServiceEventResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/recurring-service-events",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "memberships-export_location-recurring-services",
+      "description": "Provides export feed for recurring services. Required: tenant. Optional: from, includeRecentChanges. Returns array of MembershipsV2ExportLocationRecurringServiceResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/recurring-services",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "memberships-export_membership-status-changes",
+      "description": "Provides export feed for customer membership status changes. Required: tenant. Optional: from, includeRecentChanges. Returns array of MembershipsV2ExportCustomerMembershipStatusChangesResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/membership-status-changes",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "memberships-export_membership-types",
+      "description": "Provides export feed for membership types. Required: tenant. Optional: from, includeRecentChanges. Returns array of MembershipsV2ExportMembershipTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/membership-types",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "memberships-export_memberships",
+      "description": "Provides export feed for customer memberships. Required: tenant. Optional: from, includeRecentChanges. Returns array of MembershipsV2ExportCustomerMembershipResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/memberships",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "memberships-export_recurring-service-types",
+      "description": "Provides export feed for recurring service types. Required: tenant. Optional: from, includeRecentChanges. Returns array of MembershipsV2ExportRecurringServiceTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/export/recurring-service-types",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "query",
+          "description": "Continuation token received from previous export request in 'continueFrom' field."
+        },
+        {
+          "name": "includeRecentChanges",
+          "type": "bool",
+          "location": "query",
+          "description": "Use 'true' to start receiving the most recent changes quicker."
+        }
+      ]
+    },
+    {
+      "name": "recurring-service-events_location-get-list",
+      "description": "Gets a list of recurring service events. Required: tenant. Optional: ids, locationId, jobId (plus 9 more). Returns array of MembershipsV2LocationRecurringServiceEventResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/recurring-service-events",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "locationId",
+          "type": "int",
+          "location": "query",
+          "description": "Location ID"
+        },
+        {
+          "name": "jobId",
+          "type": "int",
+          "location": "query",
+          "description": "Job ID"
+        },
+        {
+          "name": "status",
+          "type": "string",
+          "location": "query",
+          "description": "Follow up status Values: [NotAttempted, Unreachable, Contacted, Won, Dismissed]"
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "array",
+          "location": "query",
+          "description": "Sort"
+        }
+      ]
+    },
+    {
+      "name": "recurring-service-events_mark-complete_location-recurring-service-events",
+      "description": "Marking an event as complete links the job with provided JobID to the given Location Recurring Service Event. It will also copy over invoice items to the Job Invoice corresponding to the Invoice Template of the Location Recurring Service the Event was generated from. Required: id, tenant, jobId. Returns the new ModificationResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/recurring-service-events/{id}/mark-complete",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Recurring service event ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "jobId",
+          "type": "int",
+          "location": "body",
+          "description": "The job ID that the event is marked as completed/incompleted on",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "recurring-service-events_mark-incomplete_location-recurring-service-events",
+      "description": "Marking an event as incomplete unlinks the job with provided JobID to the given Location Recurring Service Event. It will also delete the invoice items that were copied over when the Location Recurring Service Event was marked as completed on the Job. Required: id, tenant, jobId. Returns the new ModificationResponse.",
+      "method": "POST",
+      "path": "/tenant/{tenant}/recurring-service-events/{id}/mark-incomplete",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Recurring service event ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "jobId",
+          "type": "int",
+          "location": "body",
+          "description": "The job ID that the event is marked as completed/incompleted on",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "recurring-service-types_get",
+      "description": "Gets recurring service type specified by ID. Required: id, tenant. Returns the MembershipsV2RecurringServiceTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/recurring-service-types/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Recurring service type ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "recurring-service-types_get-list",
+      "description": "Gets a list of recurring service types. Required: tenant. Optional: ids, membershipTypeId, recurrenceType (plus 10 more). Returns array of MembershipsV2RecurringServiceTypeResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/recurring-service-types",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "membershipTypeId",
+          "type": "int",
+          "location": "query",
+          "description": "Filters by membership type ID"
+        },
+        {
+          "name": "recurrenceType",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by recurrence type Values: [Weekly, Monthly, Seasonal, Daily, NthWeekdayOfMonth]"
+        },
+        {
+          "name": "durationType",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by duration type Values: [Continuous, NumberOfVisits]"
+        },
+        {
+          "name": "active",
+          "type": "string",
+          "location": "query",
+          "description": "What kind of items should be returned (only active items will be returned by default)..."
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by the specified field: '?sort=+FieldName' for ascending order, '?sort=-FieldName' for descending order. Available fields are: Id, Name, CreatedOn, ModifiedOn."
+        }
+      ]
+    },
+    {
+      "name": "recurring-services_location-get",
+      "description": "Gets recurring service specified by ID. Required: id, tenant. Returns the MembershipsV2LocationRecurringServiceResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/recurring-services/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Recurring service ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "recurring-services_location-get-list",
+      "description": "Gets a list of recurring services. Required: tenant. Optional: ids, membershipIds, locationIds (plus 10 more). Returns array of MembershipsV2LocationRecurringServiceResponse.",
+      "method": "GET",
+      "path": "/tenant/{tenant}/recurring-services",
+      "params": [
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "ids",
+          "type": "string",
+          "location": "query",
+          "description": "Perform lookup by multiple IDs (maximum 50)"
+        },
+        {
+          "name": "membershipIds",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by customer membership IDs"
+        },
+        {
+          "name": "locationIds",
+          "type": "string",
+          "location": "query",
+          "description": "Filters by location IDs"
+        },
+        {
+          "name": "active",
+          "type": "string",
+          "location": "query",
+          "description": "What kind of items should be returned (only active items will be returned by default)..."
+        },
+        {
+          "name": "createdBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created before certain date/time (in UTC)"
+        },
+        {
+          "name": "createdOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items created on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedBefore",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified before certain date/time (in UTC)"
+        },
+        {
+          "name": "modifiedOnOrAfter",
+          "type": "string",
+          "location": "query",
+          "description": "Return items modified on or after certain date/time (in UTC)"
+        },
+        {
+          "name": "includeTechnicians",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether technician IDs should be included in the result."
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "The logical number of page to return, starting from 1"
+        },
+        {
+          "name": "pageSize",
+          "type": "int",
+          "location": "query",
+          "description": "How many records to return (50 by default)"
+        },
+        {
+          "name": "includeTotal",
+          "type": "bool",
+          "location": "query",
+          "description": "Whether total count should be returned"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Applies sorting by specified fields"
+        }
+      ]
+    },
+    {
+      "name": "recurring-services_location-update",
+      "description": "Updates specified recurring service in 'patch' mode. Required: id, tenant. Optional: active, businessUnitId, campaignId (plus 21 more). Returns the updated ModificationResponse.",
+      "method": "PATCH",
+      "path": "/tenant/{tenant}/recurring-services/{id}",
+      "params": [
+        {
+          "name": "id",
+          "type": "int",
+          "location": "path",
+          "description": "Recurring service ID",
+          "required": true
+        },
+        {
+          "name": "tenant",
+          "type": "int",
+          "location": "path",
+          "description": "Tenant ID",
+          "required": true
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "location": "body",
+          "description": "Whether recurring service is active"
+        },
+        {
+          "name": "businessUnitId",
+          "type": "int",
+          "location": "body",
+          "description": "Business unit ID"
+        },
+        {
+          "name": "campaignId",
+          "type": "int",
+          "location": "body",
+          "description": "Campaign ID"
+        },
+        {
+          "name": "durationLength",
+          "type": "int",
+          "location": "body",
+          "description": "The duration length for the given duration type"
+        },
+        {
+          "name": "durationType",
+          "type": "string",
+          "location": "body",
+          "description": "The recurrence duration type"
+        },
+        {
+          "name": "estimatedPayrollCost",
+          "type": "float",
+          "location": "body",
+          "description": "Estimated payroll cost"
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "location": "body",
+          "description": "Beginning date of recurring service"
+        },
+        {
+          "name": "invoiceTemplateForFollowingYearsId",
+          "type": "int",
+          "location": "body",
+          "description": "Invoice template ID for the 2nd year and following (for ongoing memberships)"
+        },
+        {
+          "name": "invoiceTemplateId",
+          "type": "int",
+          "location": "body",
+          "description": "Invoice template ID"
+        },
+        {
+          "name": "jobStartTime",
+          "type": "string",
+          "location": "body",
+          "description": "Job start time"
+        },
+        {
+          "name": "jobSummary",
+          "type": "string",
+          "location": "body",
+          "description": "Job summary"
+        },
+        {
+          "name": "jobTypeId",
+          "type": "int",
+          "location": "body",
+          "description": "Job type ID"
+        },
+        {
+          "name": "memo",
+          "type": "string",
+          "location": "body",
+          "description": "Memo"
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "location": "body",
+          "description": "Recurring service name"
+        },
+        {
+          "name": "preferredTechnicianIds",
+          "type": "array",
+          "location": "body",
+          "description": "List specifying IDs of preferred technicians for this location recurring service"
+        },
+        {
+          "name": "priority",
+          "type": "string",
+          "location": "body",
+          "description": "Recurring service priority"
+        },
+        {
+          "name": "recurrenceDayOfNthWeek",
+          "type": "string",
+          "location": "body",
+          "description": "Enum value corresponding to which day of the week this recurring service recurs when RecurrenceType is NthWeekdayOfMonth. Used with RecurrenceWeek."
+        },
+        {
+          "name": "recurrenceDaysOfWeek",
+          "type": "array",
+          "location": "body",
+          "description": "A list specifying which days of the week this recurring service recurs when RecurrenceType is Weekly"
+        },
+        {
+          "name": "recurrenceInterval",
+          "type": "int",
+          "location": "body",
+          "description": "The recurrence interval for the given recurrence type. Can be 0 when RecurrenceType is Seasonal."
+        },
+        {
+          "name": "recurrenceMonths",
+          "type": "array",
+          "location": "body",
+          "description": "A list of months when the recurring service occurs, if it is a seasonal recurrence type"
+        },
+        {
+          "name": "recurrenceType",
+          "type": "string",
+          "location": "body",
+          "description": "The recurrence type (e.g. Daily, Weekly, Monthly, etc.)"
+        },
+        {
+          "name": "recurrenceWeek",
+          "type": "string",
+          "location": "body",
+          "description": "Enum value corresponding to which week of the month this recurring service recurs when RecurrenceType is NthWeekdayOfMonth. Used with RecurrenceDayOfNthWeek."
+        },
+        {
+          "name": "recurringServiceTypeId",
+          "type": "int",
+          "location": "body",
+          "description": "Recurring Service Type ID"
+        },
+        {
+          "name": "tagTypeIds",
+          "type": "array",
+          "location": "body",
+          "description": "List specifying IDs of Tag Types associated with this location recurring service"
+        }
+      ]
+    }
+  ]
+}

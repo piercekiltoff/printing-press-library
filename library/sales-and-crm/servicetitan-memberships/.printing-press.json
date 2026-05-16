@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-15T23:22:33.4013393Z",
+  "printing_press_version": "4.6.1",
+  "api_name": "servicetitan-memberships",
+  "display_name": "Memberships",
+  "cli_name": "servicetitan-memberships-pp-cli",
+  "owner": "Pierce",
+  "printer": "pierc",
+  "printer_name": "Pierce",
+  "spec_format": "openapi3",
+  "spec_checksum": "sha256:5f33b31839ce7ac2106fd370b5697b0378658f0e732acea8c0c986e7b1501411",
+  "run_id": "20260515-072215",
+  "mcp_binary": "servicetitan-memberships-pp-mcp",
+  "mcp_tool_count": 30,
+  "mcp_ready": "full",
+  "api_version": "1.0",
+  "auth_type": "bearer_token",
+  "auth_env_vars": [
+    "ST_CLIENT_ID",
+    "ST_CLIENT_SECRET"
+  ],
+  "auth_env_var_specs": [
+    {
+      "name": "ST_CLIENT_ID",
+      "kind": "auth_flow_input",
+      "required": true,
+      "sensitive": true,
+      "description": "ServiceTitan OAuth2 client_id for the integration. Used by the auth login flow to exchange for a bearer token at https://auth.servicetitan.io/connect/token. Whitespace is stripped defensively."
+    },
+    {
+      "name": "ST_CLIENT_SECRET",
+      "kind": "auth_flow_input",
+      "required": true,
+      "sensitive": true,
+      "description": "ServiceTitan OAuth2 client_secret paired with ST_CLIENT_ID. Whitespace is stripped defensively (a known JKA env gotcha that produced opaque invalid_client 400s)."
+    }
+  ],
+  "novel_features": [
+    {
+      "name": "Renewal pipeline",
+      "command": "renewals",
+      "description": "List active memberships whose to-date is within a window so the renewal task is one click away."
+    },
+    {
+      "name": "Expiring soon",
+      "command": "expiring",
+      "description": "Every membership whose to-date falls inside a window, including already-cancelled, for lapse-recovery sweeps."
+    },
+    {
+      "name": "Overdue events",
+      "command": "overdue-events",
+      "description": "Recurring-service events past their date on still-active memberships — what we should have already visited."
+    },
+    {
+      "name": "Upcoming schedule",
+      "command": "schedule",
+      "description": "Compact view of upcoming recurring-service events grouped by date and location."
+    },
+    {
+      "name": "Template drift audit",
+      "command": "drift",
+      "description": "Compares each active membership's recurring-services against the membership-type template, flags missing or extra services."
+    },
+    {
+      "name": "Churn risk",
+      "command": "risk",
+      "description": "Rule-engine score per membership: follow-up status, no payment method, lapsed bills, stale events, near to-date."
+    },
+    {
+      "name": "Recurring revenue",
+      "command": "revenue",
+      "description": "Monthly recurring revenue from memberships joined to membership-types.durationBilling, broken down by business unit and billing frequency."
+    },
+    {
+      "name": "Memberships health",
+      "command": "health",
+      "description": "One compact rollup of renewals, overdue events, drift, risk, stale services, and revenue-at-risk counts."
+    },
+    {
+      "name": "Stale recurring services",
+      "command": "stale-services",
+      "description": "Recurring services on active memberships with no completed event in N or more months, even when the recurrence says one should have happened."
+    },
+    {
+      "name": "Bill preview",
+      "command": "bill-preview",
+      "description": "Show the next bill date and line-item amount for a single membership, resolved through its membership-type duration-billing."
+    },
+    {
+      "name": "Event quick-complete",
+      "command": "complete",
+      "description": "Mark a recurring-service event complete with a required job link, then refresh the local snapshot so overdue filters update."
+    },
+    {
+      "name": "Natural-language member finder",
+      "command": "find",
+      "description": "Forgiving ranked search over synced memberships using customer, importId, memo, customFields, and membership-type name."
+    }
+  ]
+}

@@ -1,0 +1,317 @@
+{
+  "api_name": "servicetitan-memberships",
+  "novelty_score": 0,
+  "alternatives": [],
+  "gaps": [],
+  "patterns": [],
+  "recommendation": "proceed",
+  "researched_at": "2026-05-15T07:22:15Z",
+  "novel_features": [
+    {
+      "name": "Renewal pipeline",
+      "command": "renewals",
+      "description": "List active memberships whose to-date is within a window so the renewal task is one click away.",
+      "rationale": "Joins memberships against membership-types.durationBilling locally; no ST API call returns this shape.",
+      "example": "servicetitan-memberships-pp-cli renewals --within 30 --agent",
+      "why_it_matters": "Reach for this when an agent needs the full renewal target list across the tenant, not one membership at a time.",
+      "group": "Lifecycle that compounds"
+    },
+    {
+      "name": "Expiring soon",
+      "command": "expiring",
+      "description": "Every membership whose to-date falls inside a window, including already-cancelled, for lapse-recovery sweeps.",
+      "rationale": "Local SQLite filter over the synced memberships table; the ST UI shows one membership at a time.",
+      "example": "servicetitan-memberships-pp-cli expiring --within 60 --agent --select id,customerId,to,status",
+      "why_it_matters": "Use this when an agent needs both renewal and recovery targets in one list with deeply-nested data narrowed by --select.",
+      "group": "Lifecycle that compounds"
+    },
+    {
+      "name": "Overdue events",
+      "command": "overdue-events",
+      "description": "Recurring-service events past their date on still-active memberships — what we should have already visited.",
+      "rationale": "Joins recurring-service-events against memberships and recurring-services locally; the API has no overdue filter.",
+      "example": "servicetitan-memberships-pp-cli overdue-events --agent",
+      "why_it_matters": "Pick this before scheduling work — overdue events are the SLA tab the UI never quite shows.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Upcoming schedule",
+      "command": "schedule",
+      "description": "Compact view of upcoming recurring-service events grouped by date and location.",
+      "rationale": "Joins recurring-services to events locally for businessUnitId, preferredTechnicianIds, and jobStartTime context.",
+      "example": "servicetitan-memberships-pp-cli schedule --within 14 --agent",
+      "why_it_matters": "Reach for this when dispatch needs to pre-stage the next two weeks of recurring service work.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Template drift audit",
+      "command": "drift",
+      "description": "Compares each active membership's recurring-services against the membership-type template, flags missing or extra services.",
+      "rationale": "Cross-joins memberships × membership-types × recurring-services in SQLite; the ST UI never shows this side-by-side.",
+      "example": "servicetitan-memberships-pp-cli drift --agent",
+      "why_it_matters": "Use this when a member's care-plan deliverables look wrong against their billed membership type.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Churn risk",
+      "command": "risk",
+      "description": "Rule-engine score per membership: follow-up status, no payment method, lapsed bills, stale events, near to-date.",
+      "rationale": "Local SQL rule engine across three tables; no single API call returns a risk score.",
+      "example": "servicetitan-memberships-pp-cli risk --agent --limit 25",
+      "why_it_matters": "Pick this when an agent is prioritizing retention outreach across the membership book.",
+      "group": "Lifecycle that compounds"
+    },
+    {
+      "name": "Recurring revenue",
+      "command": "revenue",
+      "description": "Monthly recurring revenue from memberships joined to membership-types.durationBilling, broken down by business unit and billing frequency.",
+      "rationale": "Local SQL roll-up over synced data; ST reporting can build this in the UI, not in an agent-callable shape.",
+      "example": "servicetitan-memberships-pp-cli revenue --by month --agent",
+      "why_it_matters": "Reach for this when you need the recurring-revenue picture without exporting a report.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Memberships health",
+      "command": "health",
+      "description": "One compact rollup of renewals, overdue events, drift, risk, stale services, and revenue-at-risk counts.",
+      "rationale": "Aggregates five other transcendence reports into an agent-shaped priming summary.",
+      "example": "servicetitan-memberships-pp-cli health --agent",
+      "why_it_matters": "Use this first in any agent session that touches memberships — it primes the model on what is broken.",
+      "group": "Agent-native plumbing"
+    },
+    {
+      "name": "Stale recurring services",
+      "command": "stale-services",
+      "description": "Recurring services on active memberships with no completed event in N or more months, even when the recurrence says one should have happened.",
+      "rationale": "Joins recurring-services to event history locally; the API exposes no SLA tracker.",
+      "example": "servicetitan-memberships-pp-cli stale-services --months 6 --agent",
+      "why_it_matters": "Pick this when auditing whether recurring service obligations are actually being delivered.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Bill preview",
+      "command": "bill-preview",
+      "description": "Show the next bill date and line-item amount for a single membership, resolved through its membership-type duration-billing.",
+      "rationale": "Walks memberships to membership-types.durationBilling to invoice-templates.items locally; no API call returns this.",
+      "example": "servicetitan-memberships-pp-cli bill-preview 42 --agent",
+      "why_it_matters": "Reach for this when a customer asks what they're about to be charged before the invoice runs.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Event quick-complete",
+      "command": "complete",
+      "description": "Mark a recurring-service event complete with a required job link, then refresh the local snapshot so overdue filters update.",
+      "rationale": "Wraps mark-complete with the typical reason (job link) and synchronizes the local cache in one step.",
+      "example": "servicetitan-memberships-pp-cli complete 99 --job 12345 --dry-run",
+      "why_it_matters": "Use this in field-tech workflows where the event-to-job link is the whole point of marking complete.",
+      "group": "Agent-native plumbing"
+    },
+    {
+      "name": "Natural-language member finder",
+      "command": "find",
+      "description": "Forgiving ranked search over synced memberships using customer, importId, memo, customFields, and membership-type name.",
+      "rationale": "Domain-tuned ranking and tech-facing output shape beyond the framework search command.",
+      "example": "servicetitan-memberships-pp-cli find 'Smith family well plan' --agent",
+      "why_it_matters": "Pick this when an agent or office staffer is describing a member instead of pasting an exact ID.",
+      "group": "Agent-native plumbing"
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Renewal pipeline",
+      "command": "renewals",
+      "description": "List active memberships whose to-date is within a window so the renewal task is one click away.",
+      "rationale": "Joins memberships against membership-types.durationBilling locally; no ST API call returns this shape.",
+      "example": "servicetitan-memberships-pp-cli renewals --within 30 --agent",
+      "why_it_matters": "Reach for this when an agent needs the full renewal target list across the tenant, not one membership at a time.",
+      "group": "Lifecycle that compounds"
+    },
+    {
+      "name": "Expiring soon",
+      "command": "expiring",
+      "description": "Every membership whose to-date falls inside a window, including already-cancelled, for lapse-recovery sweeps.",
+      "rationale": "Local SQLite filter over the synced memberships table; the ST UI shows one membership at a time.",
+      "example": "servicetitan-memberships-pp-cli expiring --within 60 --agent --select id,customerId,to,status",
+      "why_it_matters": "Use this when an agent needs both renewal and recovery targets in one list with deeply-nested data narrowed by --select.",
+      "group": "Lifecycle that compounds"
+    },
+    {
+      "name": "Overdue events",
+      "command": "overdue-events",
+      "description": "Recurring-service events past their date on still-active memberships — what we should have already visited.",
+      "rationale": "Joins recurring-service-events against memberships and recurring-services locally; the API has no overdue filter.",
+      "example": "servicetitan-memberships-pp-cli overdue-events --agent",
+      "why_it_matters": "Pick this before scheduling work — overdue events are the SLA tab the UI never quite shows.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Upcoming schedule",
+      "command": "schedule",
+      "description": "Compact view of upcoming recurring-service events grouped by date and location.",
+      "rationale": "Joins recurring-services to events locally for businessUnitId, preferredTechnicianIds, and jobStartTime context.",
+      "example": "servicetitan-memberships-pp-cli schedule --within 14 --agent",
+      "why_it_matters": "Reach for this when dispatch needs to pre-stage the next two weeks of recurring service work.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Template drift audit",
+      "command": "drift",
+      "description": "Compares each active membership's recurring-services against the membership-type template, flags missing or extra services.",
+      "rationale": "Cross-joins memberships × membership-types × recurring-services in SQLite; the ST UI never shows this side-by-side.",
+      "example": "servicetitan-memberships-pp-cli drift --agent",
+      "why_it_matters": "Use this when a member's care-plan deliverables look wrong against their billed membership type.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Churn risk",
+      "command": "risk",
+      "description": "Rule-engine score per membership: follow-up status, no payment method, lapsed bills, stale events, near to-date.",
+      "rationale": "Local SQL rule engine across three tables; no single API call returns a risk score.",
+      "example": "servicetitan-memberships-pp-cli risk --agent --limit 25",
+      "why_it_matters": "Pick this when an agent is prioritizing retention outreach across the membership book.",
+      "group": "Lifecycle that compounds"
+    },
+    {
+      "name": "Recurring revenue",
+      "command": "revenue",
+      "description": "Monthly recurring revenue from memberships joined to membership-types.durationBilling, broken down by business unit and billing frequency.",
+      "rationale": "Local SQL roll-up over synced data; ST reporting can build this in the UI, not in an agent-callable shape.",
+      "example": "servicetitan-memberships-pp-cli revenue --by month --agent",
+      "why_it_matters": "Reach for this when you need the recurring-revenue picture without exporting a report.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Memberships health",
+      "command": "health",
+      "description": "One compact rollup of renewals, overdue events, drift, risk, stale services, and revenue-at-risk counts.",
+      "rationale": "Aggregates five other transcendence reports into an agent-shaped priming summary.",
+      "example": "servicetitan-memberships-pp-cli health --agent",
+      "why_it_matters": "Use this first in any agent session that touches memberships — it primes the model on what is broken.",
+      "group": "Agent-native plumbing"
+    },
+    {
+      "name": "Stale recurring services",
+      "command": "stale-services",
+      "description": "Recurring services on active memberships with no completed event in N or more months, even when the recurrence says one should have happened.",
+      "rationale": "Joins recurring-services to event history locally; the API exposes no SLA tracker.",
+      "example": "servicetitan-memberships-pp-cli stale-services --months 6 --agent",
+      "why_it_matters": "Pick this when auditing whether recurring service obligations are actually being delivered.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Bill preview",
+      "command": "bill-preview",
+      "description": "Show the next bill date and line-item amount for a single membership, resolved through its membership-type duration-billing.",
+      "rationale": "Walks memberships to membership-types.durationBilling to invoice-templates.items locally; no API call returns this.",
+      "example": "servicetitan-memberships-pp-cli bill-preview 42 --agent",
+      "why_it_matters": "Reach for this when a customer asks what they're about to be charged before the invoice runs.",
+      "group": "Local state that compounds"
+    },
+    {
+      "name": "Event quick-complete",
+      "command": "complete",
+      "description": "Mark a recurring-service event complete with a required job link, then refresh the local snapshot so overdue filters update.",
+      "rationale": "Wraps mark-complete with the typical reason (job link) and synchronizes the local cache in one step.",
+      "example": "servicetitan-memberships-pp-cli complete 99 --job 12345 --dry-run",
+      "why_it_matters": "Use this in field-tech workflows where the event-to-job link is the whole point of marking complete.",
+      "group": "Agent-native plumbing"
+    },
+    {
+      "name": "Natural-language member finder",
+      "command": "find",
+      "description": "Forgiving ranked search over synced memberships using customer, importId, memo, customFields, and membership-type name.",
+      "rationale": "Domain-tuned ranking and tech-facing output shape beyond the framework search command.",
+      "example": "servicetitan-memberships-pp-cli find 'Smith family well plan' --agent",
+      "why_it_matters": "Pick this when an agent or office staffer is describing a member instead of pasting an exact ID.",
+      "group": "Agent-native plumbing"
+    }
+  ],
+  "narrative": {
+    "display_name": "ServiceTitan Memberships",
+    "headline": "A focused per-module ServiceTitan CLI for Memberships — sync once, then audit renewals, overdue events, template drift, and recurring revenue the ST UI cannot.",
+    "value_prop": "This CLI (servicetitan-memberships-pp-cli) mirrors every ServiceTitan Memberships v2 endpoint (customer memberships, membership types, recurring services, recurring service types, recurring service events, invoice templates, plus seven export feeds) and adds twelve novel commands that join across them in a local SQLite cache. It replaces the heavy general ST MCP for membership work with a thin search+execute MCP surface — so an agent doing renewal targeting, overdue-visit triage, churn risk scoring, or recurring-revenue rollups loads only the memberships module.",
+    "auth_narrative": "ServiceTitan uses composed auth: a static ST-App-Key header (set ST_APP_KEY) plus an OAuth2 client-credentials bearer token (set ST_CLIENT_ID and ST_CLIENT_SECRET). Run servicetitan-memberships-pp-cli auth login to walk the credential setup, then set the three credentials plus ST_TENANT_ID (your numeric tenant ID). Whitespace is stripped defensively on all three OAuth env vars — a known JKA gotcha that produces opaque invalid_client 400s when a trailing newline sneaks in from a copy-paste. The integration's OAuth client needs the read scopes for every list/get plus tn.mem.memberships:w, tn.mem.invoicetemplates:w, tn.mem.recurringservices:w, and tn.mem.recurringserviceevents:w for the mutation endpoints (memberships sale + update, invoice-templates create + update, recurring-services update, recurring-service-events mark-complete + mark-incomplete).",
+    "quickstart": [
+      {
+        "command": "servicetitan-memberships-pp-cli doctor",
+        "comment": "Confirm ST_APP_KEY, bearer token, ST_TENANT_ID, and base URL before anything else."
+      },
+      {
+        "command": "servicetitan-memberships-pp-cli sync",
+        "comment": "Pull memberships, membership-types, recurring-services, recurring-service-events, recurring-service-types, and invoice-templates into the local store and snapshot membership status history."
+      },
+      {
+        "command": "servicetitan-memberships-pp-cli health --agent",
+        "comment": "See renewal, overdue-event, drift, risk, stale-service, and revenue-at-risk counts in one rollup."
+      },
+      {
+        "command": "servicetitan-memberships-pp-cli renewals --within 30 --agent",
+        "comment": "List active memberships whose to-date is within the next 30 days for the renewal pipeline."
+      },
+      {
+        "command": "servicetitan-memberships-pp-cli overdue-events --agent",
+        "comment": "Show recurring-service events past their date on still-active memberships — the visits we owe."
+      }
+    ],
+    "troubleshoots": [
+      {
+        "symptom": "auth login returns invalid_client 400 even though ST_CLIENT_ID and ST_CLIENT_SECRET look right.",
+        "fix": "Re-paste the secret into a single-line env entry. ServiceTitan's OAuth server rejects trailing whitespace; this CLI strips it defensively but check that the values don't contain embedded newlines (echo -n on the value should produce no extra blank line)."
+      },
+      {
+        "symptom": "List commands return 403 forbidden even after auth login succeeds.",
+        "fix": "Your integration's OAuth client is missing a tn.mem.* scope. Check the developer-portal app and add tn.mem.memberships:r, tn.mem.membershiptypes:r, tn.mem.recurringservices:r, tn.mem.recurringserviceevents:r, tn.mem.recurringservicetypes:r, tn.mem.invoicetemplates:r. Mutation commands additionally require the :w variants."
+      },
+      {
+        "symptom": "sync says 429 too many requests.",
+        "fix": "ServiceTitan rate-limits to ~7000 requests per hour per environment per app key. The CLI's AdaptiveLimiter backs off automatically; if you hit the cap repeatedly, run sync --resources memberships,recurring-service-events to scope and let it finish before retrying the rest."
+      },
+      {
+        "symptom": "drift reports template gaps but the membership UI looks correct.",
+        "fix": "Re-run sync — membership-types.recurring-services is sub-resource data that only refreshes on a full sync. After sync, drift's view is from the same modifiedOn cursor; if a membership type changed after your last sync, the drift report lags until you resync."
+      }
+    ],
+    "when_to_use": "Reach for this CLI when an agent task touches ServiceTitan's recurring-revenue book — renewal targeting, overdue-event triage, template-drift audits, churn-risk scoring, recurring-revenue rollups, or bill previews for a single customer. It replaces the general ST MCP for any membership-shaped task, with a thin code-orchestrated MCP surface that loads only the memberships module. Use it instead of the ST UI when you need joined views across memberships, membership-types, recurring-services, and events that the UI can only show one entity at a time.",
+    "recipes": [
+      {
+        "title": "Renewal pipeline for the month",
+        "command": "servicetitan-memberships-pp-cli renewals --within 30 --agent --select id,customerId,to,membershipTypeId,soldById,businessUnitId",
+        "explanation": "Active memberships whose to-date is within 30 days, narrowed to the fields a renewal-outreach agent actually needs."
+      },
+      {
+        "title": "Overdue recurring-service events feeding a dispatch agent",
+        "command": "servicetitan-memberships-pp-cli overdue-events --agent --select id,locationRecurringServiceName,membershipName,date,locationRecurringServiceId",
+        "explanation": "Past-due events on active memberships with dotted-path field selection so the agent only sees what it needs to schedule."
+      },
+      {
+        "title": "Compute monthly recurring revenue by business unit",
+        "command": "servicetitan-memberships-pp-cli revenue --by month --agent",
+        "explanation": "Local SQL roll-up over synced memberships joined to membership-types.durationBilling, broken down by business unit and billing frequency."
+      },
+      {
+        "title": "Find a member without an ID",
+        "command": "servicetitan-memberships-pp-cli find 'Smith well-care annual' --agent",
+        "explanation": "Forgiving ranked search across memberships, importId, memo, custom fields, and membership-type name — useful when office staff describe a member."
+      },
+      {
+        "title": "Complete an event and refresh the snapshot",
+        "command": "servicetitan-memberships-pp-cli complete 99 --job 12345",
+        "explanation": "Marks event 99 complete via mark-complete with a required job link, then updates the local snapshot so overdue filters reflect the change."
+      }
+    ],
+    "trigger_phrases": [
+      "use servicetitan-memberships",
+      "run servicetitan-memberships",
+      "sync the membership book",
+      "which memberships are expiring",
+      "renewals due this month",
+      "overdue recurring service events",
+      "membership template drift",
+      "membership churn risk",
+      "recurring revenue rollup",
+      "preview the next bill for a member",
+      "find a member by description",
+      "membership health check"
+    ]
+  }
+}
